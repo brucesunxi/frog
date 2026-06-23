@@ -1,0 +1,14 @@
+{
+  "frog": "assets/frog.svg",
+  "carRed": "assets/car-red.svg",
+  "carBlue": "assets/car-blue.svg",
+  "truckPurple": "assets/truck-purple.svg",
+  "log": "assets/log.svg",
+  "turtle": "assets/turtle.svg",
+  "turtleSubmerged": "assets/turtle-submerged.svg",
+  "lilyHome": "assets/lily-home.svg",
+  "fly": "assets/fly.svg",
+  "grassTile": "assets/grass-tile.svg",
+  "roadTile": "assets/road-tile.svg",
+  "riverTile": "assets/river-tile.svg"
+}

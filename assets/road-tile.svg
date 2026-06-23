@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 40">
+  <linearGradient id="asphalt" x1="0" x2="0" y1="0" y2="1">
+    <stop offset="0" stop-color="#6f7372"/>
+    <stop offset=".5" stop-color="#535856"/>
+    <stop offset="1" stop-color="#3f4442"/>
+  </linearGradient>
+  <rect width="160" height="40" fill="url(#asphalt)"/>
+  <rect y="2" width="160" height="2" fill="#fff8c7" opacity=".13"/>
+  <rect y="36" width="160" height="2" fill="#fff8c7" opacity=".13"/>
+  <path d="M0 20h22M38 20h22M76 20h22M114 20h22M152 20h22" stroke="#f4efbd" stroke-opacity=".42" stroke-width="3" stroke-linecap="round"/>
+  <g fill="#222827" opacity=".11">
+    <circle cx="30" cy="8" r="2"/>
+    <circle cx="121" cy="31" r="2"/>
+    <circle cx="88" cy="11" r="1.5"/>
+  </g>
+</svg>
