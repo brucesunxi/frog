@@ -1,14 +1,16 @@
 {
-  "frog": "assets/frog.svg",
-  "carRed": "assets/car-red.svg",
-  "carBlue": "assets/car-blue.svg",
-  "truckPurple": "assets/truck-purple.svg",
-  "log": "assets/log.svg",
-  "turtle": "assets/turtle.svg",
-  "turtleSubmerged": "assets/turtle-submerged.svg",
-  "lilyHome": "assets/lily-home.svg",
-  "fly": "assets/fly.svg",
-  "grassTile": "assets/grass-tile.svg",
-  "roadTile": "assets/road-tile.svg",
-  "riverTile": "assets/river-tile.svg"
+  "frog": "assets/rendered/frog.png",
+  "carRed": "assets/rendered/car-red.png",
+  "carBlue": "assets/rendered/car-blue.png",
+  "truckPurple": "assets/rendered/truck-purple.png",
+  "log": "assets/rendered/log.png",
+  "turtle": "assets/rendered/turtle.png",
+  "turtleSubmerged": "assets/rendered/turtle-submerged.png",
+  "lilyHome": "assets/rendered/lily-home.png",
+  "fly": "assets/rendered/fly.png",
+  "grassTile": "assets/rendered/grass-tile.png",
+  "roadTile": "assets/rendered/road-tile.png",
+  "riverTile": "assets/rendered/river-tile.png",
+  "sourceSvgDirectory": "assets/",
+  "renderedStyleTarget": "assets/rendered-style-target.png"
 }
