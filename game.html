@@ -262,6 +262,28 @@ function fillAssetPattern(key,x,y,w,h,fallback) {
     ctx.restore();
     return true;
 }
+function drawGrassLane(y,h,base) {
+    ctx.fillStyle = base;
+    ctx.fillRect(0,y,W,h);
+    ctx.fillStyle = 'rgba(255,255,255,0.035)';
+    for (var x=0;x<W;x+=80) ctx.fillRect(x,y,40,h);
+    ctx.fillStyle = 'rgba(0,0,0,0.08)';
+    ctx.fillRect(0,y+h-4,W,4);
+    ctx.fillStyle = 'rgba(145,220,100,0.28)';
+    for (var gx=(frame%40)-40;gx<W;gx+=24) {
+        var gy=y+10+((gx*7)%Math.max(12,h-16));
+        ctx.beginPath();
+        ctx.moveTo(gx,gy+6);
+        ctx.lineTo(gx+4,gy-4);
+        ctx.lineTo(gx+8,gy+6);
+        ctx.fill();
+    }
+    ctx.fillStyle = 'rgba(255,230,90,0.45)';
+    for (var fx=18;fx<W;fx+=135) {
+        var fy=y+12+((fx*5)%Math.max(10,h-18));
+        ctx.beginPath(); ctx.arc(fx,fy,1.4,0,Math.PI*2); ctx.fill();
+    }
+}
 
 function saveProgress() {
     try { localStorage.setItem('frog_frenzy_save', JSON.stringify({ highScore, totalStars, levelsBeaten, totalAdsWatched, maxCombo, soundMuted })); } catch(e) {}
@@ -736,9 +758,7 @@ function drawBackground() {
         if (r===0||r===1) continue;
         if (r===15) continue;
         if (!laneRows.has(r)||lanes.find(function(l){return l.row===r&&l.type==='grass';})) {
-            if (!fillAssetPattern('grassTile',0,r*CELL,W,CELL,(r%2===0)?th.grass:lighten(th.grass,15))) {
-                ctx.fillStyle = (r%2===0)?th.grass:lighten(th.grass,15); ctx.fillRect(0,r*CELL,W,CELL);
-            }
+            drawGrassLane(r*CELL,CELL,(r%2===0)?th.grass:lighten(th.grass,15));
         }
     }
     var skyGrad = ctx.createLinearGradient(0,0,0,80);
@@ -750,7 +770,7 @@ function drawBackground() {
     // Clouds
     clouds.forEach(function(c){ ctx.fillStyle='rgba(255,255,255,'+c.opacity+')'; ctx.beginPath(); ctx.arc(c.x,c.y+5,c.p1,0,Math.PI*2); ctx.arc(c.x+c.p2,c.y,c.p2,0,Math.PI*2); ctx.arc(c.x+c.p3+5,c.y+5,c.p1*0.7,0,Math.PI*2); ctx.fill(); });
     // Grass area
-    fillAssetPattern('grassTile',0,14*CELL,W,CELL*2,th.grass);
+    drawGrassLane(14*CELL,CELL*2,th.grass);
     ctx.fillStyle = 'rgba(255,255,255,0.04)'; ctx.fillRect(0,15*CELL,W,CELL);
     // Grass blades
     // Flowers
@@ -775,19 +795,29 @@ function drawRoads() {
     var th = getTheme(level);
     lanes.forEach(function(l){
         if (l.type!=='road') return;
-        fillAssetPattern('roadTile',0,l.row*CELL,W,CELL,(l.row%2===0)?th.road1:th.road2);
+        var y=l.row*CELL;
+        var grad=ctx.createLinearGradient(0,y,0,y+CELL);
+        grad.addColorStop(0,lighten((l.row%2===0)?th.road1:th.road2,18));
+        grad.addColorStop(0.52,(l.row%2===0)?th.road1:th.road2);
+        grad.addColorStop(1,'#303735');
+        ctx.fillStyle=grad; ctx.fillRect(0,y,W,CELL);
+        ctx.fillStyle='rgba(255,255,255,0.04)';
+        for (var px=0;px<W;px+=64) ctx.fillRect(px,y+5,28,2);
         var dashLen=20, gapLen=15, totalLen=dashLen+gapLen, offset=(frame*getEffectiveSpeed(l)*l.dir*0.3)%totalLen;
-        ctx.strokeStyle='rgba(255,255,200,0.18)'; ctx.lineWidth=2; ctx.setLineDash([dashLen,gapLen]); ctx.lineDashOffset=-offset;
+        ctx.strokeStyle='rgba(255,255,220,0.42)'; ctx.lineWidth=2; ctx.setLineDash([dashLen,gapLen]); ctx.lineDashOffset=-offset;
         ctx.beginPath(); ctx.moveTo(0,l.row*CELL+CELL/2); ctx.lineTo(W,l.row*CELL+CELL/2); ctx.stroke();
         ctx.setLineDash([]);
-        ctx.fillStyle='rgba(255,255,200,0.15)'; ctx.fillRect(0,l.row*CELL+2,W,2); ctx.fillRect(0,l.row*CELL+CELL-4,W,2);
+        ctx.fillStyle='rgba(255,255,200,0.16)'; ctx.fillRect(0,l.row*CELL+2,W,2); ctx.fillRect(0,l.row*CELL+CELL-4,W,2);
     });
 }
 
 function drawRiver() {
     lanes.forEach(function(l){
         if (l.type!=='river') return;
-        fillAssetPattern('riverTile',0,l.row*CELL,W,CELL,'#1a6b8a');
+        var y=l.row*CELL;
+        var grad=ctx.createLinearGradient(0,y,0,y+CELL);
+        grad.addColorStop(0,'#2696b8'); grad.addColorStop(0.5,'#197996'); grad.addColorStop(1,'#0e5878');
+        ctx.fillStyle=grad; ctx.fillRect(0,y,W,CELL);
         for (var layer=0;layer<3;layer++) {
             ctx.fillStyle='rgba(255,255,255,'+(0.03+layer*0.02)+')';
             var speed=0.03+layer*0.01, spacing=20+layer*8;
