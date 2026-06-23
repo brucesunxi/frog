@@ -826,7 +826,9 @@ function drawVehicle(type,x,y,dir,w,speed) {
                 ctx.fillRect(lx,y+6+Math.random()*(h-12),2+Math.random()*3,1);
             }
         }
-        drawAsset(type,x,y-6,w,h+12,dir<0);
+        var visualW = w + (type==='truck' ? 26 : 18);
+        var visualX = x - (visualW - w) / 2;
+        drawAsset(type,visualX,y-8,visualW,h+16,dir<0);
         return;
     }
     ctx.save(); ctx.translate(x,y);

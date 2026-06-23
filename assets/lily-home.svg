@@ -1,17 +1,31 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 80">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 84">
   <defs>
-    <radialGradient id="pad" cx="40%" cy="28%" r="70%">
-      <stop offset="0" stop-color="#8dff9f"/>
-      <stop offset=".58" stop-color="#21bd63"/>
-      <stop offset="1" stop-color="#0c7445"/>
-    </radialGradient>
+    <linearGradient id="base" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset=".58" stop-color="#e9eff0"/>
+      <stop offset="1" stop-color="#b9c4c8"/>
+    </linearGradient>
+    <linearGradient id="pad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#82f68d"/>
+      <stop offset=".55" stop-color="#2abe62"/>
+      <stop offset="1" stop-color="#137747"/>
+    </linearGradient>
+    <filter id="shadow" x="-12%" y="-25%" width="124%" height="155%">
+      <feDropShadow dx="0" dy="5" stdDeviation="3" flood-color="#061016" flood-opacity=".35"/>
+    </filter>
   </defs>
-  <rect x="6" y="7" width="148" height="66" rx="12" fill="#2cee8c" opacity=".12" stroke="#70ffd3" stroke-opacity=".35" stroke-width="3"/>
-  <ellipse cx="80" cy="50" rx="43" ry="18" fill="url(#pad)"/>
-  <path d="M80 49l31-12c3 11-2 20-13 26z" fill="#103d31" opacity=".28"/>
-  <ellipse cx="58" cy="41" rx="14" ry="5" fill="#b5ffb6" opacity=".25"/>
-  <g fill="#ffd84c" opacity=".85">
-    <path d="M34 23l2 5 5 2-5 2-2 5-2-5-5-2 5-2z"/>
-    <path d="M126 27l1.5 4 4 1.5-4 1.5-1.5 4-1.5-4-4-1.5 4-1.5z"/>
+  <g filter="url(#shadow)">
+    <path d="M18 19l15-12h94l15 12v39l-12 12H30L18 58z" fill="url(#base)"/>
+    <path d="M33 7h94l15 12H18z" fill="#fff" opacity=".86"/>
+    <path d="M30 58h100l-12 12H42z" fill="#9eaaae" opacity=".5"/>
+    <path d="M49 42l18-17h37l18 17-12 18H62z" fill="url(#pad)"/>
+    <path d="M67 25h37l18 17H49z" fill="#a6ffac" opacity=".5"/>
+    <path d="M81 43l29-9c3 11-2 19-13 25z" fill="#0c4f35" opacity=".32"/>
+    <path d="M57 43h57M68 31l-11 25M91 26v34" stroke="#0a6f42" stroke-opacity=".38" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <path d="M26 23h108" stroke="#74d9ff" stroke-width="5" stroke-linecap="round" opacity=".45"/>
+    <g fill="#ffdc49" opacity=".9">
+      <path d="M35 30l2 5 5 2-5 2-2 5-2-5-5-2 5-2z"/>
+      <path d="M126 33l1.5 4 4 1.5-4 1.5-1.5 4-1.5-4-4-1.5 4-1.5z"/>
+    </g>
   </g>
 </svg>
