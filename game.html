@@ -60,6 +60,9 @@ canvas {
 .powerup-card .name { color: #ffd700; font-weight: bold; font-size: 14px; }
 .powerup-card .desc { color: #b2bec3; font-size: 12px; margin-top: 3px; }
 .fail-insight { color: #ffd700; font-size: 13px; margin: 8px 0 4px; padding: 7px 12px; border-radius: 9px; background: rgba(255,215,0,0.09); max-width: 440px; }
+.complete-tip { color:#ffd700; font-size:12px; line-height:1.35; max-width:420px; margin:4px 0 2px; padding:7px 12px; border-radius:9px; background:rgba(255,215,0,0.08); }
+.complete-actions { display:flex; gap:8px; flex-wrap:wrap; justify-content:center; margin-top:4px; }
+#levelCompleteScreen .btn { margin:4px; }
 .ad-countdown { font-size: 56px; color: #ffd700; font-weight: bold; margin: 15px 0; text-shadow: 0 0 40px rgba(255,215,0,0.5); }
 .stars { font-size: 32px; margin: 5px 0; letter-spacing: 4px; }
 .fade-in { animation: fadeIn 0.3s ease-out; }
@@ -132,13 +135,15 @@ canvas {
         <p>得分: <span class="highlight" id="completeScore">0</span></p>
         <p>连击最高: <span class="highlight" id="completeCombo">0</span>x</p>
         <p>时间奖励: <span class="highlight" id="completeTimeBonus">+0</span></p>
-        <p id="nextLevelHook" style="color:#ffd700;font-size:13px;margin-top:6px;">下一关提示</p>
-        <div style="margin:8px 0;padding:6px 16px;background:rgba(255,215,0,0.1);border-radius:8px;">
+        <div id="nextLevelHook" class="complete-tip">下一关提示</div>
+        <div style="margin:4px 0;padding:5px 14px;background:rgba(255,215,0,0.1);border-radius:8px;">
             <span style="color:#b2bec3;font-size:12px;">总星数: </span>
             <span id="totalStarsDisplay" style="color:#ffd700;font-size:16px;">⭐ 0</span>
         </div>
-        <button class="btn btn-powerup btn-small" id="prepNextBtn" onclick="prepareNextLevelBoost()">📺 带补给进下一关</button>
-        <button class="btn btn-next" onclick="nextLevel()">下一关 →</button>
+        <div class="complete-actions">
+            <button class="btn btn-powerup btn-small" id="prepNextBtn" onclick="prepareNextLevelBoost()">📺 带补给进下一关</button>
+            <button class="btn btn-next btn-small" onclick="nextLevel()">下一关 →</button>
+        </div>
     </div>
     <div class="overlay fade-in" id="gameOverScreen">
         <h1>💀</h1>
@@ -796,7 +801,7 @@ function levelComplete() {
     var next = level+1;
     var prep = document.getElementById('prepNextBtn');
     if (next<=8) {
-        document.getElementById('nextLevelHook').textContent='下一关：'+getLevelTip(next);
+        document.getElementById('nextLevelHook').textContent='下一关提示：'+getLevelStartPopup(next)+'。'+getPrepPowerupForLevel(next).replace('shield','护盾').replace('slowmo','减速').replace('superJump','超级跳')+'会更稳。';
         prep.style.display='inline-block';
         prep.textContent='📺 带补给进第 '+next+' 关';
     } else {
