@@ -183,8 +183,8 @@ canvas {
         <button class="btn btn-small" style="background:#636e72;color:white;min-width:60px;" onclick="toggleSound()" id="pauseSoundBtn">🔇</button>
         <button class="btn btn-small" style="background:#636e72;color:white;" onclick="backToMenu()">菜单</button>
     </div>
-    <div id="exitBtn" style="position:absolute;top:32px;right:72px;z-index:5;cursor:pointer;font-size:16px;width:36px;height:36px;border-radius:50%;background:rgba(0,0,0,0.4);border:1px solid rgba(255,255,255,0.15);color:white;display:none;align-items:center;justify-content:center;transition:all 0.2s;" onclick="backToMenu()" onmouseover="this.style.background='rgba(255,100,100,0.6)';" onmouseout="this.style.background='rgba(0,0,0,0.4)';">✕</div>
-    <div id="pauseBtn" style="position:absolute;top:32px;right:32px;z-index:5;cursor:pointer;font-size:20px;width:36px;height:36px;border-radius:50%;background:rgba(0,0,0,0.4);border:1px solid rgba(255,255,255,0.15);color:white;display:none;align-items:center;justify-content:center;transition:all 0.2s;" onclick="if(state===STATE.PLAYING){state=STATE.PAUSED;document.getElementById('pauseScreen').classList.add('show');}" onmouseover="this.style.background='rgba(0,0,0,0.6)';" onmouseout="this.style.background='rgba(0,0,0,0.4)';">⏸</div>
+    <div id="exitBtn" style="position:absolute;top:24px;right:68px;z-index:5;cursor:pointer;font-size:15px;width:32px;height:32px;border-radius:50%;background:rgba(0,0,0,0.45);border:1px solid rgba(255,255,255,0.18);color:white;display:none;align-items:center;justify-content:center;transition:all 0.2s;" onclick="backToMenu()" onmouseover="this.style.background='rgba(255,100,100,0.6)';" onmouseout="this.style.background='rgba(0,0,0,0.45)';">✕</div>
+    <div id="pauseBtn" style="position:absolute;top:24px;right:32px;z-index:5;cursor:pointer;font-size:18px;width:32px;height:32px;border-radius:50%;background:rgba(0,0,0,0.45);border:1px solid rgba(255,255,255,0.18);color:white;display:none;align-items:center;justify-content:center;transition:all 0.2s;" onclick="if(state===STATE.PLAYING){state=STATE.PAUSED;document.getElementById('pauseScreen').classList.add('show');}" onmouseover="this.style.background='rgba(0,0,0,0.6)';" onmouseout="this.style.background='rgba(0,0,0,0.45)';">⏸</div>
     <div class="mobile-controls">
         <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
             <button data-dir="up">▲</button>
@@ -1098,25 +1098,23 @@ function drawFlies() {
 }
 
 function drawHomes() {
-    var hw=800/5;
+    var hw=800/5, homeY=38, homeH=38;
     homes.forEach(function(h,i){
         var hx=i*hw, pulse=Math.sin(frame*.04+i)*.08;
         ctx.fillStyle=h.filled?'rgba(0,200,0,0.3)':'rgba(0,200,0,'+(.06+pulse)+')';
-        ctx.fillRect(hx+5,5,hw-10,70);
+        ctx.fillRect(hx+8,homeY,hw-16,homeH);
         ctx.strokeStyle=h.filled?'#00b894':'rgba(255,255,255,'+(.15+pulse)+')';
-        ctx.lineWidth=2; ctx.strokeRect(hx+5,5,hw-10,70);
+        ctx.lineWidth=2; ctx.strokeRect(hx+8,homeY,hw-16,homeH);
         if (h.filled) {
-            drawAsset('lilyHome',hx+16,11,hw-32,58,false);
-            drawSmallFrog(hx+hw/2,45);
-            for (var s=0;s<3;s++) { var sx=hx+hw/2+Math.sin(frame*0.02+i*2+s*2)*18, sy=30+Math.cos(frame*0.025+i*3+s*1.5)*12; ctx.fillStyle='rgba(255,215,0,'+(0.3+Math.sin(frame*0.04+i+s)*0.2)+')'; ctx.font='8px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('✦',sx,sy); }
+            drawAsset('lilyHome',hx+28,homeY+3,hw-56,31,false);
+            drawSmallFrog(hx+hw/2,homeY+24);
+            for (var s=0;s<3;s++) { var sx=hx+hw/2+Math.sin(frame*0.02+i*2+s*2)*18, sy=homeY+18+Math.cos(frame*0.025+i*3+s*1.5)*8; ctx.fillStyle='rgba(255,215,0,'+(0.3+Math.sin(frame*0.04+i+s)*0.2)+')'; ctx.font='8px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('✦',sx,sy); }
         } else {
-            drawAsset('lilyHome',hx+16,11,hw-32,58,false);
+            drawAsset('lilyHome',hx+28,homeY+3,hw-56,31,false);
             var p=Math.sin(frame*.06+i*1.5)*.4+.6;
-            ctx.fillStyle='rgba(255,215,0,'+(p*0.25)+')'; ctx.font='20px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('▼',hx+hw/2,76);
-            ctx.fillStyle='rgba(255,255,255,0.1)'; ctx.font='10px sans-serif'; ctx.textBaseline='bottom'; ctx.fillText('目标 '+(i+1),hx+hw/2,14);
+            ctx.fillStyle='rgba(255,215,0,'+(p*0.25)+')'; ctx.font='17px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('▼',hx+hw/2,homeY+39);
         }
     });
-    ctx.fillStyle='rgba(255,255,255,0.62)'; ctx.font='bold 13px sans-serif'; ctx.textAlign='left'; ctx.textBaseline='alphabetic'; ctx.fillText('🏠 '+homesFilled+'/'+homesNeeded,10,18);
     if (comboCount>=2&&comboFlash>0) {
         ctx.textAlign='center'; ctx.textBaseline='alphabetic';
         ctx.fillStyle='rgba(255,107,107,'+(Math.min(1,comboFlash))+')';
@@ -1168,12 +1166,16 @@ function drawParticles() { particles.forEach(function(p){ ctx.globalAlpha=p.life
 function drawHUD() {
     if (!levelConfig) return;
     var th=getTheme(level);
-    ctx.fillStyle='rgba(0,0,0,0.6)'; rRect(290,2,220,34,8); ctx.fill();
-    ctx.fillStyle=th.accent; ctx.font='bold 15px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='alphabetic'; ctx.fillText('第 '+level+' 关 · '+levelConfig.name,400,26);
+    ctx.fillStyle='rgba(3,8,20,0.82)'; ctx.fillRect(0,0,W,34);
+    ctx.fillStyle='rgba(255,255,255,0.08)'; ctx.fillRect(0,33,W,1);
+    ctx.textBaseline='middle';
+    ctx.textAlign='left';
+    ctx.fillStyle='#ffd700'; ctx.font='bold 14px sans-serif'; ctx.fillText('🏠 '+homesFilled+'/'+homesNeeded,10,17);
+    var ls=''; for(var i=0;i<lives;i++)ls+='❤️'; for(var i=lives;i<maxLives;i++)ls+='🖤';
+    ctx.fillStyle='#ff6b6b'; ctx.font='13px sans-serif'; ctx.fillText(ls+' ×'+lives,82,17);
+    ctx.fillStyle=th.accent; ctx.font='bold 15px sans-serif'; ctx.textAlign='center'; ctx.fillText('第 '+level+' 关 · '+levelConfig.name,360,17);
     drawTimerPanel();
-    ctx.textAlign='left'; var ls=''; for(var i=0;i<lives;i++)ls+='❤️'; for(var i=lives;i<maxLives;i++)ls+='🖤';
-    ctx.font='14px sans-serif'; ctx.textBaseline='alphabetic'; ctx.fillText(ls+' ×'+lives,10,78);
-    ctx.textAlign='right'; ctx.fillStyle='#ffd700'; ctx.font='bold 15px sans-serif'; ctx.fillText('得分: '+score,790,76);
+    ctx.textAlign='right'; ctx.fillStyle='#ffd700'; ctx.font='bold 14px sans-serif'; ctx.fillText('得分: '+score,712,17);
     var y=86; ctx.textAlign='left'; ctx.font='12px sans-serif'; ctx.textBaseline='alphabetic';
     if(powerups.shield>0){ctx.fillStyle='#00b894';ctx.fillText('🛡️ '+powerups.shield,10,y);y+=15;}
     if(powerups.slowmo>0){ctx.fillStyle='#fdcb6e';ctx.fillText('⏱️ '+Math.ceil(powerups.slowmo/60)+'s',10,y);y+=15;}
@@ -1184,25 +1186,25 @@ function drawHUD() {
 function drawTimerPanel() {
     var pct=Math.max(0,timeTotal?timeLeft/timeTotal:0);
     var urgent=timeLeft<=10, warning=timeLeft<=20;
-    var panelX=606, panelY=42, panelW=122, panelH=31;
+    var panelX=508, panelY=5, panelW=102, panelH=24;
     var fill=urgent?'#ff6b6b':(warning?'#fdcb6e':'#00d38f');
     ctx.save();
     ctx.fillStyle='rgba(5,12,24,0.78)';
-    rRect(panelX,panelY,panelW,panelH,8); ctx.fill();
+    rRect(panelX,panelY,panelW,panelH,7); ctx.fill();
     ctx.strokeStyle=urgent?'rgba(255,107,107,0.9)':(warning?'rgba(253,203,110,0.78)':'rgba(0,211,143,0.7)');
-    ctx.lineWidth=2; rRect(panelX+.5,panelY+.5,panelW-1,panelH-1,8); ctx.stroke();
+    ctx.lineWidth=2; rRect(panelX+.5,panelY+.5,panelW-1,panelH-1,7); ctx.stroke();
     ctx.textAlign='left'; ctx.textBaseline='middle';
-    ctx.fillStyle=fill; ctx.font='bold 18px sans-serif';
-    ctx.fillText('⏱ '+timeLeft+'s',panelX+10,panelY+14);
+    ctx.fillStyle=fill; ctx.font='bold 15px sans-serif';
+    ctx.fillText('⏱ '+timeLeft+'s',panelX+8,panelY+11);
     ctx.fillStyle='rgba(255,255,255,0.14)';
-    rRect(panelX+10,panelY+23,panelW-20,5,3); ctx.fill();
+    rRect(panelX+8,panelY+18,panelW-16,4,2); ctx.fill();
     if (pct>0) {
         ctx.fillStyle=fill;
-        rRect(panelX+10,panelY+23,(panelW-20)*pct,5,3); ctx.fill();
+        rRect(panelX+8,panelY+18,(panelW-16)*pct,4,2); ctx.fill();
     }
     if (urgent&&Math.sin(frame*.15)>0) {
         ctx.fillStyle='rgba(255,255,255,0.22)';
-        rRect(panelX,panelY,panelW,panelH,8); ctx.fill();
+        rRect(panelX,panelY,panelW,panelH,7); ctx.fill();
     }
     ctx.restore();
 }
