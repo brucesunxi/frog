@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>青蛙过河 - Frog Frenzy</title>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; -webkit-tap-highlight-color: transparent; }
 body {
@@ -75,6 +76,12 @@ canvas {
 .level-card .num { font-size:13px; font-weight:700; color:#ffd700; }
 .level-card .title { font-size:11px; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .level-card .stars-mini { font-size:11px; color:#ffd700; margin-top:2px; letter-spacing:1px; }
+.auth-panel { display:flex; align-items:center; justify-content:center; gap:8px; min-height:38px; margin:4px 0; }
+.auth-user { display:none; align-items:center; gap:8px; background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.12); border-radius:9px; padding:5px 9px; max-width:360px; }
+.auth-user img { width:24px; height:24px; border-radius:50%; }
+.auth-user span { color:#dfe6e9; font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:190px; }
+.auth-status { color:#7f8c8d; font-size:11px; min-height:14px; }
+.link-btn { border:0; background:transparent; color:#ffd700; font-size:12px; cursor:pointer; padding:2px 4px; }
 .ad-countdown { font-size: 56px; color: #ffd700; font-weight: bold; margin: 15px 0; text-shadow: 0 0 40px rgba(255,215,0,0.5); }
 .stars { font-size: 32px; margin: 5px 0; letter-spacing: 4px; }
 .fade-in { animation: fadeIn 0.3s ease-out; }
@@ -129,6 +136,15 @@ canvas {
             <span style="color:#636e72;margin:0 6px;">|</span>
             <span style="color:#ffd700;font-size:13px;">⭐ <span id="totalStarsMenu">0</span></span>
         </div>
+        <div class="auth-panel">
+            <div id="googleSignIn"></div>
+            <div class="auth-user" id="authUser">
+                <img id="authAvatar" alt="">
+                <span id="authName"></span>
+                <button class="link-btn" onclick="signOut()">退出</button>
+            </div>
+        </div>
+        <div class="auth-status" id="authStatus">登录后可同步关卡进度</div>
         <div style="background:rgba(255,255,255,0.05);border-radius:10px;padding:8px 16px;margin:4px 0;max-width:360px;text-align:left;font-size:13px;line-height:1.6;">
             <p>🎮 方向键 / WASD 移动  |  ESC 暂停</p>
             <p>🏠 送青蛙到顶部的家 · 躲车过河</p>
@@ -316,7 +332,8 @@ function drawGrassLane(y,h,base) {
 }
 
 function saveProgress() {
-    try { localStorage.setItem('frog_frenzy_save', JSON.stringify({ highScore, totalStars, levelsBeaten, levelStars, totalAdsWatched, maxCombo, soundMuted })); } catch(e) {}
+    try { localStorage.setItem('frog_frenzy_save', JSON.stringify(getProgressPayload())); } catch(e) {}
+    queueProgressSync();
 }
 function loadProgress() {
     try {
@@ -329,8 +346,117 @@ function loadProgress() {
         }
     } catch(e) {}
 }
+function getProgressPayload() {
+    return { highScore, totalStars, levelsBeaten, levelStars, totalAdsWatched, maxCombo, soundMuted };
+}
+function applyProgressPayload(d) {
+    if (!d) return;
+    highScore = Math.max(highScore||0, d.highScore||0);
+    levelsBeaten = Math.max(levelsBeaten||0, d.levelsBeaten||0);
+    totalAdsWatched = Math.max(totalAdsWatched||0, d.totalAdsWatched||0);
+    maxCombo = Math.max(maxCombo||0, d.maxCombo||0);
+    var merged = Object.assign({}, d.levelStars||{}, levelStars||{});
+    Object.keys(d.levelStars||{}).forEach(function(k){ merged[k]=Math.max(Number(merged[k]||0),Number(d.levelStars[k]||0)); });
+    Object.keys(levelStars||{}).forEach(function(k){ merged[k]=Math.max(Number(merged[k]||0),Number(levelStars[k]||0)); });
+    levelStars = merged;
+    totalStars = Object.values(levelStars).reduce(function(a,b){return a+(Number(b)||0);},0);
+    try { localStorage.setItem('frog_frenzy_save', JSON.stringify(getProgressPayload())); } catch(e) {}
+    refreshMenuStats();
+}
+function refreshMenuStats() {
+    var hs=document.getElementById('highScoreDisplay'), ts=document.getElementById('totalStarsMenu');
+    if (hs) hs.textContent=highScore;
+    if (ts) ts.textContent=totalStars;
+    renderLevelSelect();
+}
+function setAuthStatus(text) {
+    var e=document.getElementById('authStatus');
+    if (e) e.textContent=text||'';
+}
+function setCurrentUser(user) {
+    currentUser = user;
+    var signIn=document.getElementById('googleSignIn'), box=document.getElementById('authUser');
+    if (!signIn||!box) return;
+    if (user) {
+        signIn.style.display='none';
+        box.style.display='flex';
+        document.getElementById('authName').textContent=user.name||user.email||'已登录';
+        var avatar=document.getElementById('authAvatar');
+        avatar.src=user.pictureUrl||'';
+        avatar.style.display=user.pictureUrl?'block':'none';
+        setAuthStatus('云端进度已连接');
+    } else {
+        signIn.style.display='block';
+        box.style.display='none';
+        setAuthStatus(authConfig.googleClientId?'登录后可同步关卡进度':'Google 登录尚未配置');
+    }
+}
+async function apiFetch(path, options) {
+    var headers = Object.assign({ 'Content-Type':'application/json' }, (options&&options.headers)||{});
+    if (authToken) headers.Authorization='Bearer '+authToken;
+    var res = await fetch(path, Object.assign({}, options||{}, { headers }));
+    if (!res.ok) throw new Error(path+' '+res.status);
+    return res.json();
+}
+function queueProgressSync() {
+    if (!authToken) return;
+    clearTimeout(syncTimer);
+    syncTimer=setTimeout(syncProgressNow,500);
+}
+async function syncProgressNow() {
+    if (!authToken) return;
+    try {
+        var data = await apiFetch('/api/progress',{ method:'PUT', body:JSON.stringify({ progress:getProgressPayload() }) });
+        applyProgressPayload(data.progress);
+        setAuthStatus('进度已同步');
+    } catch(e) {
+        setAuthStatus('云同步暂时失败，本地进度已保存');
+    }
+}
+async function handleGoogleCredential(response) {
+    try {
+        setAuthStatus('正在登录...');
+        var data = await apiFetch('/api/auth/google',{ method:'POST', body:JSON.stringify({ credential:response.credential }) });
+        authToken=data.token; localStorage.setItem('frog_auth_token',authToken);
+        setCurrentUser(data.user);
+        var remote = await apiFetch('/api/progress');
+        applyProgressPayload(remote.progress);
+        await syncProgressNow();
+    } catch(e) {
+        setAuthStatus('登录失败，请稍后再试');
+    }
+}
+async function initAuth() {
+    authToken = localStorage.getItem('frog_auth_token') || null;
+    try {
+        var cfg = await fetch('/api/config').then(function(r){return r.ok?r.json():{};});
+        authConfig.googleClientId = cfg.googleClientId||'';
+    } catch(e) {}
+    if (authToken) {
+        try { var me = await apiFetch('/api/me'); setCurrentUser(me.user); var remote = await apiFetch('/api/progress'); applyProgressPayload(remote.progress); await syncProgressNow(); }
+        catch(e) { localStorage.removeItem('frog_auth_token'); authToken=null; setCurrentUser(null); }
+    } else setCurrentUser(null);
+    renderGoogleButton();
+}
+function renderGoogleButton() {
+    var target=document.getElementById('googleSignIn');
+    if (!target||!authConfig.googleClientId) return;
+    var tries=0;
+    (function waitGoogle(){
+        if (window.google&&google.accounts&&google.accounts.id) {
+            google.accounts.id.initialize({ client_id:authConfig.googleClientId, callback:handleGoogleCredential });
+            google.accounts.id.renderButton(target,{ theme:'filled_black', size:'medium', text:'signin_with', shape:'pill' });
+            return;
+        }
+        if (++tries<40) setTimeout(waitGoogle,150);
+    })();
+}
+function signOut() {
+    authToken=null; currentUser=null; localStorage.removeItem('frog_auth_token'); setCurrentUser(null); setAuthStatus('已退出，进度保存在本地');
+}
 loadProgress();
 let adInterval = null, _adCallback = null, _adReturnState = STATE.MENU, _shopReturnState = STATE.MENU;
+let authToken = null, currentUser = null, syncTimer = null, authConfig = { googleClientId: '' };
 
 // Sound System
 let audioCtx = null;
@@ -907,7 +1033,7 @@ function resumeGame() { state=STATE.PLAYING; document.getElementById('pauseScree
 function continueEndless() { document.getElementById('winScreen').classList.remove('show'); initLevel(levelsBeaten+1); state=STATE.PLAYING; }
 function backToMenu() { stopMusic(); state=STATE.MENU; document.getElementById('pauseBtn').style.display='none'; document.getElementById('exitBtn').style.display='none'; ['pauseScreen','gameOverScreen','levelCompleteScreen','winScreen','shopScreen'].forEach(function(id){document.getElementById(id).classList.remove('show');}); document.getElementById('startScreen').classList.add('show'); document.getElementById('highScoreDisplay').textContent=highScore; document.getElementById('totalStarsMenu').textContent=totalStars; renderLevelSelect(); document.getElementById('musicIndicator').classList.remove('show'); }
 function updateAdCount() { var e=document.getElementById('adCountDisplay'); if(e) e.textContent='已观看 '+totalAdsWatched+' 次广告'; }
-updateAdCount(); document.getElementById('highScoreDisplay').textContent=highScore; document.getElementById('totalStarsMenu').textContent=totalStars; renderLevelSelect();
+updateAdCount(); refreshMenuStats(); initAuth();
 document.getElementById('soundToggleBtn').textContent='🔇'; var pb=document.getElementById('pauseSoundBtn'); if(pb) pb.textContent='🔇';
 
 // ---- DRAW ----
