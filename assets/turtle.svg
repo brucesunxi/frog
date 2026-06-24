@@ -11,16 +11,17 @@
   </defs>
   <ellipse cx="48" cy="60" rx="40" ry="7" fill="#05212a" opacity=".25"/>
   <g filter="url(#shadow)">
-    <path d="M16 37l10-16h44l10 16-7 18H23z" fill="url(#shell)"/>
+    <path d="M16 37l10-16h44l10 16-7 18H23z" fill="url(#shell)" stroke="#0f7444" stroke-width="2" stroke-linejoin="round"/>
     <path d="M26 21h44l10 16H16z" fill="#99ffab" opacity=".52"/>
     <path d="M27 37l21-15 21 15-8 18H35z" fill="#0f8b50" opacity=".22"/>
     <path d="M24 38h48M34 25l-7 28M48 22v33M62 25l7 28" stroke="#0c5e3b" stroke-opacity=".55" stroke-width="3" fill="none" stroke-linecap="round"/>
-    <path d="M40 15l8-8 8 8-5 11h-6z" fill="#20b96a"/>
+    <path d="M40 15l8-8 8 8-5 11h-6z" fill="#20b96a" stroke="#0e7449" stroke-width="1.5" stroke-linejoin="round"/>
     <circle cx="45" cy="13" r="2.3" fill="#fff"/>
     <circle cx="51" cy="13" r="2.3" fill="#fff"/>
     <circle cx="45" cy="13" r="1.1" fill="#17272b"/>
     <circle cx="51" cy="13" r="1.1" fill="#17272b"/>
     <path d="M16 49l-9 6 14 5 8-7zM80 49l9 6-14 5-8-7z" fill="#0f7f4c"/>
-    <path d="M18 37h60" stroke="#fff" stroke-width="3" opacity=".2"/>
+    <path d="M18 37h60" stroke="#fff" stroke-width="3" opacity=".28"/>
+    <path d="M30 31c12-4 25-4 37 0" stroke="#d5ffd4" stroke-width="2.5" stroke-linecap="round" opacity=".38"/>
   </g>
 </svg>

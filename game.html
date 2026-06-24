@@ -212,18 +212,18 @@ let flies = [], flySpawnTimer = 0;
 let clouds = [], roadDecor = [], stars = [], exhaustParticles = [];
 
 const ASSET_SOURCES = {
-    frog: 'assets/rendered/frog.png',
-    car1: 'assets/rendered/car-red.png',
-    car2: 'assets/rendered/car-blue.png',
-    truck: 'assets/rendered/truck-purple.png',
-    log: 'assets/rendered/log.png',
-    turtle: 'assets/rendered/turtle.png',
-    turtleSubmerged: 'assets/rendered/turtle-submerged.png',
-    lilyHome: 'assets/rendered/lily-home.png',
-    fly: 'assets/rendered/fly.png',
-    grassTile: 'assets/rendered/grass-tile.png',
-    roadTile: 'assets/rendered/road-tile.png',
-    riverTile: 'assets/rendered/river-tile.png'
+    frog: 'assets/frog.svg',
+    car1: 'assets/car-red.svg',
+    car2: 'assets/car-blue.svg',
+    truck: 'assets/truck-purple.svg',
+    log: 'assets/log.svg',
+    turtle: 'assets/turtle.svg',
+    turtleSubmerged: 'assets/turtle-submerged.svg',
+    lilyHome: 'assets/lily-home.svg',
+    fly: 'assets/fly.svg',
+    grassTile: 'assets/grass-tile.svg',
+    roadTile: 'assets/road-tile.svg',
+    riverTile: 'assets/river-tile.svg'
 };
 const GameAssets = { images: {}, loaded: 0, total: Object.keys(ASSET_SOURCES).length, patterns: {} };
 window.GameAssets = GameAssets;
@@ -270,7 +270,7 @@ function drawGrassLane(y,h,base) {
     ctx.fillStyle = 'rgba(0,0,0,0.08)';
     ctx.fillRect(0,y+h-4,W,4);
     ctx.fillStyle = 'rgba(145,220,100,0.28)';
-    for (var gx=(frame%40)-40;gx<W;gx+=24) {
+    for (var gx=8;gx<W;gx+=24) {
         var gy=y+10+((gx*7)%Math.max(12,h-16));
         ctx.beginPath();
         ctx.moveTo(gx,gy+6);
@@ -803,8 +803,8 @@ function drawRoads() {
         ctx.fillStyle=grad; ctx.fillRect(0,y,W,CELL);
         ctx.fillStyle='rgba(255,255,255,0.04)';
         for (var px=0;px<W;px+=64) ctx.fillRect(px,y+5,28,2);
-        var dashLen=20, gapLen=15, totalLen=dashLen+gapLen, offset=(frame*getEffectiveSpeed(l)*l.dir*0.3)%totalLen;
-        ctx.strokeStyle='rgba(255,255,220,0.42)'; ctx.lineWidth=2; ctx.setLineDash([dashLen,gapLen]); ctx.lineDashOffset=-offset;
+        var dashLen=20, gapLen=15;
+        ctx.strokeStyle='rgba(255,255,220,0.42)'; ctx.lineWidth=2; ctx.setLineDash([dashLen,gapLen]); ctx.lineDashOffset=0;
         ctx.beginPath(); ctx.moveTo(0,l.row*CELL+CELL/2); ctx.lineTo(W,l.row*CELL+CELL/2); ctx.stroke();
         ctx.setLineDash([]);
         ctx.fillStyle='rgba(255,255,200,0.16)'; ctx.fillRect(0,l.row*CELL+2,W,2); ctx.fillRect(0,l.row*CELL+CELL-4,W,2);
@@ -852,8 +852,9 @@ function drawVehicle(type,x,y,dir,w,speed) {
             var intensity=Math.min(1,(speed-3)/3);
             ctx.fillStyle='rgba(255,255,255,'+(intensity*0.08)+')';
             for (var si=0;si<4;si++) {
-                var lx=dir>0?x-5-si*(8+Math.random()*12):x+w+5+si*(8+Math.random()*12);
-                ctx.fillRect(lx,y+6+Math.random()*(h-12),2+Math.random()*3,1);
+                var trailGap = 10 + si * 4;
+                var lx=dir>0?x-5-si*trailGap:x+w+5+si*trailGap;
+                ctx.fillRect(lx,y+7+(si*7)%(h-14),2+(si%2)*2,1);
             }
         }
         var visualW = w + (type==='truck' ? 26 : 18);
@@ -892,7 +893,7 @@ function drawVehicle(type,x,y,dir,w,speed) {
         ctx.fillStyle='rgba(200,230,255,0.4)'; ctx.fillRect(dir>0?4:w-16,4,12,h-8);
         ctx.fillStyle='#ffeaa7'; ctx.fillRect(dir>0?w-6:0,h-12,6,4);
     }
-    if (speed>3) { var intensity=Math.min(1,(speed-3)/3); ctx.fillStyle='rgba(255,255,255,'+(intensity*0.08)+')'; for (var i=0;i<4;i++) { var lx=dir>0?-5-i*(8+Math.random()*12):w+5+i*(8+Math.random()*12); ctx.fillRect(lx,6+Math.random()*(h-12),2+Math.random()*3,1); } }
+    if (speed>3) { var intensity=Math.min(1,(speed-3)/3); ctx.fillStyle='rgba(255,255,255,'+(intensity*0.08)+')'; for (var i=0;i<4;i++) { var trailGap=10+i*4, lx=dir>0?-5-i*trailGap:w+5+i*trailGap; ctx.fillRect(lx,7+(i*7)%(h-14),2+(i%2)*2,1); } }
     var wheelW=7, wheelH=6, wheelY=h-3, rot=frame*speed*dir*0.05;
     [-1,1].forEach(function(side){
         var wx=w/2+side*(w/2-wheelW);

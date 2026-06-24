@@ -13,21 +13,32 @@
     <filter id="shadow" x="-18%" y="-25%" width="136%" height="155%">
       <feDropShadow dx="0" dy="5" stdDeviation="3" flood-color="#071016" flood-opacity=".4"/>
     </filter>
+    <linearGradient id="trim" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#c9d3d8"/>
+      <stop offset=".5" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#9fabaf"/>
+    </linearGradient>
   </defs>
   <ellipse cx="56" cy="60" rx="43" ry="8" fill="#071016" opacity=".26"/>
   <g filter="url(#shadow)">
-    <path d="M17 23l12-12h54l12 12v28l-9 8H26l-9-8z" fill="url(#body)"/>
+    <path d="M17 23l12-12h54l12 12v28l-9 8H26l-9-8z" fill="url(#body)" stroke="#eef6f8" stroke-width="2" stroke-linejoin="round"/>
     <path d="M29 11h54l12 12H17z" fill="#fff" opacity=".9"/>
-    <path d="M31 24h18l6-9H36zM63 24h20l-7-9H60z" fill="url(#blue)"/>
+    <path d="M31 24h18l6-9H36zM63 24h20l-7-9H60z" fill="url(#blue)" stroke="#eefbff" stroke-width="1.6" stroke-linejoin="round"/>
+    <path d="M35 17h14M66 17h11" stroke="#ffffff" stroke-width="2" stroke-linecap="round" opacity=".72"/>
     <path d="M49 22h14v31H49z" fill="#dce6ea"/>
+    <path d="M50 24h12v8H50z" fill="#ffffff" opacity=".48"/>
     <path d="M24 39h64" stroke="#6bcaff" stroke-width="6" stroke-linecap="round"/>
     <path d="M24 46h64" stroke="#2c95d2" stroke-width="4" stroke-linecap="round" opacity=".75"/>
-    <path d="M19 48h76l-9 11H26z" fill="#aeb8bd"/>
+    <path d="M19 48h76l-9 11H26z" fill="url(#trim)"/>
+    <path d="M27 52h59" stroke="#ffffff" stroke-width="2" opacity=".35" stroke-linecap="round"/>
     <rect x="91" y="30" width="7" height="10" rx="2" fill="#ffe066"/>
     <circle cx="29" cy="57" r="9" fill="#20252a"/>
     <circle cx="83" cy="57" r="9" fill="#20252a"/>
     <circle cx="29" cy="57" r="4" fill="#b5b6ad"/>
     <circle cx="83" cy="57" r="4" fill="#b5b6ad"/>
+    <circle cx="27" cy="55" r="2" fill="#ffffff" opacity=".32"/>
+    <circle cx="81" cy="55" r="2" fill="#ffffff" opacity=".32"/>
+    <path d="M23 28h67" stroke="#6f7b82" stroke-width="1.4" opacity=".28"/>
     <path d="M20 25h74" stroke="#fff" stroke-width="3" opacity=".45"/>
   </g>
 </svg>

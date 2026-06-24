@@ -18,22 +18,32 @@
     <filter id="shadow" x="-18%" y="-25%" width="136%" height="155%">
       <feDropShadow dx="0" dy="5" stdDeviation="3" flood-color="#071016" flood-opacity=".42"/>
     </filter>
+    <linearGradient id="bumper" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#d6dde0"/>
+      <stop offset=".5" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#9ca8ad"/>
+    </linearGradient>
   </defs>
   <ellipse cx="64" cy="60" rx="52" ry="8" fill="#071016" opacity=".28"/>
   <g filter="url(#shadow)">
-    <path d="M18 22l13-12h66l13 12v28l-10 8H27l-9-8z" fill="url(#white)"/>
+    <path d="M18 22l13-12h66l13 12v28l-10 8H27l-9-8z" fill="url(#white)" stroke="#f6fbfc" stroke-width="2" stroke-linejoin="round"/>
     <path d="M31 10h66l13 12H18z" fill="#fff" opacity=".88"/>
-    <path d="M25 24h25l8-9H35zM72 24h27l-8-9H69z" fill="url(#glass)"/>
+    <path d="M25 24h25l8-9H35zM72 24h27l-8-9H69z" fill="url(#glass)" stroke="#effcff" stroke-width="1.6" stroke-linejoin="round"/>
+    <path d="M33 16h18M76 16h14" stroke="#ffffff" stroke-width="2" stroke-linecap="round" opacity=".72"/>
     <path d="M52 21h18v31H52z" fill="#dfe7eb"/>
-    <rect x="31" y="36" width="66" height="14" rx="4" fill="url(#orange)"/>
+    <rect x="31" y="36" width="66" height="14" rx="4" fill="url(#orange)" stroke="#ffbf85" stroke-width="1.4"/>
     <path d="M37 36v14M54 36v14M74 36v14M91 36v14" stroke="#ffd2ad" stroke-width="3" opacity=".85"/>
-    <path d="M21 47h88l-9 11H27z" fill="#aeb8bd"/>
+    <path d="M34 39h58" stroke="#fff5d2" stroke-width="2" opacity=".38" stroke-linecap="round"/>
+    <path d="M21 47h88l-9 11H27z" fill="url(#bumper)"/>
+    <path d="M30 52h70" stroke="#ffffff" stroke-width="2" opacity=".36" stroke-linecap="round"/>
     <rect x="107" y="29" width="8" height="10" rx="2" fill="#ffe066"/>
     <rect x="13" y="31" width="6" height="8" rx="2" fill="#ff855e"/>
     <circle cx="32" cy="57" r="9" fill="#20252a"/>
     <circle cx="96" cy="57" r="9" fill="#20252a"/>
     <circle cx="32" cy="57" r="4" fill="#b5b6ad"/>
     <circle cx="96" cy="57" r="4" fill="#b5b6ad"/>
+    <circle cx="30" cy="55" r="2" fill="#ffffff" opacity=".32"/>
+    <circle cx="94" cy="55" r="2" fill="#ffffff" opacity=".32"/>
     <path d="M29 14l-7 8h13l8-8zM92 14l9 8h-12l-8-8z" fill="#cfd7da" opacity=".75"/>
     <path d="M22 25h87" stroke="#fff" stroke-width="3" opacity=".45"/>
   </g>
