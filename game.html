@@ -77,6 +77,14 @@ canvas {
 .level-card .title { font-size:11px; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .level-card .stars-mini { font-size:11px; color:#ffd700; margin-top:2px; letter-spacing:1px; }
 .auth-panel { display:flex; align-items:center; justify-content:center; gap:8px; min-height:38px; margin:4px 0; }
+#googleSignIn { min-width:188px; min-height:36px; display:flex; align-items:center; justify-content:center; }
+.google-placeholder {
+    border:1px solid rgba(255,255,255,0.18); border-radius:18px; background:#ffffff; color:#2d3436;
+    min-width:188px; height:36px; padding:0 14px; display:flex; align-items:center; justify-content:center; gap:8px;
+    font-size:13px; font-weight:700; box-shadow:0 8px 18px rgba(0,0,0,.18);
+}
+.google-placeholder.disabled { opacity:.68; cursor:not-allowed; filter:saturate(.7); }
+.google-g { width:18px; height:18px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-weight:900; color:#4285f4; }
 .auth-user { display:none; align-items:center; gap:8px; background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.12); border-radius:9px; padding:5px 9px; max-width:360px; }
 .auth-user img { width:24px; height:24px; border-radius:50%; }
 .auth-user span { color:#dfe6e9; font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:190px; }
@@ -440,10 +448,16 @@ async function initAuth() {
 }
 function renderGoogleButton() {
     var target=document.getElementById('googleSignIn');
-    if (!target||!authConfig.googleClientId) return;
+    if (!target) return;
+    target.innerHTML='<button class="google-placeholder disabled" type="button"><span class="google-g">G</span><span>Google 登录</span></button>';
+    if (!authConfig.googleClientId) {
+        setAuthStatus('Google 登录配置中，当前进度先保存在本地');
+        return;
+    }
     var tries=0;
     (function waitGoogle(){
         if (window.google&&google.accounts&&google.accounts.id) {
+            target.innerHTML='';
             google.accounts.id.initialize({ client_id:authConfig.googleClientId, callback:handleGoogleCredential });
             google.accounts.id.renderButton(target,{ theme:'filled_black', size:'medium', text:'signin_with', shape:'pill' });
             return;
