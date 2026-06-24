@@ -52,3 +52,28 @@ npm start
 Open `http://127.0.0.1:3000/game.html`.
 
 Without Google configuration, the game still works locally. With Google configuration, login appears on the home screen and progress syncs after login, level completion, game over, and ad count updates.
+
+## Deploy to Vercel
+
+The app is Vercel-ready:
+
+- `/` and `/game.html` serve the static game page
+- `/assets/*` serves static game assets
+- `/api/*` routes to the Express handler in `api/index.js`
+- Static assets are served from the repository root
+
+Set these Vercel environment variables in Production:
+
+```bash
+DATABASE_URL=...
+JWT_SECRET=long-random-secret
+GOOGLE_CLIENT_IDS=web-client-id.apps.googleusercontent.com,android-client-id.apps.googleusercontent.com
+```
+
+Then deploy:
+
+```bash
+vercel --prod
+```
+
+If `GOOGLE_CLIENT_IDS` is not set yet, the game still loads, but Google login will stay disabled until the OAuth client ID is configured.

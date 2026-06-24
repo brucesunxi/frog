@@ -3,9 +3,11 @@ import express from 'express';
 import jwt from 'jsonwebtoken';
 import { OAuth2Client } from 'google-auth-library';
 import { neon } from '@neondatabase/serverless';
+import { fileURLToPath } from 'node:url';
 
 const app = express();
 const port = Number(process.env.PORT || 3000);
+const rootDir = fileURLToPath(new URL('.', import.meta.url));
 const databaseUrl = process.env.DATABASE_URL;
 const jwtSecret = process.env.JWT_SECRET;
 const googleClientIds = (process.env.GOOGLE_CLIENT_IDS || '')
@@ -13,15 +15,15 @@ const googleClientIds = (process.env.GOOGLE_CLIENT_IDS || '')
   .map((id) => id.trim())
   .filter(Boolean);
 
-if (!databaseUrl) throw new Error('Missing DATABASE_URL');
-if (!jwtSecret) throw new Error('Missing JWT_SECRET');
-if (!googleClientIds.length) throw new Error('Missing GOOGLE_CLIENT_IDS');
-
-const sql = neon(databaseUrl);
+const sql = databaseUrl ? neon(databaseUrl) : null;
 const googleClient = new OAuth2Client();
 
 app.use(express.json({ limit: '128kb' }));
-app.use(express.static('.', { extensions: ['html'] }));
+app.use(express.static(rootDir, { extensions: ['html'] }));
+
+app.get('/', (req, res) => {
+  res.sendFile('game.html', { root: rootDir });
+});
 
 function clampInt(value, min, max) {
   const n = Number.parseInt(value, 10);
@@ -66,8 +68,14 @@ function signSession(userId) {
   return jwt.sign({ sub: userId }, jwtSecret, { expiresIn: '30d' });
 }
 
+function requireServerConfig(req, res, next) {
+  if (!sql || !jwtSecret) return res.status(503).json({ error: 'server_not_configured' });
+  next();
+}
+
 async function requireAuth(req, res, next) {
   try {
+    if (!jwtSecret) return res.status(503).json({ error: 'server_not_configured' });
     const header = req.headers.authorization || '';
     const token = header.startsWith('Bearer ') ? header.slice(7) : '';
     if (!token) return res.status(401).json({ error: 'missing_token' });
@@ -80,13 +88,14 @@ async function requireAuth(req, res, next) {
 }
 
 app.get('/api/config', (req, res) => {
-  res.json({ googleClientId: googleClientIds[0] });
+  res.json({ googleClientId: googleClientIds[0] || '' });
 });
 
-app.post('/api/auth/google', async (req, res) => {
+app.post('/api/auth/google', requireServerConfig, async (req, res) => {
   try {
     const { credential } = req.body || {};
     if (!credential) return res.status(400).json({ error: 'missing_credential' });
+    if (!googleClientIds.length) return res.status(503).json({ error: 'google_not_configured' });
 
     const ticket = await googleClient.verifyIdToken({
       idToken: credential,
@@ -120,7 +129,7 @@ app.post('/api/auth/google', async (req, res) => {
   }
 });
 
-app.get('/api/me', requireAuth, async (req, res) => {
+app.get('/api/me', requireServerConfig, requireAuth, async (req, res) => {
   const rows = await sql`
     select id, email, name, picture_url
     from users
@@ -130,7 +139,7 @@ app.get('/api/me', requireAuth, async (req, res) => {
   res.json({ user: toClientUser(rows[0]) });
 });
 
-app.get('/api/progress', requireAuth, async (req, res) => {
+app.get('/api/progress', requireServerConfig, requireAuth, async (req, res) => {
   const rows = await sql`
     select high_score, total_stars, levels_beaten, level_stars, max_combo, total_ads_watched
     from user_progress
@@ -150,7 +159,7 @@ app.get('/api/progress', requireAuth, async (req, res) => {
   });
 });
 
-app.put('/api/progress', requireAuth, async (req, res) => {
+app.put('/api/progress', requireServerConfig, requireAuth, async (req, res) => {
   const incoming = normalizeProgress(req.body?.progress);
   const rows = await sql`
     insert into user_progress (user_id, high_score, total_stars, levels_beaten, level_stars, max_combo, total_ads_watched, updated_at)
@@ -189,6 +198,10 @@ app.put('/api/progress', requireAuth, async (req, res) => {
   });
 });
 
-app.listen(port, () => {
-  console.log(`Frog Frenzy server listening on http://127.0.0.1:${port}`);
-});
+export default app;
+
+if (process.env.VERCEL !== '1') {
+  app.listen(port, () => {
+    console.log(`Frog Frenzy server listening on http://127.0.0.1:${port}`);
+  });
+}
