@@ -1115,15 +1115,7 @@ function drawHomes() {
             ctx.fillStyle='rgba(255,255,255,0.1)'; ctx.font='10px sans-serif'; ctx.textBaseline='bottom'; ctx.fillText('目标 '+(i+1),hx+hw/2,14);
         }
     });
-    ctx.fillStyle='rgba(255,255,255,0.5)'; ctx.font='12px sans-serif'; ctx.textAlign='left'; ctx.textBaseline='alphabetic'; ctx.fillText('🏠 '+homesFilled+'/'+homesNeeded,10,18);
-    ctx.textAlign='right';
-    if (timeLeft<=10) { var f=Math.sin(frame*.15)>0; ctx.fillStyle=f?'#ff6b6b':'rgba(255,255,255,0.5)'; ctx.font=f?'bold 16px sans-serif':'12px sans-serif'; } else { ctx.fillStyle='rgba(255,255,255,0.5)'; ctx.font='12px sans-serif'; }
-    ctx.fillText('⏱️ '+timeLeft+'s',790,18);
-    var barW=100, barH=4, barX=690, barY=22;
-    ctx.fillStyle='rgba(255,255,255,0.1)'; rRect(barX,barY,barW,barH,2); ctx.fill();
-    var pct=Math.max(0,timeLeft/timeTotal);
-    ctx.fillStyle=timeLeft<=10?'#ff6b6b':(timeLeft<=20?'#fdcb6e':'#00b894');
-    if (pct>0) { rRect(barX,barY,barW*pct,barH,2); ctx.fill(); }
+    ctx.fillStyle='rgba(255,255,255,0.62)'; ctx.font='bold 13px sans-serif'; ctx.textAlign='left'; ctx.textBaseline='alphabetic'; ctx.fillText('🏠 '+homesFilled+'/'+homesNeeded,10,18);
     if (comboCount>=2&&comboFlash>0) {
         ctx.textAlign='center'; ctx.textBaseline='alphabetic';
         ctx.fillStyle='rgba(255,107,107,'+(Math.min(1,comboFlash))+')';
@@ -1177,6 +1169,7 @@ function drawHUD() {
     var th=getTheme(level);
     ctx.fillStyle='rgba(0,0,0,0.6)'; rRect(290,2,220,34,8); ctx.fill();
     ctx.fillStyle=th.accent; ctx.font='bold 15px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='alphabetic'; ctx.fillText('第 '+level+' 关 · '+levelConfig.name,400,26);
+    drawTimerPanel();
     ctx.textAlign='left'; var ls=''; for(var i=0;i<lives;i++)ls+='❤️'; for(var i=lives;i<maxLives;i++)ls+='🖤';
     ctx.font='14px sans-serif'; ctx.textBaseline='alphabetic'; ctx.fillText(ls+' ×'+lives,10,78);
     ctx.textAlign='right'; ctx.fillStyle='#ffd700'; ctx.font='bold 15px sans-serif'; ctx.fillText('得分: '+score,790,76);
@@ -1185,6 +1178,32 @@ function drawHUD() {
     if(powerups.slowmo>0){ctx.fillStyle='#fdcb6e';ctx.fillText('⏱️ '+Math.ceil(powerups.slowmo/60)+'s',10,y);y+=15;}
     if(powerups.superJump>0){ctx.fillStyle='#a29bfe';ctx.fillText('🦘 '+powerups.superJump,10,y);y+=15;}
     if (timeLeft<=10) { var f=Math.sin(frame*.15)>0; if(f){ctx.fillStyle='rgba(255,0,0,0.12)';ctx.fillRect(0,0,W,H); ctx.fillStyle='#ff6b6b';ctx.font='bold 20px sans-serif';ctx.textAlign='center'; ctx.fillText('⚠️ 时间快到了!',400,120);} }
+}
+
+function drawTimerPanel() {
+    var pct=Math.max(0,timeTotal?timeLeft/timeTotal:0);
+    var urgent=timeLeft<=10, warning=timeLeft<=20;
+    var panelX=606, panelY=42, panelW=122, panelH=31;
+    var fill=urgent?'#ff6b6b':(warning?'#fdcb6e':'#00d38f');
+    ctx.save();
+    ctx.fillStyle='rgba(5,12,24,0.78)';
+    rRect(panelX,panelY,panelW,panelH,8); ctx.fill();
+    ctx.strokeStyle=urgent?'rgba(255,107,107,0.9)':(warning?'rgba(253,203,110,0.78)':'rgba(0,211,143,0.7)');
+    ctx.lineWidth=2; rRect(panelX+.5,panelY+.5,panelW-1,panelH-1,8); ctx.stroke();
+    ctx.textAlign='left'; ctx.textBaseline='middle';
+    ctx.fillStyle=fill; ctx.font='bold 18px sans-serif';
+    ctx.fillText('⏱ '+timeLeft+'s',panelX+10,panelY+14);
+    ctx.fillStyle='rgba(255,255,255,0.14)';
+    rRect(panelX+10,panelY+23,panelW-20,5,3); ctx.fill();
+    if (pct>0) {
+        ctx.fillStyle=fill;
+        rRect(panelX+10,panelY+23,(panelW-20)*pct,5,3); ctx.fill();
+    }
+    if (urgent&&Math.sin(frame*.15)>0) {
+        ctx.fillStyle='rgba(255,255,255,0.22)';
+        rRect(panelX,panelY,panelW,panelH,8); ctx.fill();
+    }
+    ctx.restore();
 }
 
 function drawPopups() {
