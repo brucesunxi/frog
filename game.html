@@ -63,6 +63,18 @@ canvas {
 .complete-tip { color:#ffd700; font-size:12px; line-height:1.35; max-width:420px; margin:4px 0 2px; padding:7px 12px; border-radius:9px; background:rgba(255,215,0,0.08); }
 .complete-actions { display:flex; gap:8px; flex-wrap:wrap; justify-content:center; margin-top:4px; }
 #levelCompleteScreen .btn { margin:4px; }
+.level-select { width:min(560px,92%); margin:8px 0 6px; }
+.level-progress { color:#ffd700; font-size:13px; margin-bottom:6px; }
+.level-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:7px; }
+.level-card { min-height:58px; border-radius:8px; border:1px solid rgba(255,255,255,0.12); background:rgba(255,255,255,0.055); color:#dfe6e9; cursor:pointer; padding:6px 5px; transition:all .18s; }
+.level-card:hover { transform:translateY(-2px); border-color:#ffd700; background:rgba(255,215,0,0.12); }
+.level-card.locked { opacity:.45; cursor:not-allowed; filter:grayscale(.6); }
+.level-card.locked:hover { transform:none; border-color:rgba(255,255,255,0.12); background:rgba(255,255,255,0.055); }
+.level-card.current { border-color:#00d38f; box-shadow:0 0 14px rgba(0,211,143,.18); }
+.level-card.cleared { border-color:rgba(255,215,0,.55); }
+.level-card .num { font-size:13px; font-weight:700; color:#ffd700; }
+.level-card .title { font-size:11px; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.level-card .stars-mini { font-size:11px; color:#ffd700; margin-top:2px; letter-spacing:1px; }
 .ad-countdown { font-size: 56px; color: #ffd700; font-weight: bold; margin: 15px 0; text-shadow: 0 0 40px rgba(255,215,0,0.5); }
 .stars { font-size: 32px; margin: 5px 0; letter-spacing: 4px; }
 .fade-in { animation: fadeIn 0.3s ease-out; }
@@ -94,6 +106,7 @@ canvas {
     .overlay p { font-size: 13px; }
     .btn { padding: 12px 28px; font-size: 15px; min-width: 150px; }
     .powerup-grid { gap: 6px; }
+    .level-grid { grid-template-columns:repeat(2,1fr); }
 }
 </style>
 </head>
@@ -121,7 +134,11 @@ canvas {
             <p>🏠 送青蛙到顶部的家 · 躲车过河</p>
             <p style="color:#ffd700;">🔥 连续送达触发连击加分!</p>
         </div>
-        <button class="btn btn-start" onclick="startGame()">开始冒险</button>
+        <div class="level-select">
+            <div class="level-progress" id="campaignProgress">已通关 0/8</div>
+            <div class="level-grid" id="levelGrid"></div>
+        </div>
+        <button class="btn btn-start" onclick="startGame()" id="continueBtn">开始冒险</button>
         <div style="display:flex;gap:6px;margin-top:4px;">
             <button class="btn btn-small btn-powerup" onclick="showShop()">🎁 商店</button>
             <button class="btn btn-small" style="background:#636e72;color:white;min-width:50px;" onclick="toggleSound()" id="soundToggleBtn">🔇</button>
@@ -215,11 +232,12 @@ let inventory = { shield:0, slowmo:0, superJump:0, extraLife:0 };
 let levelConfig = null, lanes = [], homes = [], homesFilled = 0, homesNeeded = 5;
 let timeLeft = 60, timeTotal = 60, levelTimer = 0, laneObjects = [];
 const DEFAULT_CROSSING_TIME_LIMIT = 100;
+const CAMPAIGN_LEVELS = 8;
 let particles = [], popupTexts = [], screenShake = 0, flashOverlay = 0, flashColor = '#fff';
 let nearMissFlash = 0, trailParticles = [], comboCount = 0, maxCombo = 0, comboFlash = 0;
 let justSavedByShield = false, levelStartFrame = 0, totalStars = 0, bestCombo = 0, scoreAtLevelStart = 0;
 let lastFailType = 'generic', lastFailRow = 14, lastFailCol = 9;
-let levelsBeaten = 0, highScore = 0, soundMuted = true, deathAnim = 0;
+let levelsBeaten = 0, levelStars = {}, highScore = 0, soundMuted = true, deathAnim = 0;
 let flies = [], flySpawnTimer = 0;
 let clouds = [], roadDecor = [], stars = [], exhaustParticles = [];
 
@@ -298,12 +316,17 @@ function drawGrassLane(y,h,base) {
 }
 
 function saveProgress() {
-    try { localStorage.setItem('frog_frenzy_save', JSON.stringify({ highScore, totalStars, levelsBeaten, totalAdsWatched, maxCombo, soundMuted })); } catch(e) {}
+    try { localStorage.setItem('frog_frenzy_save', JSON.stringify({ highScore, totalStars, levelsBeaten, levelStars, totalAdsWatched, maxCombo, soundMuted })); } catch(e) {}
 }
 function loadProgress() {
     try {
         const raw = localStorage.getItem('frog_frenzy_save');
-        if (raw) { const d = JSON.parse(raw); highScore = d.highScore||0; totalStars = d.totalStars||0; levelsBeaten = d.levelsBeaten||0; totalAdsWatched = d.totalAdsWatched||0; maxCombo = d.maxCombo||0; soundMuted = d.soundMuted||false; }
+        if (raw) {
+            const d = JSON.parse(raw);
+            highScore = d.highScore||0; levelsBeaten = d.levelsBeaten||0; totalAdsWatched = d.totalAdsWatched||0; maxCombo = d.maxCombo||0; soundMuted = d.soundMuted||false;
+            levelStars = d.levelStars||{};
+            totalStars = Object.keys(levelStars).length ? Object.values(levelStars).reduce(function(a,b){return a+(Number(b)||0);},0) : (d.totalStars||0);
+        }
     } catch(e) {}
 }
 loadProgress();
@@ -716,17 +739,40 @@ function reviveAfterAd() {
 }
 
 // UI
-function startGame() {
+function getUnlockedLevel() { return Math.min(CAMPAIGN_LEVELS, levelsBeaten+1); }
+function isLevelUnlocked(lvl) { return lvl<=getUnlockedLevel(); }
+function renderLevelSelect() {
+    var grid=document.getElementById('levelGrid');
+    if (!grid) return;
+    grid.innerHTML='';
+    document.getElementById('campaignProgress').textContent='已通关 '+Math.min(levelsBeaten,CAMPAIGN_LEVELS)+'/'+CAMPAIGN_LEVELS+' · 已解锁第 '+getUnlockedLevel()+' 关';
+    var btn=document.getElementById('continueBtn');
+    if (btn) btn.textContent = levelsBeaten>0 ? '继续第 '+getUnlockedLevel()+' 关' : '开始冒险';
+    for (var i=1;i<=CAMPAIGN_LEVELS;i++) {
+        var cfg=getLevelConfig(i), unlocked=isLevelUnlocked(i), cleared=i<=levelsBeaten, stars=levelStars[i]||0;
+        var card=document.createElement('button');
+        card.className='level-card '+(unlocked?'':'locked ')+(cleared?'cleared ':'')+(i===getUnlockedLevel()&&!cleared?'current':'');
+        card.disabled=!unlocked;
+        card.onclick=(function(lvl){return function(){startLevel(lvl);};})(i);
+        card.innerHTML='<div class="num">'+(cleared?'✓':'第 '+i+' 关')+'</div><div class="title">'+cfg.name.replace(/^\S+\s*/,'')+'</div><div class="stars-mini">'+(unlocked?('★'.repeat(stars)+'☆'.repeat(3-stars)):'🔒 未解锁')+'</div>';
+        grid.appendChild(card);
+    }
+}
+
+function startLevel(lvl) {
+    if (!isLevelUnlocked(lvl)) { addPopup('先通关上一关解锁','#ffd700'); return; }
     document.getElementById('startScreen').classList.remove('show');
-    score=0;lives=maxLives;homes=[];maxCombo=0;totalStars=0;levelsBeaten=0;
+    score=0;lives=maxLives;homes=[];maxCombo=0;
     powerups={shield:0,slowmo:0,superJump:0,secondChance:0};
-    initLevel(1); state=STATE.PLAYING; initAudio();
+    initLevel(lvl); state=STATE.PLAYING; initAudio();
     
     if (!soundMuted) startMusic();
     document.getElementById('pauseBtn').style.display='flex'; document.getElementById('exitBtn').style.display='flex';
     document.getElementById('musicIndicator').classList.add('show');
     if (!window._gameLoopRunning) { window._gameLoopRunning=true; (function loop(){try{update();draw();}catch(e){console.error('Game:',e);}requestAnimationFrame(loop);})(); }
 }
+
+function startGame() { startLevel(getUnlockedLevel()); }
 
 function getFailInsight() {
     var left = Math.max(0,homesNeeded-homesFilled);
@@ -790,7 +836,9 @@ function levelComplete() {
     var elapsed = levelTimer/60;
     var ratio = timeTotal ? timeLeft/timeTotal : 0;
     var st = ratio>.45?3:(ratio>.2?2:1);
-    totalStars += st; levelsBeaten = Math.max(levelsBeaten,level);
+    var oldStars = Number(levelStars[level]||0);
+    if (st>oldStars) { levelStars[level]=st; totalStars += st-oldStars; }
+    levelsBeaten = Math.max(levelsBeaten,Math.min(level,CAMPAIGN_LEVELS));
     if (score>highScore) highScore=score;
     saveProgress();
     document.getElementById('completeLevelName').textContent='第 '+level+' 关 · '+levelConfig.name;
@@ -857,9 +905,9 @@ function retryLevel() {
 }
 function resumeGame() { state=STATE.PLAYING; document.getElementById('pauseScreen').classList.remove('show'); }
 function continueEndless() { document.getElementById('winScreen').classList.remove('show'); initLevel(levelsBeaten+1); state=STATE.PLAYING; }
-function backToMenu() { stopMusic(); state=STATE.MENU; document.getElementById('pauseBtn').style.display='none'; document.getElementById('exitBtn').style.display='none'; ['pauseScreen','gameOverScreen','levelCompleteScreen','winScreen','shopScreen'].forEach(function(id){document.getElementById(id).classList.remove('show');}); document.getElementById('startScreen').classList.add('show'); document.getElementById('highScoreDisplay').textContent=highScore; document.getElementById('totalStarsMenu').textContent=totalStars; document.getElementById('musicIndicator').classList.remove('show'); }
+function backToMenu() { stopMusic(); state=STATE.MENU; document.getElementById('pauseBtn').style.display='none'; document.getElementById('exitBtn').style.display='none'; ['pauseScreen','gameOverScreen','levelCompleteScreen','winScreen','shopScreen'].forEach(function(id){document.getElementById(id).classList.remove('show');}); document.getElementById('startScreen').classList.add('show'); document.getElementById('highScoreDisplay').textContent=highScore; document.getElementById('totalStarsMenu').textContent=totalStars; renderLevelSelect(); document.getElementById('musicIndicator').classList.remove('show'); }
 function updateAdCount() { var e=document.getElementById('adCountDisplay'); if(e) e.textContent='已观看 '+totalAdsWatched+' 次广告'; }
-updateAdCount(); document.getElementById('highScoreDisplay').textContent=highScore; document.getElementById('totalStarsMenu').textContent=totalStars;
+updateAdCount(); document.getElementById('highScoreDisplay').textContent=highScore; document.getElementById('totalStarsMenu').textContent=totalStars; renderLevelSelect();
 document.getElementById('soundToggleBtn').textContent='🔇'; var pb=document.getElementById('pauseSoundBtn'); if(pb) pb.textContent='🔇';
 
 // ---- DRAW ----
