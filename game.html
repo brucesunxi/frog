@@ -54,9 +54,11 @@ canvas {
 .powerup-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 12px 0; max-width: 420px; }
 .powerup-card { background: rgba(255,255,255,0.06); border: 2px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 14px; cursor: pointer; transition: all 0.25s; }
 .powerup-card:hover { background: rgba(255,255,255,0.14); transform: translateY(-3px); border-color: #ffd700; }
+.powerup-card.recommended { border-color: #ffd700; background: rgba(255,215,0,0.12); box-shadow: 0 0 18px rgba(255,215,0,0.18); }
 .powerup-card .icon { font-size: 30px; margin-bottom: 4px; }
 .powerup-card .name { color: #ffd700; font-weight: bold; font-size: 14px; }
 .powerup-card .desc { color: #b2bec3; font-size: 12px; margin-top: 3px; }
+.fail-insight { color: #ffd700; font-size: 13px; margin: 8px 0 4px; padding: 7px 12px; border-radius: 9px; background: rgba(255,215,0,0.09); max-width: 440px; }
 .ad-countdown { font-size: 56px; color: #ffd700; font-weight: bold; margin: 15px 0; text-shadow: 0 0 40px rgba(255,215,0,0.5); }
 .stars { font-size: 32px; margin: 5px 0; letter-spacing: 4px; }
 .fade-in { animation: fadeIn 0.3s ease-out; }
@@ -129,10 +131,12 @@ canvas {
         <p>得分: <span class="highlight" id="completeScore">0</span></p>
         <p>连击最高: <span class="highlight" id="completeCombo">0</span>x</p>
         <p>时间奖励: <span class="highlight" id="completeTimeBonus">+0</span></p>
+        <p id="nextLevelHook" style="color:#ffd700;font-size:13px;margin-top:6px;">下一关提示</p>
         <div style="margin:8px 0;padding:6px 16px;background:rgba(255,215,0,0.1);border-radius:8px;">
             <span style="color:#b2bec3;font-size:12px;">总星数: </span>
             <span id="totalStarsDisplay" style="color:#ffd700;font-size:16px;">⭐ 0</span>
         </div>
+        <button class="btn btn-powerup btn-small" id="prepNextBtn" onclick="prepareNextLevelBoost()">📺 带补给进下一关</button>
         <button class="btn btn-next" onclick="nextLevel()">下一关 →</button>
     </div>
     <div class="overlay fade-in" id="gameOverScreen">
@@ -140,6 +144,7 @@ canvas {
         <h2 style="color:#ff6b6b;">挑战失败</h2>
         <p id="failLevelName">第 1 关</p>
         <p id="failReason" style="color:#b2bec3;">生命值耗尽...</p>
+        <div class="fail-insight" id="failInsight">差一点就过了，再试一次。</div>
         <div class="powerup-grid" id="failPowerups"></div>
         <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center;">
             <button class="btn btn-retry btn-small" onclick="retryLevel()">🔄 再来一次</button>
@@ -203,10 +208,11 @@ let powerups = { shield:0, slowmo:0, superJump:0, secondChance:0 };
 let inventory = { shield:0, slowmo:0, superJump:0, extraLife:0 };
 let levelConfig = null, lanes = [], homes = [], homesFilled = 0, homesNeeded = 5;
 let timeLeft = 60, timeTotal = 60, levelTimer = 0, laneObjects = [];
-const CROSSING_TIME_LIMIT = 100;
+const DEFAULT_CROSSING_TIME_LIMIT = 100;
 let particles = [], popupTexts = [], screenShake = 0, flashOverlay = 0, flashColor = '#fff';
 let nearMissFlash = 0, trailParticles = [], comboCount = 0, maxCombo = 0, comboFlash = 0;
-let justSavedByShield = false, levelStartFrame = 0, totalStars = 0, bestCombo = 0;
+let justSavedByShield = false, levelStartFrame = 0, totalStars = 0, bestCombo = 0, scoreAtLevelStart = 0;
+let lastFailType = 'generic', lastFailRow = 14, lastFailCol = 9;
 let levelsBeaten = 0, highScore = 0, soundMuted = true, deathAnim = 0;
 let flies = [], flySpawnTimer = 0;
 let clouds = [], roadDecor = [], stars = [], exhaustParticles = [];
@@ -295,7 +301,7 @@ function loadProgress() {
     } catch(e) {}
 }
 loadProgress();
-let adInterval = null, _adCallback = null;
+let adInterval = null, _adCallback = null, _adReturnState = STATE.MENU, _shopReturnState = STATE.MENU;
 
 // Sound System
 let audioCtx = null;
@@ -414,6 +420,31 @@ var LEVEL_THEMES = [
     { road1:"#2a2a3a", road2:"#3a3a4a", river1:"#0a1a2a", river2:"#0a2a3a", grass:"#1a3a0a", accent:"#ffd700", name:"👑 最终彼岸" }
 ];
 function getTheme(lvl) { return LEVEL_THEMES[Math.min(lvl-1, LEVEL_THEMES.length-1)]; }
+function getLevelTimeLimit() { return (levelConfig&&levelConfig.timeLimit) ? levelConfig.timeLimit : DEFAULT_CROSSING_TIME_LIMIT; }
+function getLevelTip(lvl) {
+    var tips = [
+        '教学关：观察车道节奏，先稳稳送满目标。',
+        '卡车登场：车身更长，过路前多等半拍。',
+        '乌龟会下潜：别在河面上贪停，减速最有价值。',
+        '双道路夹击：先找安全草地，再分段推进。',
+        '水陆一起提速：超级跳可以跨过危险河段。',
+        '城市高速段：减速能把连续车流拆成可读节奏。',
+        '生死时速：护盾用来保住最后一两次关键冲刺。',
+        '最终彼岸：目标是连续稳定送达，复活能保住本关进度。'
+    ];
+    return tips[Math.min(lvl-1,tips.length-1)] || '终极挑战：速度会持续提高，专注每一次窗口。';
+}
+function getLevelStartPopup(lvl) {
+    var tips = ['观察节奏','卡车登场','小心乌龟','分段推进','激流加速','高速穿梭','别贪窗口','最终挑战'];
+    return tips[Math.min(lvl-1,tips.length-1)] || '终极挑战';
+}
+function getRecommendedPowerup(type) {
+    if (type==='water') return 'superJump';
+    if (type==='time') return 'slowmo';
+    if (type==='road') return 'shield';
+    if (type==='swept') return 'slowmo';
+    return level>=6 ? 'slowmo' : 'shield';
+}
 
 function getLevelConfig(lvl) {
     var C = [
@@ -434,7 +465,7 @@ function getLevelConfig(lvl) {
 function initLevel(lvl) {
     level = lvl; levelConfig = getLevelConfig(lvl);
     lanes = levelConfig.lanes; homesNeeded = levelConfig.homesNeeded;
-    timeTotal = CROSSING_TIME_LIMIT; timeLeft = timeTotal; levelTimer = 0; levelStartFrame = frame;
+    timeTotal = getLevelTimeLimit(); timeLeft = timeTotal; levelTimer = 0; levelStartFrame = frame; scoreAtLevelStart = score;
     homes = []; homesFilled = 0; comboCount = 0; nearMissFlash = 0; trailParticles = []; exhaustParticles = [];
     var hs = 800/5;
     for (var i=0;i<5;i++) homes.push({ x:hs*i+hs/2-20, y:20, filled:false, idx:i });
@@ -449,17 +480,23 @@ function initLevel(lvl) {
     });
     flies = []; flySpawnTimer = 60;
     if (powerups.slowmo>0) powerups.slowmo=300;
+    setTimeout(function(){ if (state===STATE.PLAYING&&levelConfig) addPopup('第 '+level+' 关 · '+getLevelStartPopup(level),'#ffd700'); },220);
 }
 
 function getEffectiveSpeed(l) { return powerups.slowmo>0 ? l.speed*.35 : l.speed; }
-function restoreCrossingTime() { timeTotal = CROSSING_TIME_LIMIT; timeLeft = CROSSING_TIME_LIMIT; levelTimer = 0; }
+function restoreCrossingTime() { timeTotal = getLevelTimeLimit(); timeLeft = timeTotal; levelTimer = 0; }
+function rememberFail(type) {
+    lastFailType = type || 'generic';
+    lastFailRow = Math.max(0,Math.min(ROWS-1,Math.round(frog.row)));
+    lastFailCol = Math.max(0,Math.min(COLS-1,Math.round(frog.col)));
+}
 
 // Update
 function update() {
     if (state!==STATE.PLAYING) return; frame++;
     if (frogLockTimer>0) frogLockTimer--; if (frogInvincible>0) frogInvincible--;
     levelTimer++;
-    if (levelTimer%60===0) { timeLeft--; if (timeLeft<=0) { gameOver('⏰ 时间耗尽了...'); return; } }
+    if (levelTimer%60===0) { timeLeft--; if (timeLeft<=0) { rememberFail('time'); gameOver('⏰ 时间耗尽了...'); return; } }
     if (powerups.slowmo>0) { powerups.slowmo--; if (powerups.slowmo===0) addPopup('⏱️ 减速结束','#ffd700'); }
     updateLaneObjects();
     exhaustParticles = exhaustParticles.filter(function(p){ p.life--; p.x+=p.vx; p.y+=p.vy; p.vy-=0.02; return p.life>0; });
@@ -475,13 +512,13 @@ function update() {
         return;
     }
     checkNearMiss();
-    if (!frogMoving) { var l2 = lanes.find(function(l){return l.row===frog.row;}); if (l2&&l2.type==='road'&&checkRoadCollision()) { frogHit(); } }
+    if (!frogMoving) { var l2 = lanes.find(function(l){return l.row===frog.row;}); if (l2&&l2.type==='road'&&checkRoadCollision()) { frogHit('road'); } }
     if (frog.row>=3&&frog.row<=7&&!frogMoving) {
         var l2 = lanes.find(function(l){return l.row===frog.row;});
         if (l2&&l2.type==='river') {
             var o2 = getObjectUnderFrog();
-            if (o2) { frog.col += getEffectiveSpeed(l2)*l2.dir*.02; if (frog.col<0||frog.col>=COLS) { gameOver('🌊 被冲走了...'); return; } if (frame%3===0) spawnParticle(frog.col*CELL+20,frog.row*CELL+24,'rgba(100,200,255,0.3)',2); }
-            else if (frogSafe&&!isTurtleUnderFrog()) { gameOver('💦 掉进水里了...'); return; }
+            if (o2) { frog.col += getEffectiveSpeed(l2)*l2.dir*.02; if (frog.col<0||frog.col>=COLS) { rememberFail('swept'); gameOver('🌊 被冲走了...'); return; } if (frame%3===0) spawnParticle(frog.col*CELL+20,frog.row*CELL+24,'rgba(100,200,255,0.3)',2); }
+            else if (frogSafe&&!isTurtleUnderFrog()) { rememberFail('water'); gameOver('💦 掉进水里了...'); return; }
         }
     }
     particles = particles.filter(function(p){ p.x+=p.vx; p.y+=p.vy; p.life--; p.vx*=.98; return p.life>0; });
@@ -578,8 +615,8 @@ function checkFrogPosition() {
         frog.row=14; frog.col=9; frogSafe=true; frogLockTimer=20;
         addPopup('⚠️ 此坑已占! 换一个目标','#ffd700'); return;
     }
-    if (lane&&lane.type==='road') { if (checkRoadCollision()) frogHit(); return; }
-    if (lane&&lane.type==='river') { var o = getObjectUnderFrog(); if (!o&&!isTurtleUnderFrog()) { frogHit(); return; } frogSafe=true; if (frame%20===0) spawnParticle(frog.col*CELL+20,frog.row*CELL+30,'rgba(100,200,255,0.2)',3); return; }
+    if (lane&&lane.type==='road') { if (checkRoadCollision()) frogHit('road'); return; }
+    if (lane&&lane.type==='river') { var o = getObjectUnderFrog(); if (!o&&!isTurtleUnderFrog()) { frogHit('water'); return; } frogSafe=true; if (frame%20===0) spawnParticle(frog.col*CELL+20,frog.row*CELL+30,'rgba(100,200,255,0.2)',3); return; }
     frogSafe=true;
 }
 
@@ -589,13 +626,31 @@ function checkRoadCollision() {
     return false;
 }
 
-function frogHit() { if (frogInvincible>0) return;
+function findReviveSpot() {
+    var c = Math.max(0,Math.min(COLS-1,lastFailCol));
+    for (var r=lastFailRow;r<ROWS;r++) {
+        var lane = lanes.find(function(l){return l.row===r;});
+        if (!lane || lane.type==='grass') return { row:r, col:c };
+    }
+    return { row:14, col:9 };
+}
+
+function continuePlayingAfterAd(text) {
+    ['gameOverScreen','adScreen','shopScreen','pauseScreen'].forEach(function(id){document.getElementById(id).classList.remove('show');});
+    lives = Math.max(1,lives);
+    frogMoving=false; frogSafe=true; frogInvincible=60; deathAnim=0; screenShake=0;
+    state=STATE.PLAYING;
+    if (text) addPopup(text,'#ffd700');
+}
+
+function frogHit(type) { if (frogInvincible>0) return;
+    rememberFail(type||'road');
     if (powerups.shield>0) { powerups.shield--; flashOverlay=1; flashColor='#00b894'; playSound('shield'); addPopup('🛡️ 护盾抵挡!','#00b894'); spawnParticle(frog.col*CELL+20,frog.row*CELL+20,'#00b894',15); frog.row=Math.min(14,frog.row+1); frog.col=Math.max(0,Math.min(COLS-1,frog.col)); justSavedByShield=true; return; }
     deathAnim=30; screenShake=8; flashOverlay=1; flashColor='#ff6b6b'; comboCount=0;
     playSound('die');
     spawnParticle(frog.col*CELL+20,frog.row*CELL+20,'#ff6b6b',25); spawnParticle(frog.col*CELL+20,frog.row*CELL+20,'#ffd700',15); spawnParticle(frog.col*CELL+20,frog.row*CELL+20,'#ff9ff3',10);
     state=STATE.DYING;
-    if (powerups.secondChance>0) { powerups.secondChance--; addPopup('💫 原地复活!','#a29bfe'); setTimeout(function(){frog.row=14;frog.col=9;frogMoving=false;frogSafe=true;state=STATE.PLAYING;},800); return; }
+    if (powerups.secondChance>0) { powerups.secondChance--; addPopup('💫 附近复活!','#a29bfe'); setTimeout(function(){var spot=findReviveSpot();frog.row=spot.row;frog.col=spot.col;frogMoving=false;frogSafe=true;frogInvincible=60;state=STATE.PLAYING;},800); return; }
     setTimeout(function(){lives--;if(lives<=0){gameOver('💀 生命值耗尽...');return;}frog.row=14;frog.col=9;frogMoving=false;frogSafe=true;frogInvincible=45;state=STATE.PLAYING;addPopup('❤️ 剩余 '+lives+' 条命','#ff6b6b');},600);
 }
 
@@ -621,24 +676,37 @@ function addPopupAt(text,color,x,y) { popupTexts=popupTexts.filter(function(p){r
 
 // AD System
 function watchAd(callback,message) {
-    state=STATE.AD; _adCallback=callback;
+    _adReturnState=state; state=STATE.AD; _adCallback=callback;
     document.getElementById('adScreen').classList.add('show');
     document.getElementById('adMessage').textContent=message||'请稍候...';
     var count=3; document.getElementById('adCountdown').textContent=count;
     if (adInterval) clearInterval(adInterval);
     adInterval=setInterval(function(){count--; if(count<=0)finishAd(); else document.getElementById('adCountdown').textContent=count;},1000);
 }
-function finishAd() { if(adInterval){clearInterval(adInterval);adInterval=null;} document.getElementById('adScreen').classList.remove('show'); totalAdsWatched++; updateAdCount(); var cb=_adCallback; _adCallback=null; if(cb)cb(); if(state===STATE.AD) state=STATE.PLAYING; }
+function finishAd() { if(adInterval){clearInterval(adInterval);adInterval=null;} document.getElementById('adScreen').classList.remove('show'); totalAdsWatched++; updateAdCount(); var cb=_adCallback, ret=_adReturnState; _adCallback=null; if(cb)cb(); if(state===STATE.AD) state=ret; }
 function skipAd(){finishAd();}
 
-function useAdPowerup(type,stayInPlace) {
-    var names={shield:'🛡️ 护盾',slowmo:'⏱️ 减速',superJump:'🦘 超级跳',extraLife:'❤️ 额外生命'};
-    var rewards={shield:function(){powerups.shield=(powerups.shield||0)+1;addPopup('🛡️ 获得护盾!','#00b894');playSound('shield');},slowmo:function(){powerups.slowmo=600;addPopup('⏱️ 时间减速!','#fdcb6e');playSound('shield');},superJump:function(){powerups.superJump=(powerups.superJump||0)+3;addPopup('🦘 获得超级跳!','#a29bfe');playSound('shield');},extraLife:function(){lives=Math.min(maxLives,lives+1);addPopup('❤️ +1 生命!','#ff6b6b');playSound('win');}};
-    if (rewards[type]) watchAd(function(){rewards[type]();if(!stayInPlace&&state===STATE.AD&&lives>0){state=STATE.PLAYING;document.getElementById('gameOverScreen').classList.remove('show');}},'观看广告获取 '+names[type]+'...');
+function grantPowerup(type) {
+    if (type==='shield') { powerups.shield=(powerups.shield||0)+1; addPopup('🛡️ 获得护盾!','#00b894'); playSound('shield'); return true; }
+    if (type==='slowmo') { powerups.slowmo=600; addPopup('⏱️ 时间减速!','#fdcb6e'); playSound('shield'); return true; }
+    if (type==='superJump') { powerups.superJump=(powerups.superJump||0)+3; addPopup('🦘 获得超级跳!','#a29bfe'); playSound('shield'); return true; }
+    if (type==='extraLife') { lives=Math.min(maxLives,lives+1); addPopup('❤️ +1 生命!','#ff6b6b'); playSound('win'); return true; }
+    if (type==='secondChance') { powerups.secondChance=(powerups.secondChance||0)+1; addPopup('💫 获得续命!','#a29bfe'); playSound('shield'); return true; }
+    return false;
+}
+
+function useAdPowerup(type,mode) {
+    var names={shield:'🛡️ 护盾',slowmo:'⏱️ 减速',superJump:'🦘 超级跳',extraLife:'❤️ 额外生命',secondChance:'💫 自动续命'};
+    mode = mode || 'bank';
+    if (!names[type]) return;
+    watchAd(function(){
+        grantPowerup(type);
+        if (mode==='continue') { var spot=findReviveSpot(); frog.row=spot.row; frog.col=spot.col; continuePlayingAfterAd('道具已生效，继续挑战!'); }
+    },'观看广告获取 '+names[type]+'...');
 }
 
 function reviveAfterAd() {
-    watchAd(function(){lives=Math.max(1,lives+1);powerups.shield=(powerups.shield||0)+1;addPopup('❤️ 复活+护盾!','#ffd700');playSound('win');state=STATE.PLAYING;document.getElementById('gameOverScreen').classList.remove('show');frog.row=14;frog.col=9;frogMoving=false;},'观看广告复活并获取护盾...');
+    watchAd(function(){var spot=findReviveSpot();frog.row=spot.row;frog.col=spot.col;lives=Math.max(1,lives+1);powerups.shield=(powerups.shield||0)+1;playSound('win');continuePlayingAfterAd('复活+护盾，继续冲!');},'观看广告复活并保住本关进度...');
 }
 
 // UI
@@ -654,26 +722,49 @@ function startGame() {
     if (!window._gameLoopRunning) { window._gameLoopRunning=true; (function loop(){try{update();draw();}catch(e){console.error('Game:',e);}requestAnimationFrame(loop);})(); }
 }
 
-function showFailScreen() {
-    document.getElementById('gameOverScreen').classList.add('show');
-    document.getElementById('failLevelName').textContent='第 '+level+' 关 · '+levelConfig.name; document.getElementById('failReason').textContent=lives<=0?'💀 生命值耗尽...':'💀 挑战失败...';
+function getFailInsight() {
+    var left = Math.max(0,homesNeeded-homesFilled);
+    var base = left<=1 ? '只差最后一个目标。' : '已经完成 '+homesFilled+'/'+homesNeeded+' 个目标。';
+    if (lastFailType==='road') return base+'车流窗口很窄，护盾能把一次失误变成继续冲。';
+    if (lastFailType==='water') return base+'河面落点不够稳，超级跳可以跨过最危险的一段。';
+    if (lastFailType==='swept') return base+'被水流带出边界，减速能放大可操作窗口。';
+    if (lastFailType==='time') return base+'时间压力是主因，减速能让最后几次送达更稳。';
+    return base+'继续本关会保留已送达目标，别让这局断掉。';
+}
+
+function renderFailOffers() {
+    var recommended = getRecommendedPowerup(lastFailType);
+    document.getElementById('failInsight').textContent = getFailInsight();
     var c=document.getElementById('failPowerups'); c.innerHTML='';
-    [{type:'revive',icon:'💫',name:'原地复活',desc:'复活+护盾，继续闯关'},{type:'shield',icon:'🛡️',name:'护盾',desc:'抵挡一次撞击'},{type:'slowmo',icon:'⏱️',name:'时间减速',desc:'全部速度降低65%'},{type:'extraLife',icon:'❤️',name:'额外生命',desc:'增加一条命'}].forEach(function(item){
-        var card=document.createElement('div'); card.className='powerup-card';
-        card.onclick=function(){if(item.type==='revive')reviveAfterAd(); else useAdPowerup(item.type,true);};
-        card.innerHTML='<div class="icon">'+item.icon+'</div><div class="name">'+item.name+'</div><div class="desc">'+item.desc+'</div><div style="font-size:11px;color:#e17055;margin-top:3px;">📺 看广告获取</div>';
+    var items=[
+        {type:'revive',icon:'💫',name:'继续本关',desc:'附近复活+护盾，保住已送达目标'},
+        {type:recommended,icon:recommended==='shield'?'🛡️':(recommended==='slowmo'?'⏱️':'🦘'),name:recommended==='shield'?'推荐：护盾':(recommended==='slowmo'?'推荐：减速':'推荐：超级跳'),desc:recommended==='shield'?'适合车流关，挡下一次致命撞击':(recommended==='slowmo'?'适合高速/倒计时，把节奏慢下来':'适合河流关，跨过短木头和空档')},
+        {type:'secondChance',icon:'💫',name:'自动续命',desc:'下一次失误自动附近复活一次'},
+        {type:'extraLife',icon:'❤️',name:'额外生命',desc:'补一条命，适合继续磨本关'}
+    ];
+    items.forEach(function(item,idx){
+        var card=document.createElement('div'); card.className='powerup-card'+(idx<2?' recommended':'');
+        card.onclick=function(){if(item.type==='revive')reviveAfterAd(); else useAdPowerup(item.type,'continue');};
+        card.innerHTML='<div class="icon">'+item.icon+'</div><div class="name">'+item.name+'</div><div class="desc">'+item.desc+'</div><div style="font-size:11px;color:#e17055;margin-top:3px;">📺 看广告继续</div>';
         c.appendChild(card);
     });
 }
 
+function showFailScreen() {
+    document.getElementById('gameOverScreen').classList.add('show');
+    document.getElementById('failLevelName').textContent='第 '+level+' 关 · '+levelConfig.name; document.getElementById('failReason').textContent=lives<=0?'💀 生命值耗尽...':'💀 挑战失败...';
+    renderFailOffers();
+}
+
 function showShop() {
+    _shopReturnState=state;
     state=STATE.SHOP;
     ['startScreen','pauseScreen','gameOverScreen'].forEach(function(id){document.getElementById(id).classList.remove('show');});
     document.getElementById('shopScreen').classList.add('show');
     var c=document.getElementById('shopPowerups'); c.innerHTML='';
-    [{type:'shield',icon:'🛡️',name:'护盾',desc:'抵挡一次致命撞击(可叠加)'},{type:'slowmo',icon:'⏱️',name:'时间减速',desc:'10秒内所有速度降低65%'},{type:'superJump',icon:'🦘',name:'超级跳',desc:'3次跳跃两格'},{type:'extraLife',icon:'❤️',name:'额外生命',desc:'增加一条命(上限5条)'}].forEach(function(item){
+    [{type:'shield',icon:'🛡️',name:'护盾',desc:'车流密集关最稳，抵挡一次致命撞击'},{type:'slowmo',icon:'⏱️',name:'时间减速',desc:'高速关核心道具，10秒内速度降低65%'},{type:'superJump',icon:'🦘',name:'超级跳',desc:'河流短木头关好用，3次跳跃两格'},{type:'secondChance',icon:'💫',name:'自动续命',desc:'失误后附近复活一次，保住连击节奏'},{type:'extraLife',icon:'❤️',name:'额外生命',desc:'增加一条命，上限5条'}].forEach(function(item){
         var card=document.createElement('div');card.className='powerup-card';
-        card.onclick=function(){useAdPowerup(item.type,true);};
+        card.onclick=function(){useAdPowerup(item.type,'bank');};
         card.innerHTML='<div class="icon">'+item.icon+'</div><div class="name">'+item.name+'</div><div class="desc">'+item.desc+'</div><div style="font-size:11px;color:#e17055;margin-top:3px;">📺 看广告免费获取</div>';
         c.appendChild(card);
     });
@@ -681,14 +772,18 @@ function showShop() {
 
 function closeShop() {
     document.getElementById('shopScreen').classList.remove('show');
-    if(state===STATE.SHOP){if(lives>0&&level>0)state=STATE.PLAYING;else{document.getElementById('startScreen').classList.add('show');state=STATE.MENU;}}
+    if(state===STATE.SHOP){
+        if(_shopReturnState===STATE.MENU){document.getElementById('startScreen').classList.add('show');state=STATE.MENU;}
+        else { state=_shopReturnState===STATE.PAUSED ? STATE.PAUSED : STATE.PLAYING; if(state===STATE.PAUSED) document.getElementById('pauseScreen').classList.add('show'); }
+    }
 }
 
 function levelComplete() {
     state=STATE.LEVEL_COMPLETE; playSound('win');
     document.getElementById('levelCompleteScreen').classList.add('show');
     var elapsed = levelTimer/60;
-    var st = timeLeft>30?3:(timeLeft>15?2:1);
+    var ratio = timeTotal ? timeLeft/timeTotal : 0;
+    var st = ratio>.45?3:(ratio>.2?2:1);
     totalStars += st; levelsBeaten = Math.max(levelsBeaten,level);
     if (score>highScore) highScore=score;
     saveProgress();
@@ -697,21 +792,63 @@ function levelComplete() {
     document.getElementById('completeTimeBonus').textContent='+'+Math.max(0,timeLeft)*2;
     document.getElementById('completeStars').textContent='★'.repeat(st)+'☆'.repeat(3-st);
     document.getElementById('totalStarsDisplay').textContent='⭐ '+totalStars;
+    var next = level+1;
+    var prep = document.getElementById('prepNextBtn');
+    if (next<=8) {
+        document.getElementById('nextLevelHook').textContent='下一关：'+getLevelTip(next);
+        prep.style.display='inline-block';
+        prep.textContent='📺 带补给进第 '+next+' 关';
+    } else {
+        document.getElementById('nextLevelHook').textContent='已完成主线，接下来进入无限挑战。';
+        prep.style.display='none';
+    }
 }
 
-function nextLevel() { document.getElementById('levelCompleteScreen').classList.remove('show'); initLevel(level+1); state=STATE.PLAYING; }
-
-function gameOver(reason) { stopMusic(); state=STATE.GAME_OVER; if (score>highScore) highScore=score; saveProgress(); document.getElementById('gameOverScreen').classList.add('show'); document.getElementById('failLevelName').textContent='第 '+level+' 关 · '+levelConfig.name; document.getElementById('failReason').textContent=reason;
-    var c=document.getElementById('failPowerups'); c.innerHTML='';
-    [{type:'revive',icon:'💫',name:'原地复活',desc:'复活+护盾，继续闯关'},{type:'shield',icon:'🛡️',name:'护盾',desc:'抵挡一次撞击'},{type:'slowmo',icon:'⏱️',name:'时间减速',desc:'全部速度降低65%'},{type:'extraLife',icon:'❤️',name:'额外生命',desc:'增加一条命'}].forEach(function(item){
-        var card=document.createElement('div'); card.className='powerup-card';
-        card.onclick=function(){if(item.type==='revive')reviveAfterAd(); else useAdPowerup(item.type,true);};
-        card.innerHTML='<div class="icon">'+item.icon+'</div><div class="name">'+item.name+'</div><div class="desc">'+item.desc+'</div><div style="font-size:11px;color:#e17055;margin-top:3px;">📺 看广告获取</div>';
-        c.appendChild(card);
-    });
+function getPrepPowerupForLevel(lvl) {
+    if (lvl===3||lvl===5) return 'superJump';
+    if (lvl>=6) return 'slowmo';
+    if (lvl===4||lvl===7||lvl===8) return 'shield';
+    return 'shield';
 }
 
-function retryLevel() { stopMusic(); document.getElementById('gameOverScreen').classList.remove('show'); startGame(); }
+function prepareNextLevelBoost() {
+    var next = level+1;
+    if (next>8) return;
+    var type = getPrepPowerupForLevel(next);
+    var names={shield:'护盾',slowmo:'减速',superJump:'超级跳'};
+    watchAd(function(){grantPowerup(type);document.getElementById('levelCompleteScreen').classList.remove('show');initLevel(next);state=STATE.PLAYING;addPopup('已带入'+names[type]+'补给','#ffd700');},'观看广告，带 '+names[type]+' 进入第 '+next+' 关...');
+}
+
+function nextLevel() {
+    document.getElementById('levelCompleteScreen').classList.remove('show');
+    if (level>=8) {
+        document.getElementById('finalScore').textContent=score;
+        document.getElementById('finalCombo').textContent=maxCombo;
+        document.getElementById('finalStars').textContent=totalStars;
+        document.getElementById('winScreen').classList.add('show');
+        state=STATE.LEVEL_COMPLETE;
+        return;
+    }
+    initLevel(level+1); state=STATE.PLAYING;
+}
+
+function gameOver(reason) {
+    stopMusic(); state=STATE.GAME_OVER; if (score>highScore) highScore=score; saveProgress();
+    document.getElementById('gameOverScreen').classList.add('show');
+    document.getElementById('failLevelName').textContent='第 '+level+' 关 · '+levelConfig.name;
+    document.getElementById('failReason').textContent=reason;
+    renderFailOffers();
+}
+
+function retryLevel() {
+    stopMusic();
+    ['gameOverScreen','pauseScreen','adScreen'].forEach(function(id){document.getElementById(id).classList.remove('show');});
+    score=scoreAtLevelStart; lives=maxLives; powerups={shield:0,slowmo:0,superJump:0,secondChance:0};
+    initLevel(level); state=STATE.PLAYING; initAudio();
+    if (!soundMuted) startMusic();
+    document.getElementById('pauseBtn').style.display='flex'; document.getElementById('exitBtn').style.display='flex';
+    document.getElementById('musicIndicator').classList.add('show');
+}
 function resumeGame() { state=STATE.PLAYING; document.getElementById('pauseScreen').classList.remove('show'); }
 function continueEndless() { document.getElementById('winScreen').classList.remove('show'); initLevel(levelsBeaten+1); state=STATE.PLAYING; }
 function backToMenu() { stopMusic(); state=STATE.MENU; document.getElementById('pauseBtn').style.display='none'; document.getElementById('exitBtn').style.display='none'; ['pauseScreen','gameOverScreen','levelCompleteScreen','winScreen','shopScreen'].forEach(function(id){document.getElementById(id).classList.remove('show');}); document.getElementById('startScreen').classList.add('show'); document.getElementById('highScoreDisplay').textContent=highScore; document.getElementById('totalStarsMenu').textContent=totalStars; document.getElementById('musicIndicator').classList.remove('show'); }
