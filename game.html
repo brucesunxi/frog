@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>青蛙过河 - Frog Frenzy</title>
-<script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; -webkit-tap-highlight-color: transparent; }
 body {
@@ -76,20 +75,9 @@ canvas {
 .level-card .num { font-size:13px; font-weight:700; color:#ffd700; }
 .level-card .title { font-size:11px; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .level-card .stars-mini { font-size:11px; color:#ffd700; margin-top:2px; letter-spacing:1px; }
-.auth-panel { display:flex; align-items:center; justify-content:center; gap:8px; min-height:38px; margin:4px 0; }
-#googleSignIn { min-width:188px; min-height:36px; display:flex; align-items:center; justify-content:center; }
-.google-placeholder {
-    border:1px solid rgba(255,255,255,0.18); border-radius:18px; background:#ffffff; color:#2d3436;
-    min-width:188px; height:36px; padding:0 14px; display:flex; align-items:center; justify-content:center; gap:8px;
-    font-size:13px; font-weight:700; box-shadow:0 8px 18px rgba(0,0,0,.18);
-}
-.google-placeholder.disabled { opacity:.68; cursor:not-allowed; filter:saturate(.7); }
-.google-g { width:18px; height:18px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-weight:900; color:#4285f4; }
-.auth-user { display:none; align-items:center; gap:8px; background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.12); border-radius:9px; padding:5px 9px; max-width:360px; }
-.auth-user img { width:24px; height:24px; border-radius:50%; }
-.auth-user span { color:#dfe6e9; font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:190px; }
-.auth-status { color:#7f8c8d; font-size:11px; min-height:14px; }
-.link-btn { border:0; background:transparent; color:#ffd700; font-size:12px; cursor:pointer; padding:2px 4px; }
+.wallet-panel { display:flex; align-items:center; justify-content:center; gap:8px; flex-wrap:wrap; margin:5px 0; }
+.wallet-pill { min-height:32px; padding:5px 12px; border-radius:16px; display:flex; align-items:center; gap:6px; background:rgba(255,215,0,.1); border:1px solid rgba(255,215,0,.28); color:#ffd700; font-size:13px; font-weight:800; }
+.wallet-status { color:#7f8c8d; font-size:11px; min-height:14px; }
 .ad-countdown { font-size: 56px; color: #ffd700; font-weight: bold; margin: 15px 0; text-shadow: 0 0 40px rgba(255,215,0,0.5); }
 .stars { font-size: 32px; margin: 5px 0; letter-spacing: 4px; }
 .fade-in { animation: fadeIn 0.3s ease-out; }
@@ -144,15 +132,11 @@ canvas {
             <span style="color:#636e72;margin:0 6px;">|</span>
             <span style="color:#ffd700;font-size:13px;">⭐ <span id="totalStarsMenu">0</span></span>
         </div>
-        <div class="auth-panel">
-            <div id="googleSignIn"></div>
-            <div class="auth-user" id="authUser">
-                <img id="authAvatar" alt="">
-                <span id="authName"></span>
-                <button class="link-btn" onclick="signOut()">退出</button>
-            </div>
+        <div class="wallet-panel">
+            <div class="wallet-pill">🪙 <span id="coinBalanceMenu">0</span></div>
+            <div class="wallet-pill">🎒 道具 <span id="inventoryCountMenu">0</span></div>
         </div>
-        <div class="auth-status" id="authStatus">登录后可同步关卡进度</div>
+        <div class="wallet-status" id="walletStatus">Google Play 版将自动使用玩家 ID 同步资产</div>
         <div style="background:rgba(255,255,255,0.05);border-radius:10px;padding:8px 16px;margin:4px 0;max-width:360px;text-align:left;font-size:13px;line-height:1.6;">
             <p>🎮 方向键 / WASD 移动  |  ESC 暂停</p>
             <p>🏠 送青蛙到顶部的家 · 躲车过河</p>
@@ -182,7 +166,7 @@ canvas {
             <span id="totalStarsDisplay" style="color:#ffd700;font-size:16px;">⭐ 0</span>
         </div>
         <div class="complete-actions">
-            <button class="btn btn-powerup btn-small" id="prepNextBtn" onclick="prepareNextLevelBoost()">📺 带补给进下一关</button>
+            <button class="btn btn-powerup btn-small" id="prepNextBtn" onclick="prepareNextLevelBoost()">🪙 带补给进下一关</button>
             <button class="btn btn-next btn-small" onclick="nextLevel()">下一关 →</button>
         </div>
     </div>
@@ -199,10 +183,11 @@ canvas {
         </div>
     </div>
     <div class="overlay fade-in" id="adScreen">
-        <h2 style="color:#ffd700;">📺 获取道具</h2>
-        <p style="margin:8px 0;" id="adMessage">请稍候...</p>
-        <div class="ad-countdown" id="adCountdown">3</div>
-        <button class="btn btn-small" style="background:#636e72;color:white;font-size:13px;min-width:100px;" onclick="skipAd()">跳过 ›</button>
+        <h2 style="color:#ffd700;">🪙 金币不足</h2>
+        <p style="margin:8px 0;" id="adMessage">Google Play 版将在这里打开金币购买。</p>
+        <div class="ad-countdown" id="adCountdown">🪙</div>
+        <button class="btn btn-powerup btn-small" onclick="showCoinStore()">购买金币</button>
+        <button class="btn btn-small" style="background:#636e72;color:white;font-size:13px;min-width:100px;" onclick="skipAd()">稍后</button>
     </div>
     <div class="overlay fade-in" id="winScreen">
         <h1>🏆</h1>
@@ -216,9 +201,11 @@ canvas {
     </div>
     <div class="overlay fade-in" id="shopScreen">
         <h1 style="color:#ffd700;">🎁 道具商店</h1>
-        <p style="font-size:13px;">看广告免费获取，助你过关！</p>
+        <p style="font-size:13px;">使用金币购买道具，Google Play 版金币由应用内购买获得。</p>
+        <div class="wallet-pill" style="margin:5px 0;">🪙 当前金币 <span id="coinBalanceShop">0</span></div>
         <div class="powerup-grid" id="shopPowerups"></div>
         <p style="font-size:12px;color:#636e72;" id="adCountDisplay"></p>
+        <button class="btn btn-powerup btn-small" onclick="showCoinStore()">购买金币</button>
         <button class="btn btn-retry btn-small" onclick="closeShop()" style="margin-top:6px;">关闭</button>
     </div>
     <div class="overlay" id="pauseScreen">
@@ -248,11 +235,12 @@ const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 const W = 800, H = 640, CELL = 40, COLS = 20, ROWS = 16;
 const STATE = { MENU:0, PLAYING:1, DYING:2, LEVEL_COMPLETE:3, GAME_OVER:4, PAUSED:5, AD:6, SHOP:7 };
-let state = STATE.MENU, level = 1, score = 0, lives = 3, maxLives = 5, frame = 0, totalAdsWatched = 0;
+let state = STATE.MENU, level = 1, score = 0, lives = 3, maxLives = 5, frame = 0, totalCoinsSpent = 0;
 let frog = { row:14, col:9 }, frogTarget = { row:14, col:9 };
 let frogMoving = false, frogDir = { dr:0, dc:0 }, frogAnim = 0, frogSafe = true, frogLockTimer = 0, frogInvincible = 0;
 let powerups = { shield:0, slowmo:0, superJump:0, secondChance:0 };
-let inventory = { shield:0, slowmo:0, superJump:0, extraLife:0 };
+let inventory = { shield:0, slowmo:0, superJump:0, extraLife:0, secondChance:0 };
+let coinBalance = 0, playerToken = null, syncTimer = null, installId = null;
 let levelConfig = null, lanes = [], homes = [], homesFilled = 0, homesNeeded = 5;
 let timeLeft = 60, timeTotal = 60, levelTimer = 0, laneObjects = [];
 const DEFAULT_CROSSING_TIME_LIMIT = 100;
@@ -348,20 +336,21 @@ function loadProgress() {
         const raw = localStorage.getItem('frog_frenzy_save');
         if (raw) {
             const d = JSON.parse(raw);
-            highScore = d.highScore||0; levelsBeaten = d.levelsBeaten||0; totalAdsWatched = d.totalAdsWatched||0; maxCombo = d.maxCombo||0; soundMuted = d.soundMuted||false;
+            highScore = d.highScore||0; levelsBeaten = d.levelsBeaten||0; totalCoinsSpent = d.totalCoinsSpent||d.totalAdsWatched||0; maxCombo = d.maxCombo||0; soundMuted = d.soundMuted||false;
+            coinBalance = Number(d.coinBalance||0); inventory = Object.assign(inventory,d.inventory||{});
             levelStars = d.levelStars||{};
             totalStars = Object.keys(levelStars).length ? Object.values(levelStars).reduce(function(a,b){return a+(Number(b)||0);},0) : (d.totalStars||0);
         }
     } catch(e) {}
 }
 function getProgressPayload() {
-    return { highScore, totalStars, levelsBeaten, levelStars, totalAdsWatched, maxCombo, soundMuted };
+    return { highScore, totalStars, levelsBeaten, levelStars, totalCoinsSpent, maxCombo, soundMuted, coinBalance, inventory };
 }
 function applyProgressPayload(d) {
     if (!d) return;
     highScore = Math.max(highScore||0, d.highScore||0);
     levelsBeaten = Math.max(levelsBeaten||0, d.levelsBeaten||0);
-    totalAdsWatched = Math.max(totalAdsWatched||0, d.totalAdsWatched||0);
+    totalCoinsSpent = Math.max(totalCoinsSpent||0, d.totalCoinsSpent||0);
     maxCombo = Math.max(maxCombo||0, d.maxCombo||0);
     var merged = Object.assign({}, d.levelStars||{}, levelStars||{});
     Object.keys(d.levelStars||{}).forEach(function(k){ merged[k]=Math.max(Number(merged[k]||0),Number(d.levelStars[k]||0)); });
@@ -371,106 +360,80 @@ function applyProgressPayload(d) {
     try { localStorage.setItem('frog_frenzy_save', JSON.stringify(getProgressPayload())); } catch(e) {}
     refreshMenuStats();
 }
+function applyPlayerState(stateData) {
+    if (!stateData) return;
+    if (stateData.wallet) coinBalance = Number(stateData.wallet.coin_balance || stateData.wallet.coinBalance || coinBalance || 0);
+    if (stateData.inventory) inventory = Object.assign(inventory, stateData.inventory);
+    if (stateData.progress) applyProgressPayload(stateData.progress);
+    updateWalletUI();
+}
 function refreshMenuStats() {
     var hs=document.getElementById('highScoreDisplay'), ts=document.getElementById('totalStarsMenu');
     if (hs) hs.textContent=highScore;
     if (ts) ts.textContent=totalStars;
+    updateWalletUI();
     renderLevelSelect();
 }
-function setAuthStatus(text) {
-    var e=document.getElementById('authStatus');
+function setWalletStatus(text) {
+    var e=document.getElementById('walletStatus');
     if (e) e.textContent=text||'';
 }
-function setCurrentUser(user) {
-    currentUser = user;
-    var signIn=document.getElementById('googleSignIn'), box=document.getElementById('authUser');
-    if (!signIn||!box) return;
-    if (user) {
-        signIn.style.display='none';
-        box.style.display='flex';
-        document.getElementById('authName').textContent=user.name||user.email||'已登录';
-        var avatar=document.getElementById('authAvatar');
-        avatar.src=user.pictureUrl||'';
-        avatar.style.display=user.pictureUrl?'block':'none';
-        setAuthStatus('云端进度已连接');
-    } else {
-        signIn.style.display='block';
-        box.style.display='none';
-        setAuthStatus(authConfig.googleClientId?'登录后可同步关卡进度':'Google 登录尚未配置');
-    }
+function updateWalletUI() {
+    var ids=['coinBalanceMenu','coinBalanceShop'];
+    ids.forEach(function(id){ var e=document.getElementById(id); if(e)e.textContent=coinBalance; });
+    var inv=document.getElementById('inventoryCountMenu');
+    if(inv) inv.textContent=Object.values(inventory||{}).reduce(function(a,b){return a+(Number(b)||0);},0);
 }
 async function apiFetch(path, options) {
     var headers = Object.assign({ 'Content-Type':'application/json' }, (options&&options.headers)||{});
-    if (authToken) headers.Authorization='Bearer '+authToken;
+    if (playerToken) headers.Authorization='Bearer '+playerToken;
     var res = await fetch(path, Object.assign({}, options||{}, { headers }));
     if (!res.ok) throw new Error(path+' '+res.status);
     return res.json();
 }
 function queueProgressSync() {
-    if (!authToken) return;
+    if (!playerToken) return;
     clearTimeout(syncTimer);
     syncTimer=setTimeout(syncProgressNow,500);
 }
 async function syncProgressNow() {
-    if (!authToken) return;
+    if (!playerToken) return;
     try {
         var data = await apiFetch('/api/progress',{ method:'PUT', body:JSON.stringify({ progress:getProgressPayload() }) });
-        applyProgressPayload(data.progress);
-        setAuthStatus('进度已同步');
+        applyPlayerState(data.state || { progress:data.progress });
+        setWalletStatus('资产与关卡进度已同步');
     } catch(e) {
-        setAuthStatus('云同步暂时失败，本地进度已保存');
+        setWalletStatus('云同步暂时失败，本地进度已保存');
     }
 }
-async function handleGoogleCredential(response) {
+function getInstallId() {
+    var existing = localStorage.getItem('frog_install_id');
+    if (existing) return existing;
+    var id = 'web_'+Math.random().toString(36).slice(2)+Date.now().toString(36);
+    localStorage.setItem('frog_install_id',id);
+    return id;
+}
+async function initPlayerSession() {
+    installId = getInstallId();
+    playerToken = localStorage.getItem('frog_player_token') || null;
     try {
-        setAuthStatus('正在登录...');
-        var data = await apiFetch('/api/auth/google',{ method:'POST', body:JSON.stringify({ credential:response.credential }) });
-        authToken=data.token; localStorage.setItem('frog_auth_token',authToken);
-        setCurrentUser(data.user);
-        var remote = await apiFetch('/api/progress');
-        applyProgressPayload(remote.progress);
+        var data = await fetch('/api/play/session',{
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({ installId:installId, platform:'web', appVersion:'web-preview' })
+        }).then(function(r){return r.ok?r.json():null;});
+        if (!data) throw new Error('session_failed');
+        playerToken=data.token; localStorage.setItem('frog_player_token',playerToken);
+        applyPlayerState(data.state);
         await syncProgressNow();
+        setWalletStatus('本机资产已连接，Google Play 版将自动绑定玩家 ID');
     } catch(e) {
-        setAuthStatus('登录失败，请稍后再试');
+        setWalletStatus('离线模式：本地保存金币、道具和进度');
+        updateWalletUI();
     }
-}
-async function initAuth() {
-    authToken = localStorage.getItem('frog_auth_token') || null;
-    try {
-        var cfg = await fetch('/api/config').then(function(r){return r.ok?r.json():{};});
-        authConfig.googleClientId = cfg.googleClientId||'';
-    } catch(e) {}
-    if (authToken) {
-        try { var me = await apiFetch('/api/me'); setCurrentUser(me.user); var remote = await apiFetch('/api/progress'); applyProgressPayload(remote.progress); await syncProgressNow(); }
-        catch(e) { localStorage.removeItem('frog_auth_token'); authToken=null; setCurrentUser(null); }
-    } else setCurrentUser(null);
-    renderGoogleButton();
-}
-function renderGoogleButton() {
-    var target=document.getElementById('googleSignIn');
-    if (!target) return;
-    target.innerHTML='<button class="google-placeholder disabled" type="button"><span class="google-g">G</span><span>Google 登录</span></button>';
-    if (!authConfig.googleClientId) {
-        setAuthStatus('Google 登录配置中，当前进度先保存在本地');
-        return;
-    }
-    var tries=0;
-    (function waitGoogle(){
-        if (window.google&&google.accounts&&google.accounts.id) {
-            target.innerHTML='';
-            google.accounts.id.initialize({ client_id:authConfig.googleClientId, callback:handleGoogleCredential });
-            google.accounts.id.renderButton(target,{ theme:'filled_black', size:'medium', text:'signin_with', shape:'pill' });
-            return;
-        }
-        if (++tries<40) setTimeout(waitGoogle,150);
-    })();
-}
-function signOut() {
-    authToken=null; currentUser=null; localStorage.removeItem('frog_auth_token'); setCurrentUser(null); setAuthStatus('已退出，进度保存在本地');
 }
 loadProgress();
 let adInterval = null, _adCallback = null, _adReturnState = STATE.MENU, _shopReturnState = STATE.MENU;
-let authToken = null, currentUser = null, syncTimer = null, authConfig = { googleClientId: '' };
 
 // Sound System
 let audioCtx = null;
@@ -843,17 +806,20 @@ function spawnParticle(x,y,color,spd) { if (particles.length>250) particles.spli
 var _po=0;function addPopup(text,color) { popupTexts=popupTexts.filter(function(p){return p.text!==text;}); _po=(_po+18)%54; popupTexts.push({text,color,y:320+_po,life:90,x:400,scale:0}); if(popupTexts.length>5)popupTexts.splice(0,popupTexts.length-5); }
 function addPopupAt(text,color,x,y) { popupTexts=popupTexts.filter(function(p){return p.text!==text;}); popupTexts.push({text,color,y:x,life:80,x:y,scale:0}); }
 
-// AD System
-function watchAd(callback,message) {
-    _adReturnState=state; state=STATE.AD; _adCallback=callback;
+const ITEM_PRICES = { shield:60, slowmo:80, superJump:70, extraLife:90, secondChance:120, revive:100 };
+function getItemPrice(type) { return ITEM_PRICES[type] || 100; }
+function showCoinStore() {
+    setWalletStatus('Google Play 版将在这里调起应用内购买金币包');
     document.getElementById('adScreen').classList.add('show');
-    document.getElementById('adMessage').textContent=message||'请稍候...';
-    var count=3; document.getElementById('adCountdown').textContent=count;
-    if (adInterval) clearInterval(adInterval);
-    adInterval=setInterval(function(){count--; if(count<=0)finishAd(); else document.getElementById('adCountdown').textContent=count;},1000);
+    document.getElementById('adMessage').textContent='正式 Android 版会打开 Google Play Billing 金币包；当前 Web 预览不会模拟真实付款。';
 }
-function finishAd() { if(adInterval){clearInterval(adInterval);adInterval=null;} document.getElementById('adScreen').classList.remove('show'); totalAdsWatched++; updateAdCount(); var cb=_adCallback, ret=_adReturnState; _adCallback=null; if(cb)cb(); if(state===STATE.AD) state=ret; }
-function skipAd(){finishAd();}
+function showNotEnoughCoins(cost) {
+    _adReturnState=state; state=STATE.AD; _adCallback=null;
+    document.getElementById('adScreen').classList.add('show');
+    document.getElementById('adMessage').textContent='还需要 '+cost+' 金币。Google Play 版会在这里购买金币包。';
+    document.getElementById('adCountdown').textContent='🪙';
+}
+function skipAd(){document.getElementById('adScreen').classList.remove('show'); if(state===STATE.AD) state=_adReturnState;}
 
 function grantPowerup(type) {
     if (type==='shield') { powerups.shield=(powerups.shield||0)+1; addPopup('🛡️ 获得护盾!','#00b894'); playSound('shield'); return true; }
@@ -864,18 +830,47 @@ function grantPowerup(type) {
     return false;
 }
 
-function useAdPowerup(type,mode) {
+async function spendCoinsForItem(type,quantity) {
+    quantity = quantity || 1;
+    var cost = getItemPrice(type) * quantity;
+    if (coinBalance < cost) { showNotEnoughCoins(cost-coinBalance); return false; }
+    coinBalance -= cost; totalCoinsSpent += cost; updateWalletUI(); saveProgress();
+    try {
+        var data = await apiFetch('/api/wallet/spend',{ method:'POST', body:JSON.stringify({ itemId:type, quantity:quantity, levelId:level }) });
+        applyPlayerState(data.state);
+    } catch(e) {
+        setWalletStatus('离线消费已记录，本地继续游戏');
+    }
+    return true;
+}
+async function useCoinPowerup(type,mode) {
     var names={shield:'🛡️ 护盾',slowmo:'⏱️ 减速',superJump:'🦘 超级跳',extraLife:'❤️ 额外生命',secondChance:'💫 自动续命'};
     mode = mode || 'bank';
     if (!names[type]) return;
-    watchAd(function(){
-        grantPowerup(type);
-        if (mode==='continue') { var spot=findReviveSpot(); frog.row=spot.row; frog.col=spot.col; continuePlayingAfterAd('道具已生效，继续挑战!'); }
-    },'观看广告获取 '+names[type]+'...');
+    if (!(await spendCoinsForItem(type,1))) return;
+    grantPowerup(type);
+    if (mode==='continue') {
+        var spot=findReviveSpot(); frog.row=spot.row; frog.col=spot.col; continuePlayingAfterAd('道具已生效，继续挑战!');
+    }
+}
+
+async function reviveWithCoins() {
+    if (!(await spendCoinsForItem('revive',1))) return;
+    var spot=findReviveSpot();frog.row=spot.row;frog.col=spot.col;lives=Math.max(1,lives+1);powerups.shield=(powerups.shield||0)+1;playSound('win');continuePlayingAfterAd('复活+护盾，继续冲!');
+}
+
+function useAdPowerup(type,mode) {
+    useCoinPowerup(type,mode);
 }
 
 function reviveAfterAd() {
-    watchAd(function(){var spot=findReviveSpot();frog.row=spot.row;frog.col=spot.col;lives=Math.max(1,lives+1);powerups.shield=(powerups.shield||0)+1;playSound('win');continuePlayingAfterAd('复活+护盾，继续冲!');},'观看广告复活并保住本关进度...');
+    reviveWithCoins();
+}
+
+function buyPreviewCoins(amount) {
+    coinBalance += amount;
+    setWalletStatus('Web 预览已增加 '+amount+' 金币；正式版由 Google Play 购买入账');
+    updateWalletUI(); saveProgress();
 }
 
 // UI
@@ -937,7 +932,7 @@ function renderFailOffers() {
     items.forEach(function(item,idx){
         var card=document.createElement('div'); card.className='powerup-card'+(idx<2?' recommended':'');
         card.onclick=function(){if(item.type==='revive')reviveAfterAd(); else useAdPowerup(item.type,'continue');};
-        card.innerHTML='<div class="icon">'+item.icon+'</div><div class="name">'+item.name+'</div><div class="desc">'+item.desc+'</div><div style="font-size:11px;color:#e17055;margin-top:3px;">📺 看广告继续</div>';
+        card.innerHTML='<div class="icon">'+item.icon+'</div><div class="name">'+item.name+'</div><div class="desc">'+item.desc+'</div><div style="font-size:11px;color:#ffd700;margin-top:3px;">🪙 '+getItemPrice(item.type)+' 金币</div>';
         c.appendChild(card);
     });
 }
@@ -956,10 +951,14 @@ function showShop() {
     var c=document.getElementById('shopPowerups'); c.innerHTML='';
     [{type:'shield',icon:'🛡️',name:'护盾',desc:'车流密集关最稳，抵挡一次致命撞击'},{type:'slowmo',icon:'⏱️',name:'时间减速',desc:'高速关核心道具，10秒内速度降低65%'},{type:'superJump',icon:'🦘',name:'超级跳',desc:'河流短木头关好用，3次跳跃两格'},{type:'secondChance',icon:'💫',name:'自动续命',desc:'失误后附近复活一次，保住连击节奏'},{type:'extraLife',icon:'❤️',name:'额外生命',desc:'增加一条命，上限5条'}].forEach(function(item){
         var card=document.createElement('div');card.className='powerup-card';
-        card.onclick=function(){useAdPowerup(item.type,'bank');};
-        card.innerHTML='<div class="icon">'+item.icon+'</div><div class="name">'+item.name+'</div><div class="desc">'+item.desc+'</div><div style="font-size:11px;color:#e17055;margin-top:3px;">📺 看广告免费获取</div>';
+        card.onclick=function(){useCoinPowerup(item.type,'bank');};
+        card.innerHTML='<div class="icon">'+item.icon+'</div><div class="name">'+item.name+'</div><div class="desc">'+item.desc+'</div><div style="font-size:11px;color:#ffd700;margin-top:3px;">🪙 '+getItemPrice(item.type)+' 金币</div>';
         c.appendChild(card);
     });
+    var demo=document.createElement('div'); demo.className='powerup-card';
+    demo.onclick=function(){buyPreviewCoins(300);};
+    demo.innerHTML='<div class="icon">🪙</div><div class="name">Web 预览金币</div><div class="desc">仅用于浏览器测试；正式版使用 Google Play 购买</div><div style="font-size:11px;color:#00d38f;margin-top:3px;">+300 预览金币</div>';
+    c.appendChild(demo);
 }
 
 function closeShop() {
@@ -991,7 +990,7 @@ function levelComplete() {
     if (next<=8) {
         document.getElementById('nextLevelHook').textContent='下一关提示：'+getLevelStartPopup(next)+'。'+getPrepPowerupForLevel(next).replace('shield','护盾').replace('slowmo','减速').replace('superJump','超级跳')+'会更稳。';
         prep.style.display='inline-block';
-        prep.textContent='📺 带补给进第 '+next+' 关';
+        prep.textContent='🪙 带补给进第 '+next+' 关';
     } else {
         document.getElementById('nextLevelHook').textContent='已完成主线，接下来进入无限挑战。';
         prep.style.display='none';
@@ -1010,7 +1009,10 @@ function prepareNextLevelBoost() {
     if (next>8) return;
     var type = getPrepPowerupForLevel(next);
     var names={shield:'护盾',slowmo:'减速',superJump:'超级跳'};
-    watchAd(function(){grantPowerup(type);document.getElementById('levelCompleteScreen').classList.remove('show');initLevel(next);state=STATE.PLAYING;addPopup('已带入'+names[type]+'补给','#ffd700');},'观看广告，带 '+names[type]+' 进入第 '+next+' 关...');
+    spendCoinsForItem(type,1).then(function(ok){
+        if(!ok) return;
+        grantPowerup(type);document.getElementById('levelCompleteScreen').classList.remove('show');initLevel(next);state=STATE.PLAYING;addPopup('已带入'+names[type]+'补给','#ffd700');
+    });
 }
 
 function nextLevel() {
@@ -1046,8 +1048,8 @@ function retryLevel() {
 function resumeGame() { state=STATE.PLAYING; document.getElementById('pauseScreen').classList.remove('show'); }
 function continueEndless() { document.getElementById('winScreen').classList.remove('show'); initLevel(levelsBeaten+1); state=STATE.PLAYING; }
 function backToMenu() { stopMusic(); state=STATE.MENU; document.getElementById('pauseBtn').style.display='none'; document.getElementById('exitBtn').style.display='none'; ['pauseScreen','gameOverScreen','levelCompleteScreen','winScreen','shopScreen'].forEach(function(id){document.getElementById(id).classList.remove('show');}); document.getElementById('startScreen').classList.add('show'); document.getElementById('highScoreDisplay').textContent=highScore; document.getElementById('totalStarsMenu').textContent=totalStars; renderLevelSelect(); document.getElementById('musicIndicator').classList.remove('show'); }
-function updateAdCount() { var e=document.getElementById('adCountDisplay'); if(e) e.textContent='已观看 '+totalAdsWatched+' 次广告'; }
-updateAdCount(); refreshMenuStats(); initAuth();
+function updateAdCount() { var e=document.getElementById('adCountDisplay'); if(e) e.textContent='金币消费会记录到账本，Google Play 购买接入后可跨设备恢复'; }
+updateAdCount(); refreshMenuStats(); initPlayerSession();
 document.getElementById('soundToggleBtn').textContent='🔇'; var pb=document.getElementById('pauseSoundBtn'); if(pb) pb.textContent='🔇';
 
 // ---- DRAW ----
