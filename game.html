@@ -25,7 +25,33 @@ canvas {
     padding: 20px; text-align: center; backdrop-filter: blur(4px);
 }
 .overlay.show { display: flex; }
-#startScreen { background: #050814; backdrop-filter: none; }
+#startScreen {
+    background: #050814; backdrop-filter: none; justify-content:flex-start;
+    overflow-y:auto; overflow-x:hidden; gap:6px; padding:16px 18px 18px;
+}
+#startScreen::-webkit-scrollbar { width:6px; }
+#startScreen::-webkit-scrollbar-thumb { background:rgba(255,215,0,.25); border-radius:6px; }
+.brand-frog { font-size:38px; line-height:1; margin-bottom:2px; }
+.brand-title { font-size:32px; color:#ffd700; line-height:1.05; margin:0 0 2px; }
+.brand-subtitle { color:#b2bec3; font-size:13px; margin-bottom:3px; }
+.menu-score { background:rgba(255,215,0,0.08);border-radius:8px;padding:3px 12px;margin-bottom:2px; }
+.menu-help { background:rgba(255,255,255,0.05);border-radius:10px;padding:7px 14px;margin:2px 0;max-width:360px;text-align:left;font-size:12px;line-height:1.45; }
+.menu-actions { display:flex; gap:7px; margin-top:3px; align-items:center; justify-content:center; flex-wrap:wrap; padding-bottom:2px; }
+.menu-primary { margin-top:3px; }
+.scroll-panel {
+    justify-content:flex-start; overflow-y:auto; overflow-x:hidden;
+    padding:16px 18px 18px; gap:7px;
+}
+.scroll-panel::-webkit-scrollbar { width:6px; }
+.scroll-panel::-webkit-scrollbar-thumb { background:rgba(255,215,0,.25); border-radius:6px; }
+.shop-title { color:#ffd700; font-size:34px; line-height:1.05; margin-bottom:2px; }
+.shop-subtitle { font-size:13px; max-width:520px; }
+.shop-actions {
+    position:sticky; bottom:-1px; z-index:2; width:100%;
+    display:flex; gap:8px; justify-content:center; flex-wrap:wrap;
+    padding:10px 0 0; background:linear-gradient(to top,#050814 72%,rgba(5,8,20,0));
+}
+.shop-actions .btn { margin:2px 4px; }
 .overlay h1 { font-size: 40px; margin-bottom: 6px; text-shadow: 0 0 30px rgba(255,215,0,0.3); }
 .overlay h2 { font-size: 26px; color: #fff; margin-bottom: 6px; }
 .overlay p { color: #b2bec3; font-size: 15px; margin-bottom: 4px; line-height: 1.5; }
@@ -52,31 +78,31 @@ canvas {
 .btn-powerup { background: linear-gradient(135deg, #fdcb6e, #e17055); color: #2d3436; }
 .btn-small { padding: 10px 24px; font-size: 14px; min-width: 120px; }
 .btn-disabled { opacity: 0.5; pointer-events: none; }
-.powerup-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 12px 0; max-width: 420px; }
-.powerup-card { background: rgba(255,255,255,0.06); border: 2px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 14px; cursor: pointer; transition: all 0.25s; }
+.powerup-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 10px 0; width:min(520px,92%); max-width: 520px; }
+.powerup-card { min-height:112px; background: rgba(255,255,255,0.06); border: 2px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 12px; cursor: pointer; transition: all 0.25s; display:flex; flex-direction:column; align-items:center; justify-content:center; }
 .powerup-card:hover { background: rgba(255,255,255,0.14); transform: translateY(-3px); border-color: #ffd700; }
 .powerup-card.recommended { border-color: #ffd700; background: rgba(255,215,0,0.12); box-shadow: 0 0 18px rgba(255,215,0,0.18); }
-.powerup-card .icon { font-size: 30px; margin-bottom: 4px; }
+.powerup-card .icon { font-size: 28px; margin-bottom: 4px; line-height:1; }
 .powerup-card .name { color: #ffd700; font-weight: bold; font-size: 14px; }
 .powerup-card .desc { color: #b2bec3; font-size: 12px; margin-top: 3px; }
 .fail-insight { color: #ffd700; font-size: 13px; margin: 8px 0 4px; padding: 7px 12px; border-radius: 9px; background: rgba(255,215,0,0.09); max-width: 440px; }
 .complete-tip { color:#ffd700; font-size:12px; line-height:1.35; max-width:420px; margin:4px 0 2px; padding:7px 12px; border-radius:9px; background:rgba(255,215,0,0.08); }
 .complete-actions { display:flex; gap:8px; flex-wrap:wrap; justify-content:center; margin-top:4px; }
 #levelCompleteScreen .btn { margin:4px; }
-.level-select { width:min(560px,92%); margin:8px 0 6px; }
-.level-progress { color:#ffd700; font-size:13px; margin-bottom:6px; }
-.level-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:7px; }
-.level-card { min-height:58px; border-radius:8px; border:1px solid rgba(255,255,255,0.12); background:rgba(255,255,255,0.055); color:#dfe6e9; cursor:pointer; padding:6px 5px; transition:all .18s; }
+.level-select { width:min(560px,92%); margin:5px 0 3px; }
+.level-progress { color:#ffd700; font-size:12px; margin-bottom:5px; }
+.level-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:6px; }
+.level-card { min-height:50px; border-radius:8px; border:1px solid rgba(255,255,255,0.12); background:rgba(255,255,255,0.055); color:#dfe6e9; cursor:pointer; padding:5px 5px; transition:all .18s; }
 .level-card:hover { transform:translateY(-2px); border-color:#ffd700; background:rgba(255,215,0,0.12); }
 .level-card.locked { opacity:.45; cursor:not-allowed; filter:grayscale(.6); }
 .level-card.locked:hover { transform:none; border-color:rgba(255,255,255,0.12); background:rgba(255,255,255,0.055); }
 .level-card.current { border-color:#00d38f; box-shadow:0 0 14px rgba(0,211,143,.18); }
 .level-card.cleared { border-color:rgba(255,215,0,.55); }
-.level-card .num { font-size:13px; font-weight:700; color:#ffd700; }
-.level-card .title { font-size:11px; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.level-card .stars-mini { font-size:11px; color:#ffd700; margin-top:2px; letter-spacing:1px; }
-.wallet-panel { display:flex; align-items:center; justify-content:center; gap:8px; flex-wrap:wrap; margin:5px 0; }
-.wallet-pill { min-height:32px; padding:5px 12px; border-radius:16px; display:flex; align-items:center; gap:6px; background:rgba(255,215,0,.1); border:1px solid rgba(255,215,0,.28); color:#ffd700; font-size:13px; font-weight:800; }
+.level-card .num { font-size:12px; font-weight:700; color:#ffd700; }
+.level-card .title { font-size:10px; margin-top:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.level-card .stars-mini { font-size:10px; color:#ffd700; margin-top:1px; letter-spacing:1px; }
+.wallet-panel { display:flex; align-items:center; justify-content:center; gap:8px; flex-wrap:wrap; margin:3px 0; }
+.wallet-pill { min-height:28px; padding:4px 11px; border-radius:15px; display:flex; align-items:center; gap:6px; background:rgba(255,215,0,.1); border:1px solid rgba(255,215,0,.28); color:#ffd700; font-size:12px; font-weight:800; }
 .wallet-status { color:#7f8c8d; font-size:11px; min-height:14px; }
 .ad-countdown { font-size: 56px; color: #ffd700; font-weight: bold; margin: 15px 0; text-shadow: 0 0 40px rgba(255,215,0,0.5); }
 .stars { font-size: 32px; margin: 5px 0; letter-spacing: 4px; }
@@ -111,6 +137,22 @@ canvas {
     .powerup-grid { gap: 6px; }
     .level-grid { grid-template-columns:repeat(2,1fr); }
 }
+@media (max-height: 720px) {
+    #startScreen { padding-top:10px; gap:3px; }
+    .brand-frog { font-size:30px; }
+    .brand-title { font-size:27px; }
+    .brand-subtitle, .wallet-status { font-size:11px; }
+    .menu-help { display:none; }
+    .level-card { min-height:45px; }
+    .btn { padding-top:10px; padding-bottom:10px; }
+    .shop-title { font-size:28px; }
+    .shop-subtitle { font-size:12px; }
+    .powerup-grid { gap:7px; margin:6px 0; }
+    .powerup-card { min-height:94px; padding:8px; }
+    .powerup-card .icon { font-size:22px; }
+    .powerup-card .name { font-size:13px; }
+    .powerup-card .desc { font-size:11px; line-height:1.25; }
+}
 </style>
 </head>
 <body>
@@ -124,10 +166,10 @@ canvas {
         <div class="music-bar" style="animation-delay:0.05s;height:12px;"></div>
     </div>
     <div class="overlay show" id="startScreen">
-        <h1 style="font-size:52px;">🐸</h1>
-        <h1 style="font-size:38px;color:#ffd700;">Frog Frenzy</h1>
-        <p style="color:#b2bec3;font-size:14px;margin-bottom:6px;">青蛙过河 · 经典重生</p>
-        <div style="background:rgba(255,215,0,0.08);border-radius:8px;padding:4px 14px;margin-bottom:6px;">
+        <h1 class="brand-frog">🐸</h1>
+        <h1 class="brand-title">Frog Frenzy</h1>
+        <p class="brand-subtitle">青蛙过河 · 经典重生</p>
+        <div class="menu-score">
             <span style="color:#ffd700;font-size:13px;">🏆 最高分: <strong id="highScoreDisplay">0</strong></span>
             <span style="color:#636e72;margin:0 6px;">|</span>
             <span style="color:#ffd700;font-size:13px;">⭐ <span id="totalStarsMenu">0</span></span>
@@ -137,7 +179,7 @@ canvas {
             <div class="wallet-pill">🎒 道具 <span id="inventoryCountMenu">0</span></div>
         </div>
         <div class="wallet-status" id="walletStatus">Google Play 版将自动使用玩家 ID 同步资产</div>
-        <div style="background:rgba(255,255,255,0.05);border-radius:10px;padding:8px 16px;margin:4px 0;max-width:360px;text-align:left;font-size:13px;line-height:1.6;">
+        <div class="menu-help">
             <p>🎮 方向键 / WASD 移动  |  ESC 暂停</p>
             <p>🏠 送青蛙到顶部的家 · 躲车过河</p>
             <p style="color:#ffd700;">🔥 连续送达触发连击加分!</p>
@@ -146,8 +188,8 @@ canvas {
             <div class="level-progress" id="campaignProgress">已通关 0/8</div>
             <div class="level-grid" id="levelGrid"></div>
         </div>
-        <button class="btn btn-start" onclick="startGame()" id="continueBtn">开始冒险</button>
-        <div style="display:flex;gap:6px;margin-top:4px;">
+        <button class="btn btn-start menu-primary" onclick="startGame()" id="continueBtn">开始冒险</button>
+        <div class="menu-actions">
             <button class="btn btn-small btn-powerup" onclick="showShop()">🎁 商店</button>
             <button class="btn btn-small" style="background:#636e72;color:white;min-width:50px;" onclick="toggleSound()" id="soundToggleBtn">🔇</button>
         </div>
@@ -199,14 +241,16 @@ canvas {
         <button class="btn btn-next" onclick="continueEndless()">🏆 无限挑战</button>
         <button class="btn btn-retry btn-small" onclick="backToMenu()">返回菜单</button>
     </div>
-    <div class="overlay fade-in" id="shopScreen">
-        <h1 style="color:#ffd700;">🎁 道具商店</h1>
-        <p style="font-size:13px;">使用金币购买道具，Google Play 版金币由应用内购买获得。</p>
+    <div class="overlay fade-in scroll-panel" id="shopScreen">
+        <h1 class="shop-title">🎁 道具商店</h1>
+        <p class="shop-subtitle">使用金币购买道具，Google Play 版金币由应用内购买获得。</p>
         <div class="wallet-pill" style="margin:5px 0;">🪙 当前金币 <span id="coinBalanceShop">0</span></div>
         <div class="powerup-grid" id="shopPowerups"></div>
         <p style="font-size:12px;color:#636e72;" id="adCountDisplay"></p>
-        <button class="btn btn-powerup btn-small" onclick="showCoinStore()">购买金币</button>
-        <button class="btn btn-retry btn-small" onclick="closeShop()" style="margin-top:6px;">关闭</button>
+        <div class="shop-actions">
+            <button class="btn btn-powerup btn-small" onclick="showCoinStore()">购买金币</button>
+            <button class="btn btn-retry btn-small" onclick="closeShop()">关闭</button>
+        </div>
     </div>
     <div class="overlay" id="pauseScreen">
         <h2>⏸️ 已暂停</h2>
