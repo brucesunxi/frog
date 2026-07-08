@@ -401,6 +401,28 @@ let lastFailType = 'generic', lastFailRow = 14, lastFailCol = 9;
 let levelsBeaten = 0, levelStars = {}, highScore = 0, soundMuted = true, deathAnim = 0;
 let flies = [], flySpawnTimer = 0;
 let clouds = [], roadDecor = [], stars = [], exhaustParticles = [];
+const PRODUCTION_API_BASE = 'https://frog-omega-rose.vercel.app';
+const COIN_PACKS = [
+    { productId:'coins_starter', label:'Starter Pack', coins:300, bonus:0 },
+    { productId:'coins_1000', label:'Small Pouch', coins:1000, bonus:0 },
+    { productId:'coins_5500', label:'Adventure Pack', coins:5500, bonus:500 },
+    { productId:'coins_12000', label:'Challenge Chest', coins:12000, bonus:2000 },
+    { productId:'coins_26000', label:'Master Vault', coins:26000, bonus:6000 }
+];
+
+function isNativeAndroid() {
+    var cap = window.Capacitor;
+    if (!cap) return false;
+    if (typeof cap.getPlatform === 'function') return cap.getPlatform() === 'android';
+    if (typeof cap.isNativePlatform === 'function') return cap.isNativePlatform();
+    return false;
+}
+function getApiUrl(path) {
+    return isNativeAndroid() ? PRODUCTION_API_BASE + path : path;
+}
+function getAppPlatform() {
+    return isNativeAndroid() ? 'android' : 'web';
+}
 
 const ASSET_SOURCES = {
     frog: 'assets/frog.svg',
@@ -536,7 +558,7 @@ function updateWalletUI() {
 async function apiFetch(path, options) {
     var headers = Object.assign({ 'Content-Type':'application/json' }, (options&&options.headers)||{});
     if (playerToken) headers.Authorization='Bearer '+playerToken;
-    var res = await fetch(path, Object.assign({}, options||{}, { headers }));
+    var res = await fetch(getApiUrl(path), Object.assign({}, options||{}, { headers }));
     if (!res.ok) throw new Error(path+' '+res.status);
     return res.json();
 }
@@ -558,7 +580,7 @@ async function syncProgressNow() {
 function getInstallId() {
     var existing = localStorage.getItem('frog_install_id');
     if (existing) return existing;
-    var id = 'web_'+Math.random().toString(36).slice(2)+Date.now().toString(36);
+    var id = getAppPlatform()+'_'+Math.random().toString(36).slice(2)+Date.now().toString(36);
     localStorage.setItem('frog_install_id',id);
     return id;
 }
@@ -566,10 +588,10 @@ async function initPlayerSession() {
     installId = getInstallId();
     playerToken = localStorage.getItem('frog_player_token') || null;
     try {
-        var data = await fetch('/api/play/session',{
+        var data = await fetch(getApiUrl('/api/play/session'),{
             method:'POST',
             headers:{'Content-Type':'application/json'},
-            body:JSON.stringify({ installId:installId, platform:'web', appVersion:'web-preview' })
+            body:JSON.stringify({ installId:installId, platform:getAppPlatform(), appVersion:isNativeAndroid()?'android-1.0.0':'web-preview' })
         }).then(function(r){return r.ok?r.json():null;});
         if (!data) throw new Error('session_failed');
         playerToken=data.token; localStorage.setItem('frog_player_token',playerToken);
@@ -958,9 +980,14 @@ function addPopupAt(text,color,x,y) { popupTexts=popupTexts.filter(function(p){r
 const ITEM_PRICES = { shield:60, slowmo:80, superJump:70, extraLife:90, secondChance:120, revive:100 };
 function getItemPrice(type) { return ITEM_PRICES[type] || 100; }
 function showCoinStore() {
-    setWalletStatus('The Google Play version will open coin packs here.');
+    if (isNativeAndroid()) {
+        showShop();
+        setWalletStatus('Choose a coin pack. Google Play will handle checkout.');
+        return;
+    }
+    setWalletStatus('Web preview coin packs are for browser testing only.');
     document.getElementById('adScreen').classList.add('show');
-    document.getElementById('adMessage').textContent='The Android release will open Google Play Billing here. This web preview does not simulate real payments.';
+    document.getElementById('adMessage').textContent='This browser preview does not simulate real Google Play payments.';
 }
 function showNotEnoughCoins(cost) {
     _adReturnState=state; state=STATE.AD; _adCallback=null;
@@ -1020,6 +1047,35 @@ function buyPreviewCoins(amount) {
     coinBalance += amount;
     setWalletStatus('Web preview added '+amount+' coins. The release version will use Google Play purchases.');
     updateWalletUI(); saveProgress();
+}
+
+async function buyCoinPack(productId, fallbackCoins) {
+    if (!isNativeAndroid()) {
+        buyPreviewCoins(fallbackCoins || 300);
+        return;
+    }
+    try {
+        var plugin = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.FrogBilling;
+        if (!plugin) throw new Error('Billing plugin is unavailable');
+        setWalletStatus('Opening Google Play checkout...');
+        var purchase = await plugin.buyCoins({ productId:productId });
+        if (!purchase || !purchase.purchaseToken) throw new Error('Missing purchase token');
+        setWalletStatus('Verifying purchase...');
+        var data = await apiFetch('/api/purchases/google-play/verify', {
+            method:'POST',
+            body:JSON.stringify({
+                productId:purchase.productId || productId,
+                purchaseToken:purchase.purchaseToken,
+                orderId:purchase.orderId || null
+            })
+        });
+        applyPlayerState(data.state);
+        saveProgress();
+        setWalletStatus('Purchase verified. Coins added to your wallet.');
+        playSound('win');
+    } catch(e) {
+        setWalletStatus(e && e.message ? e.message : 'Purchase could not be completed.');
+    }
 }
 
 // UI
@@ -1104,10 +1160,20 @@ function showShop() {
         card.innerHTML='<div class="icon">'+item.icon+'</div><div class="name">'+item.name+'</div><div class="desc">'+item.desc+'</div><div style="font-size:11px;color:#ffd700;margin-top:3px;">🪙 '+getItemPrice(item.type)+' coins</div>';
         c.appendChild(card);
     });
-    var demo=document.createElement('div'); demo.className='powerup-card';
-    demo.onclick=function(){buyPreviewCoins(300);};
-    demo.innerHTML='<div class="icon">🪙</div><div class="name">Web Preview Coins</div><div class="desc">Browser testing only. Release builds use Google Play purchases.</div><div style="font-size:11px;color:#00d38f;margin-top:3px;">+300 preview coins</div>';
-    c.appendChild(demo);
+    if (isNativeAndroid()) {
+        COIN_PACKS.forEach(function(pack){
+            var card=document.createElement('div'); card.className='powerup-card recommended';
+            card.onclick=function(){buyCoinPack(pack.productId, pack.coins+pack.bonus);};
+            var total = pack.coins + pack.bonus;
+            card.innerHTML='<div class="icon">🪙</div><div class="name">'+pack.label+'</div><div class="desc">Google Play Billing checkout</div><div style="font-size:11px;color:#00d38f;margin-top:3px;">+'+total+' coins</div>';
+            c.appendChild(card);
+        });
+    } else {
+        var demo=document.createElement('div'); demo.className='powerup-card';
+        demo.onclick=function(){buyPreviewCoins(300);};
+        demo.innerHTML='<div class="icon">🪙</div><div class="name">Web Preview Coins</div><div class="desc">Browser testing only. Release builds use Google Play purchases.</div><div style="font-size:11px;color:#00d38f;margin-top:3px;">+300 preview coins</div>';
+        c.appendChild(demo);
+    }
 }
 
 function closeShop() {

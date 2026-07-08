@@ -2,6 +2,7 @@ import 'dotenv/config';
 import crypto from 'node:crypto';
 import express from 'express';
 import jwt from 'jsonwebtoken';
+import { google } from 'googleapis';
 import { neon } from '@neondatabase/serverless';
 import { fileURLToPath } from 'node:url';
 
@@ -11,6 +12,8 @@ const rootDir = fileURLToPath(new URL('.', import.meta.url));
 const databaseUrl = process.env.DATABASE_URL;
 const jwtSecret = process.env.JWT_SECRET;
 const sql = databaseUrl ? neon(databaseUrl) : null;
+const googlePlayPackageName = process.env.GOOGLE_PLAY_PACKAGE_NAME || 'com.frogfrenzy.game';
+let androidPublisherPromise = null;
 
 const STARTER_COINS = 300;
 const MAX_LEVELS = 40;
@@ -22,6 +25,10 @@ const STORE_PRODUCTS = [
   { id: 'coins_12000', kind: 'coins', coins: 12000, bonus: 2000, label: 'Challenge Coin Chest', googlePlayProductId: 'coins_12000' },
   { id: 'coins_26000', kind: 'coins', coins: 26000, bonus: 6000, label: 'Master Coin Vault', googlePlayProductId: 'coins_26000' }
 ];
+
+const STORE_PRODUCTS_BY_PLAY_ID = Object.fromEntries(
+  STORE_PRODUCTS.map((product) => [product.googlePlayProductId, product])
+);
 
 const ITEM_CATALOG = {
   shield: { id: 'shield', name: 'Shield', cost: 60, description: 'Blocks one lethal collision' },
@@ -52,6 +59,29 @@ function hashStableId(value) {
 function normalizeInstallId(value) {
   const text = String(value || '').trim();
   return /^[a-zA-Z0-9_-]{16,80}$/.test(text) ? text : '';
+}
+
+function getGooglePlayCredentials() {
+  const inlineJson = process.env.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON;
+  const base64Json = process.env.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON_BASE64;
+  if (inlineJson) return JSON.parse(inlineJson);
+  if (base64Json) return JSON.parse(Buffer.from(base64Json, 'base64').toString('utf8'));
+  return null;
+}
+
+function getAndroidPublisher() {
+  if (!androidPublisherPromise) {
+    androidPublisherPromise = (async () => {
+      const credentials = getGooglePlayCredentials();
+      if (!credentials) return null;
+      const auth = new google.auth.GoogleAuth({
+        credentials,
+        scopes: ['https://www.googleapis.com/auth/androidpublisher']
+      });
+      return google.androidpublisher({ version: 'v3', auth });
+    })();
+  }
+  return androidPublisherPromise;
 }
 
 function signSession(playerId) {
@@ -330,9 +360,89 @@ app.post('/api/inventory/use', requireServerConfig, requirePlayer, async (req, r
 });
 
 app.post('/api/purchases/google-play/verify', requireServerConfig, requirePlayer, async (req, res) => {
-  res.status(501).json({
-    error: 'google_play_billing_not_connected',
-    message: 'After Play Billing is integrated, send productId and purchaseToken here. The backend will verify the purchase with the Google Play Developer API before crediting coins.'
+  const productId = String(req.body?.productId || '').trim();
+  const purchaseToken = String(req.body?.purchaseToken || '').trim();
+  const product = STORE_PRODUCTS_BY_PLAY_ID[productId];
+  if (!product || product.kind !== 'coins') return res.status(400).json({ error: 'unknown_product' });
+  if (!purchaseToken) return res.status(400).json({ error: 'missing_purchase_token' });
+
+  const existingRows = await sql`
+    select player_id, product_id, purchase_state, coins_granted
+    from google_play_purchases
+    where purchase_token = ${purchaseToken}
+  `;
+  if (existingRows.length) {
+    const existing = existingRows[0];
+    if (existing.player_id !== req.playerId) return res.status(409).json({ error: 'purchase_token_already_bound' });
+    return res.json({ state: await getPlayerState(req.playerId), purchase: existing, duplicate: true });
+  }
+
+  const androidPublisher = await getAndroidPublisher();
+  if (!androidPublisher) {
+    return res.status(503).json({
+      error: 'google_play_credentials_missing',
+      message: 'Set GOOGLE_PLAY_SERVICE_ACCOUNT_JSON or GOOGLE_PLAY_SERVICE_ACCOUNT_JSON_BASE64 in production.'
+    });
+  }
+
+  let verification;
+  try {
+    verification = await androidPublisher.purchases.products.get({
+      packageName: googlePlayPackageName,
+      productId,
+      token: purchaseToken
+    });
+  } catch (error) {
+    return res.status(502).json({
+      error: 'google_play_verification_failed',
+      message: error?.message || 'Google Play verification failed'
+    });
+  }
+
+  const purchase = verification.data || {};
+  if (purchase.purchaseState !== 0) {
+    await sql`
+      insert into google_play_purchases (purchase_token, player_id, product_id, order_id, purchase_state, quantity, coins_granted, raw_response)
+      values (${purchaseToken}, ${req.playerId}, ${productId}, ${purchase.orderId || null}, ${String(purchase.purchaseState ?? 'unknown')}, ${clampInt(purchase.quantity || 1, 1, 99)}, 0, ${JSON.stringify(purchase)})
+      on conflict (purchase_token) do nothing
+    `;
+    return res.status(409).json({ error: 'purchase_not_completed', purchaseState: purchase.purchaseState });
+  }
+
+  const quantity = clampInt(purchase.quantity || 1, 1, 99);
+  const coinsToGrant = (product.coins + product.bonus) * quantity;
+  await sql`
+    insert into google_play_purchases (purchase_token, player_id, product_id, order_id, purchase_state, quantity, coins_granted, raw_response)
+    values (${purchaseToken}, ${req.playerId}, ${productId}, ${purchase.orderId || null}, 'purchased', ${quantity}, ${coinsToGrant}, ${JSON.stringify(purchase)})
+  `;
+  await addCoins(req.playerId, coinsToGrant, 'purchase', `google_play_${productId}`, 'google_play_purchase', purchase.orderId || purchaseToken, {
+    productId,
+    purchaseToken,
+    quantity
+  });
+
+  try {
+    await androidPublisher.purchases.products.consume({
+      packageName: googlePlayPackageName,
+      productId,
+      token: purchaseToken
+    });
+    await sql`
+      update google_play_purchases
+      set consumed_at = now(), purchase_state = 'consumed'
+      where purchase_token = ${purchaseToken}
+    `;
+  } catch (error) {
+    await sql`
+      update google_play_purchases
+      set purchase_state = 'credited_not_consumed'
+      where purchase_token = ${purchaseToken}
+    `;
+  }
+
+  res.json({
+    state: await getPlayerState(req.playerId),
+    purchase: { productId, quantity, coinsGranted: coinsToGrant }
   });
 });
 

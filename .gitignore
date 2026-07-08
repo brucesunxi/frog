@@ -2,3 +2,6 @@
 node_modules/
 .env
 .vercel
+www/
+android/keystores/
+android/release-signing.env

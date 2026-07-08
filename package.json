@@ -6,12 +6,20 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node server.js",
-    "db:init": "node scripts/init-db.js"
+    "db:init": "node scripts/init-db.js",
+    "android:prepare": "node scripts/prepare-capacitor.js && npx cap sync android",
+    "android:keystore": "node scripts/create-android-keystore.js",
+    "android:bundle": "node scripts/build-android-bundle.js",
+    "android:debug": "npm run android:prepare && cd android && ./gradlew assembleDebug"
   },
   "dependencies": {
+    "@capacitor/android": "^6.2.1",
+    "@capacitor/cli": "^6.2.1",
+    "@capacitor/core": "^6.2.1",
     "@neondatabase/serverless": "^0.10.4",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
+    "googleapis": "^173.0.0",
     "jsonwebtoken": "^9.0.2",
     "pg": "^8.22.0"
   }
