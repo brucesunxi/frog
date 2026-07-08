@@ -192,6 +192,7 @@ async function getPlayerState(playerId) {
 
 async function upsertProgress(playerId, progress) {
   const clean = normalizeProgress(progress);
+  const scoreLevelId = clampInt(clean.levelsBeaten || Object.keys(clean.levelStars).length || 1, 1, MAX_LEVELS);
   for (const [levelKey, stars] of Object.entries(clean.levelStars)) {
     const levelId = clampInt(levelKey, 1, MAX_LEVELS);
     await sql`
@@ -201,6 +202,15 @@ async function upsertProgress(playerId, progress) {
         status = 'completed',
         stars = greatest(level_progress.stars, excluded.stars),
         completed_at = coalesce(level_progress.completed_at, now()),
+        updated_at = now()
+    `;
+  }
+  if (clean.highScore > 0) {
+    await sql`
+      insert into level_progress (player_id, level_id, status, best_score, updated_at)
+      values (${playerId}, ${scoreLevelId}, 'unlocked', ${clean.highScore}, now())
+      on conflict (player_id, level_id) do update set
+        best_score = greatest(level_progress.best_score, excluded.best_score),
         updated_at = now()
     `;
   }
