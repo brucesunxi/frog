@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>青蛙过河 - Frog Frenzy</title>
+<title>Frog Frenzy</title>
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; -webkit-tap-highlight-color: transparent; }
 body {
@@ -168,97 +168,97 @@ canvas {
     <div class="overlay show" id="startScreen">
         <h1 class="brand-frog">🐸</h1>
         <h1 class="brand-title">Frog Frenzy</h1>
-        <p class="brand-subtitle">青蛙过河 · 经典重生</p>
+        <p class="brand-subtitle">Classic road-and-river arcade</p>
         <div class="menu-score">
-            <span style="color:#ffd700;font-size:13px;">🏆 最高分: <strong id="highScoreDisplay">0</strong></span>
+            <span style="color:#ffd700;font-size:13px;">🏆 Best: <strong id="highScoreDisplay">0</strong></span>
             <span style="color:#636e72;margin:0 6px;">|</span>
             <span style="color:#ffd700;font-size:13px;">⭐ <span id="totalStarsMenu">0</span></span>
         </div>
         <div class="wallet-panel">
             <div class="wallet-pill">🪙 <span id="coinBalanceMenu">0</span></div>
-            <div class="wallet-pill">🎒 道具 <span id="inventoryCountMenu">0</span></div>
+            <div class="wallet-pill">🎒 Items <span id="inventoryCountMenu">0</span></div>
         </div>
-        <div class="wallet-status" id="walletStatus">Google Play 版将自动使用玩家 ID 同步资产</div>
+        <div class="wallet-status" id="walletStatus">Google Play will sync your wallet with your player ID</div>
         <div class="menu-help">
-            <p>🎮 方向键 / WASD 移动  |  ESC 暂停</p>
-            <p>🏠 送青蛙到顶部的家 · 躲车过河</p>
-            <p style="color:#ffd700;">🔥 连续送达触发连击加分!</p>
+            <p>🎮 Arrow keys / WASD to move  |  ESC to pause</p>
+            <p>🏠 Reach the homes at the top · Dodge traffic and cross rivers</p>
+            <p style="color:#ffd700;">🔥 Chain safe deliveries for combo points!</p>
         </div>
         <div class="level-select">
-            <div class="level-progress" id="campaignProgress">已通关 0/8</div>
+            <div class="level-progress" id="campaignProgress">Cleared 0/8</div>
             <div class="level-grid" id="levelGrid"></div>
         </div>
-        <button class="btn btn-start menu-primary" onclick="startGame()" id="continueBtn">开始冒险</button>
+        <button class="btn btn-start menu-primary" onclick="startGame()" id="continueBtn">Start Run</button>
         <div class="menu-actions">
-            <button class="btn btn-small btn-powerup" onclick="showShop()">🎁 商店</button>
+            <button class="btn btn-small btn-powerup" onclick="showShop()">🎁 Shop</button>
             <button class="btn btn-small" style="background:#636e72;color:white;min-width:50px;" onclick="toggleSound()" id="soundToggleBtn">🔇</button>
         </div>
     </div>
     <div class="overlay fade-in" id="levelCompleteScreen">
         <h1>🎉</h1>
-        <h1 style="color:#ffd700;">恭喜过关！</h1>
-        <h2 id="completeLevelName" style="color:#b2bec3;font-size:16px;">第 1 关</h2>
+        <h1 style="color:#ffd700;">Level Clear!</h1>
+        <h2 id="completeLevelName" style="color:#b2bec3;font-size:16px;">Level 1</h2>
         <div class="stars" id="completeStars">⭐⭐⭐</div>
-        <p>得分: <span class="highlight" id="completeScore">0</span></p>
-        <p>连击最高: <span class="highlight" id="completeCombo">0</span>x</p>
-        <p>时间奖励: <span class="highlight" id="completeTimeBonus">+0</span></p>
-        <div id="nextLevelHook" class="complete-tip">下一关提示</div>
+        <p>Score: <span class="highlight" id="completeScore">0</span></p>
+        <p>Best combo: <span class="highlight" id="completeCombo">0</span>x</p>
+        <p>Time bonus: <span class="highlight" id="completeTimeBonus">+0</span></p>
+        <div id="nextLevelHook" class="complete-tip">Next level tip</div>
         <div style="margin:4px 0;padding:5px 14px;background:rgba(255,215,0,0.1);border-radius:8px;">
-            <span style="color:#b2bec3;font-size:12px;">总星数: </span>
+            <span style="color:#b2bec3;font-size:12px;">Total stars: </span>
             <span id="totalStarsDisplay" style="color:#ffd700;font-size:16px;">⭐ 0</span>
         </div>
         <div class="complete-actions">
-            <button class="btn btn-powerup btn-small" id="prepNextBtn" onclick="prepareNextLevelBoost()">🪙 带补给进下一关</button>
-            <button class="btn btn-next btn-small" onclick="nextLevel()">下一关 →</button>
+            <button class="btn btn-powerup btn-small" id="prepNextBtn" onclick="prepareNextLevelBoost()">🪙 Prep next level</button>
+            <button class="btn btn-next btn-small" onclick="nextLevel()">Next Level →</button>
         </div>
     </div>
     <div class="overlay fade-in" id="gameOverScreen">
         <h1>💀</h1>
-        <h2 style="color:#ff6b6b;">挑战失败</h2>
-        <p id="failLevelName">第 1 关</p>
-        <p id="failReason" style="color:#b2bec3;">生命值耗尽...</p>
-        <div class="fail-insight" id="failInsight">差一点就过了，再试一次。</div>
+        <h2 style="color:#ff6b6b;">Run Failed</h2>
+        <p id="failLevelName">Level 1</p>
+        <p id="failReason" style="color:#b2bec3;">Out of lives...</p>
+        <div class="fail-insight" id="failInsight">So close. One more try.</div>
         <div class="powerup-grid" id="failPowerups"></div>
         <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center;">
-            <button class="btn btn-retry btn-small" onclick="retryLevel()">🔄 再来一次</button>
-            <button class="btn btn-small" style="background:#636e72;color:white;" onclick="backToMenu()">返回菜单</button>
+            <button class="btn btn-retry btn-small" onclick="retryLevel()">🔄 Retry</button>
+            <button class="btn btn-small" style="background:#636e72;color:white;" onclick="backToMenu()">Menu</button>
         </div>
     </div>
     <div class="overlay fade-in" id="adScreen">
-        <h2 style="color:#ffd700;">🪙 金币不足</h2>
-        <p style="margin:8px 0;" id="adMessage">Google Play 版将在这里打开金币购买。</p>
+        <h2 style="color:#ffd700;">🪙 Not Enough Coins</h2>
+        <p style="margin:8px 0;" id="adMessage">The Google Play version will open coin purchases here.</p>
         <div class="ad-countdown" id="adCountdown">🪙</div>
-        <button class="btn btn-powerup btn-small" onclick="showCoinStore()">购买金币</button>
-        <button class="btn btn-small" style="background:#636e72;color:white;font-size:13px;min-width:100px;" onclick="skipAd()">稍后</button>
+        <button class="btn btn-powerup btn-small" onclick="showCoinStore()">Buy Coins</button>
+        <button class="btn btn-small" style="background:#636e72;color:white;font-size:13px;min-width:100px;" onclick="skipAd()">Later</button>
     </div>
     <div class="overlay fade-in" id="winScreen">
         <h1>🏆</h1>
-        <h1 style="color:#ffd700;">恭喜通关！</h1>
-        <p style="font-size:22px;color:#ffd700;margin:6px 0;">全部关卡通关！</p>
-        <p>总分: <span class="highlight" id="finalScore">0</span></p>
-        <p>最高连击: <span class="highlight" id="finalCombo">0</span>x</p>
-        <p>总星数: <span class="highlight" id="finalStars">0</span></p>
-        <button class="btn btn-next" onclick="continueEndless()">🏆 无限挑战</button>
-        <button class="btn btn-retry btn-small" onclick="backToMenu()">返回菜单</button>
+        <h1 style="color:#ffd700;">Campaign Complete!</h1>
+        <p style="font-size:22px;color:#ffd700;margin:6px 0;">All levels cleared!</p>
+        <p>Total score: <span class="highlight" id="finalScore">0</span></p>
+        <p>Best combo: <span class="highlight" id="finalCombo">0</span>x</p>
+        <p>Total stars: <span class="highlight" id="finalStars">0</span></p>
+        <button class="btn btn-next" onclick="continueEndless()">🏆 Endless Run</button>
+        <button class="btn btn-retry btn-small" onclick="backToMenu()">Menu</button>
     </div>
     <div class="overlay fade-in scroll-panel" id="shopScreen">
-        <h1 class="shop-title">🎁 道具商店</h1>
-        <p class="shop-subtitle">使用金币购买道具，Google Play 版金币由应用内购买获得。</p>
-        <div class="wallet-pill" style="margin:5px 0;">🪙 当前金币 <span id="coinBalanceShop">0</span></div>
+        <h1 class="shop-title">🎁 Item Shop</h1>
+        <p class="shop-subtitle">Spend coins on power-ups. In the Google Play version, coins come from in-app purchases.</p>
+        <div class="wallet-pill" style="margin:5px 0;">🪙 Coins <span id="coinBalanceShop">0</span></div>
         <div class="powerup-grid" id="shopPowerups"></div>
         <p style="font-size:12px;color:#636e72;" id="adCountDisplay"></p>
         <div class="shop-actions">
-            <button class="btn btn-powerup btn-small" onclick="showCoinStore()">购买金币</button>
-            <button class="btn btn-retry btn-small" onclick="closeShop()">关闭</button>
+            <button class="btn btn-powerup btn-small" onclick="showCoinStore()">Buy Coins</button>
+            <button class="btn btn-retry btn-small" onclick="closeShop()">Close</button>
         </div>
     </div>
     <div class="overlay" id="pauseScreen">
-        <h2>⏸️ 已暂停</h2>
-        <button class="btn btn-start btn-small" onclick="resumeGame()">继续</button>
-        <button class="btn btn-retry btn-small" onclick="retryLevel();document.getElementById('pauseScreen').classList.remove('show');">🔄 重来</button>
-        <button class="btn btn-small btn-powerup" onclick="showShop()">🎁 商店</button>
+        <h2>⏸️ Paused</h2>
+        <button class="btn btn-start btn-small" onclick="resumeGame()">Resume</button>
+        <button class="btn btn-retry btn-small" onclick="retryLevel();document.getElementById('pauseScreen').classList.remove('show');">🔄 Restart</button>
+        <button class="btn btn-small btn-powerup" onclick="showShop()">🎁 Shop</button>
         <button class="btn btn-small" style="background:#636e72;color:white;min-width:60px;" onclick="toggleSound()" id="pauseSoundBtn">🔇</button>
-        <button class="btn btn-small" style="background:#636e72;color:white;" onclick="backToMenu()">菜单</button>
+        <button class="btn btn-small" style="background:#636e72;color:white;" onclick="backToMenu()">Menu</button>
     </div>
     <div id="exitBtn" style="position:absolute;top:24px;right:68px;z-index:5;cursor:pointer;font-size:15px;width:32px;height:32px;border-radius:50%;background:rgba(0,0,0,0.45);border:1px solid rgba(255,255,255,0.18);color:white;display:none;align-items:center;justify-content:center;transition:all 0.2s;" onclick="backToMenu()" onmouseover="this.style.background='rgba(255,100,100,0.6)';" onmouseout="this.style.background='rgba(0,0,0,0.45)';">✕</div>
     <div id="pauseBtn" style="position:absolute;top:24px;right:32px;z-index:5;cursor:pointer;font-size:18px;width:32px;height:32px;border-radius:50%;background:rgba(0,0,0,0.45);border:1px solid rgba(255,255,255,0.18);color:white;display:none;align-items:center;justify-content:center;transition:all 0.2s;" onclick="if(state===STATE.PLAYING){state=STATE.PAUSED;document.getElementById('pauseScreen').classList.add('show');}" onmouseover="this.style.background='rgba(0,0,0,0.6)';" onmouseout="this.style.background='rgba(0,0,0,0.45)';">⏸</div>
@@ -274,7 +274,7 @@ canvas {
     </div>
 </div>
 <script>
-// FROG FRENZY - 青蛙过河 (欢快增强版)
+// FROG FRENZY - arcade road-and-river crossing
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 const W = 800, H = 640, CELL = 40, COLS = 20, ROWS = 16;
@@ -445,9 +445,9 @@ async function syncProgressNow() {
     try {
         var data = await apiFetch('/api/progress',{ method:'PUT', body:JSON.stringify({ progress:getProgressPayload() }) });
         applyPlayerState(data.state || { progress:data.progress });
-        setWalletStatus('资产与关卡进度已同步');
+        setWalletStatus('Wallet and level progress synced');
     } catch(e) {
-        setWalletStatus('云同步暂时失败，本地进度已保存');
+        setWalletStatus('Cloud sync is unavailable. Local progress is saved.');
     }
 }
 function getInstallId() {
@@ -470,9 +470,9 @@ async function initPlayerSession() {
         playerToken=data.token; localStorage.setItem('frog_player_token',playerToken);
         applyPlayerState(data.state);
         await syncProgressNow();
-        setWalletStatus('本机资产已连接，Google Play 版将自动绑定玩家 ID');
+        setWalletStatus('Wallet connected. Google Play will bind your player ID automatically.');
     } catch(e) {
-        setWalletStatus('离线模式：本地保存金币、道具和进度');
+        setWalletStatus('Offline mode: coins, items, and progress are saved locally.');
         updateWalletUI();
     }
 }
@@ -586,33 +586,33 @@ initAmbient();
 
 // Level Config
 var LEVEL_THEMES = [
-    { road1:"#555", road2:"#666", river1:"#1a5276", river2:"#1a6b8a", grass:"#2d5016", accent:"#ffd700", name:"🌿 郊外清晨" },
-    { road1:"#5a6a4a", road2:"#6a7a5a", river1:"#1a5a6a", river2:"#1a7a8a", grass:"#3a6a2a", accent:"#ffd700", name:"🌾 田园小路" },
-    { road1:"#555", road2:"#666", river1:"#1a5276", river2:"#1a6b8a", grass:"#2d5016", accent:"#feca57", name:"🏡 郊外清晨" },
-    { road1:"#444", road2:"#555", river1:"#1a3a5c", river2:"#1a4a6c", grass:"#3a5a1a", accent:"#ff6b6b", name:"🚗 车水马龙" },
-    { road1:"#3a3040", road2:"#4a3850", river1:"#0d3050", river2:"#0d4060", grass:"#2a4a15", accent:"#a29bfe", name:"🌊 激流勇进" },
-    { road1:"#2a3a4a", road2:"#3a4a5a", river1:"#0a2a3a", river2:"#0a3a4a", grass:"#2a3a15", accent:"#74b9ff", name:"🏙️ 城市穿梭" },
-    { road1:"#4a2020", road2:"#5a2828", river1:"#1a1a3a", river2:"#1a1a4a", grass:"#3a2a10", accent:"#ff7675", name:"🔥 生死时速" },
-    { road1:"#2a2a3a", road2:"#3a3a4a", river1:"#0a1a2a", river2:"#0a2a3a", grass:"#1a3a0a", accent:"#ffd700", name:"👑 最终彼岸" }
+    { road1:"#555", road2:"#666", river1:"#1a5276", river2:"#1a6b8a", grass:"#2d5016", accent:"#ffd700", name:"🌿 Morning Meadow" },
+    { road1:"#5a6a4a", road2:"#6a7a5a", river1:"#1a5a6a", river2:"#1a7a8a", grass:"#3a6a2a", accent:"#ffd700", name:"🌾 Country Lane" },
+    { road1:"#555", road2:"#666", river1:"#1a5276", river2:"#1a6b8a", grass:"#2d5016", accent:"#feca57", name:"🏡 Suburban Dawn" },
+    { road1:"#444", road2:"#555", river1:"#1a3a5c", river2:"#1a4a6c", grass:"#3a5a1a", accent:"#ff6b6b", name:"🚗 Rush Hour" },
+    { road1:"#3a3040", road2:"#4a3850", river1:"#0d3050", river2:"#0d4060", grass:"#2a4a15", accent:"#a29bfe", name:"🌊 Rapid River" },
+    { road1:"#2a3a4a", road2:"#3a4a5a", river1:"#0a2a3a", river2:"#0a3a4a", grass:"#2a3a15", accent:"#74b9ff", name:"🏙️ City Sprint" },
+    { road1:"#4a2020", road2:"#5a2828", river1:"#1a1a3a", river2:"#1a1a4a", grass:"#3a2a10", accent:"#ff7675", name:"🔥 High Stakes" },
+    { road1:"#2a2a3a", road2:"#3a3a4a", river1:"#0a1a2a", river2:"#0a2a3a", grass:"#1a3a0a", accent:"#ffd700", name:"👑 Final Crossing" }
 ];
 function getTheme(lvl) { return LEVEL_THEMES[Math.min(lvl-1, LEVEL_THEMES.length-1)]; }
 function getLevelTimeLimit() { return (levelConfig&&levelConfig.timeLimit) ? levelConfig.timeLimit : DEFAULT_CROSSING_TIME_LIMIT; }
 function getLevelTip(lvl) {
     var tips = [
-        '教学关：观察车道节奏，先稳稳送满目标。',
-        '卡车登场：车身更长，过路前多等半拍。',
-        '乌龟会下潜：别在河面上贪停，减速最有价值。',
-        '双道路夹击：先找安全草地，再分段推进。',
-        '水陆一起提速：超级跳可以跨过危险河段。',
-        '城市高速段：减速能把连续车流拆成可读节奏。',
-        '生死时速：护盾用来保住最后一两次关键冲刺。',
-        '最终彼岸：目标是连续稳定送达，复活能保住本关进度。'
+        'Tutorial: read the traffic rhythm and deliver frogs safely.',
+        'Trucks are longer. Wait an extra beat before crossing.',
+        'Turtles dive. Do not linger on the river.',
+        'Split the route into safe checkpoints.',
+        'Road and river speeds rise together. Super Jump helps.',
+        'City traffic is fast. Slow Motion makes patterns readable.',
+        'High stakes. Save Shield for the final risky crossings.',
+        'Final crossing. Revive can preserve a strong run.'
     ];
-    return tips[Math.min(lvl-1,tips.length-1)] || '终极挑战：速度会持续提高，专注每一次窗口。';
+    return tips[Math.min(lvl-1,tips.length-1)] || 'Ultimate challenge: speeds keep climbing. Focus on every opening.';
 }
 function getLevelStartPopup(lvl) {
-    var tips = ['观察节奏','卡车登场','小心乌龟','分段推进','激流加速','高速穿梭','别贪窗口','最终挑战'];
-    return tips[Math.min(lvl-1,tips.length-1)] || '终极挑战';
+    var tips = ['Read the rhythm','Trucks ahead','Watch the turtles','Use checkpoints','Rapid river','City sprint','Do not rush','Final challenge'];
+    return tips[Math.min(lvl-1,tips.length-1)] || 'Ultimate challenge';
 }
 function getRecommendedPowerup(type) {
     if (type==='water') return 'superJump';
@@ -624,16 +624,16 @@ function getRecommendedPowerup(type) {
 
 function getLevelConfig(lvl) {
     var C = [
-        { name:"🌿 初次跳跃", homesNeeded:3, timeLimit:120, lanes:[{row:13,type:"road",dir:1,speed:.5,objType:"car1",gap:300,width:40},{row:12,type:"road",dir:-1,speed:.6,objType:"car2",gap:280,width:40},{row:11,type:"grass"},{row:10,type:"road",dir:1,speed:.7,objType:"car1",gap:260,width:40},{row:9,type:"road",dir:-1,speed:.8,objType:"car2",gap:240,width:40},{row:7,type:"river",dir:1,speed:.4,objType:"log1",gap:280,width:95},{row:6,type:"grass"},{row:5,type:"river",dir:-1,speed:.5,objType:"log1",gap:260,width:85},{row:4,type:"river",dir:1,speed:.6,objType:"log2",gap:300,width:105},{row:3,type:"grass"}]},
-        { name:"🌾 田园小路", homesNeeded:3, timeLimit:110, lanes:[{row:13,type:"road",dir:1,speed:.7,objType:"car1",gap:270,width:40},{row:12,type:"road",dir:-1,speed:.8,objType:"car2",gap:260,width:40},{row:11,type:"grass"},{row:10,type:"road",dir:1,speed:.9,objType:"car1",gap:240,width:40},{row:9,type:"road",dir:-1,speed:1.0,objType:"truck",gap:290,width:40},{row:8,type:"grass"},{row:7,type:"river",dir:1,speed:.5,objType:"log1",gap:270,width:90},{row:6,type:"grass"},{row:5,type:"river",dir:-1,speed:.6,objType:"log2",gap:280,width:100},{row:4,type:"grass"},{row:3,type:"grass"}]},
-        { name:"🏡 郊外清晨", homesNeeded:4, timeLimit:95, lanes:[{row:13,type:"road",dir:1,speed:1.2,objType:"car1",gap:220,width:40},{row:12,type:"road",dir:-1,speed:1.5,objType:"car2",gap:200,width:40},{row:11,type:"grass"},{row:10,type:"road",dir:1,speed:1.4,objType:"truck",gap:260,width:40},{row:9,type:"road",dir:-1,speed:1.8,objType:"car2",gap:180,width:40},{row:8,type:"grass"},{row:7,type:"river",dir:1,speed:1.0,objType:"log1",gap:200,width:75},{row:6,type:"grass"},{row:5,type:"river",dir:-1,speed:1.2,objType:"turtle",gap:220,width:65},{row:4,type:"river",dir:1,speed:1.5,objType:"log2",gap:230,width:85},{row:3,type:"grass"}]},
-        { name:"🚗 车水马龙", homesNeeded:4, timeLimit:80, lanes:[{row:14,type:"road",dir:1,speed:1.2,objType:"car1",gap:210,width:40},{row:13,type:"grass"},{row:12,type:"road",dir:-1,speed:1.5,objType:"car2",gap:190,width:40},{row:11,type:"road",dir:1,speed:1.0,objType:"truck",gap:280,width:40},{row:10,type:"grass"},{row:9,type:"road",dir:-1,speed:1.4,objType:"car1",gap:200,width:40},{row:8,type:"river",dir:1,speed:0.9,objType:"log1",gap:210,width:65},{row:7,type:"river",dir:-1,speed:1.1,objType:"turtle",gap:200,width:60},{row:6,type:"grass"},{row:5,type:"river",dir:1,speed:1.3,objType:"log2",gap:190,width:70},{row:4,type:"river",dir:-1,speed:1.0,objType:"log1",gap:185,width:55},{row:3,type:"road",dir:1,speed:1.3,objType:"car2",gap:220,width:40}]},
-        { name:"🌊 激流勇进", homesNeeded:5, timeLimit:65, lanes:[{row:13,type:"road",dir:-1,speed:2.5,objType:"car2",gap:145,width:40},{row:12,type:"road",dir:1,speed:3.0,objType:"truck",gap:215,width:40},{row:11,type:"road",dir:-1,speed:2.2,objType:"car1",gap:165,width:40},{row:10,type:"road",dir:1,speed:3.2,objType:"car2",gap:130,width:40},{row:9,type:"road",dir:-1,speed:2.8,objType:"truck",gap:195,width:40},{row:8,type:"grass"},{row:7,type:"river",dir:1,speed:2.0,objType:"log1",gap:165,width:55},{row:6,type:"river",dir:-1,speed:2.2,objType:"turtle",gap:195,width:60},{row:5,type:"river",dir:1,speed:1.6,objType:"log2",gap:205,width:75},{row:4,type:"river",dir:-1,speed:2.5,objType:"log1",gap:155,width:50},{row:3,type:"river",dir:1,speed:1.8,objType:"turtle",gap:185,width:65}]},
-        { name:"🏙️ 城市穿梭", homesNeeded:5, timeLimit:55, lanes:[{row:13,type:"road",dir:1,speed:3.0,objType:"car2",gap:125,width:40},{row:12,type:"road",dir:-1,speed:3.5,objType:"truck",gap:185,width:40},{row:11,type:"road",dir:1,speed:2.8,objType:"car1",gap:140,width:40},{row:10,type:"road",dir:-1,speed:3.5,objType:"car2",gap:120,width:40},{row:9,type:"road",dir:1,speed:3.2,objType:"truck",gap:170,width:40},{row:8,type:"grass"},{row:7,type:"river",dir:-1,speed:2.5,objType:"log2",gap:155,width:55},{row:6,type:"river",dir:1,speed:2.8,objType:"turtle",gap:165,width:50},{row:5,type:"river",dir:-1,speed:3.0,objType:"log1",gap:145,width:48},{row:4,type:"river",dir:1,speed:2.2,objType:"log2",gap:170,width:65},{row:3,type:"grass"}]},
-        { name:"🔥 生死时速", homesNeeded:5, timeLimit:48, lanes:[{row:13,type:"road",dir:1,speed:3.5,objType:"car2",gap:115,width:40},{row:12,type:"road",dir:-1,speed:4.0,objType:"truck",gap:175,width:40},{row:11,type:"road",dir:1,speed:2.8,objType:"car1",gap:135,width:40},{row:10,type:"road",dir:-1,speed:3.5,objType:"car2",gap:125,width:40},{row:9,type:"road",dir:1,speed:4.5,objType:"truck",gap:195,width:40},{row:8,type:"grass"},{row:7,type:"river",dir:-1,speed:2.8,objType:"log1",gap:155,width:48},{row:6,type:"river",dir:1,speed:3.0,objType:"turtle",gap:175,width:55},{row:5,type:"river",dir:-1,speed:3.2,objType:"log2",gap:185,width:68},{row:4,type:"river",dir:1,speed:2.5,objType:"log1",gap:145,width:42},{row:3,type:"river",dir:-1,speed:3.6,objType:"turtle",gap:165,width:50}]},
-        { name:"👑 最终彼岸", homesNeeded:5, timeLimit:42, lanes:[{row:13,type:"road",dir:-1,speed:4.2,objType:"truck",gap:155,width:40},{row:12,type:"road",dir:1,speed:4.8,objType:"car2",gap:105,width:40},{row:11,type:"road",dir:-1,speed:3.6,objType:"car1",gap:125,width:40},{row:10,type:"road",dir:1,speed:5.2,objType:"truck",gap:170,width:40},{row:9,type:"road",dir:-1,speed:4.0,objType:"car2",gap:115,width:40},{row:8,type:"grass"},{row:7,type:"river",dir:1,speed:3.2,objType:"log1",gap:135,width:42},{row:6,type:"river",dir:-1,speed:3.8,objType:"turtle",gap:155,width:48},{row:5,type:"river",dir:1,speed:3.0,objType:"log2",gap:165,width:62},{row:4,type:"river",dir:-1,speed:4.2,objType:"log1",gap:125,width:38},{row:3,type:"river",dir:1,speed:3.5,objType:"turtle",gap:145,width:42}]}
+        { name:"🌿 First Hop", homesNeeded:3, timeLimit:120, lanes:[{row:13,type:"road",dir:1,speed:.5,objType:"car1",gap:300,width:40},{row:12,type:"road",dir:-1,speed:.6,objType:"car2",gap:280,width:40},{row:11,type:"grass"},{row:10,type:"road",dir:1,speed:.7,objType:"car1",gap:260,width:40},{row:9,type:"road",dir:-1,speed:.8,objType:"car2",gap:240,width:40},{row:7,type:"river",dir:1,speed:.4,objType:"log1",gap:280,width:95},{row:6,type:"grass"},{row:5,type:"river",dir:-1,speed:.5,objType:"log1",gap:260,width:85},{row:4,type:"river",dir:1,speed:.6,objType:"log2",gap:300,width:105},{row:3,type:"grass"}]},
+        { name:"🌾 Country Road", homesNeeded:3, timeLimit:110, lanes:[{row:13,type:"road",dir:1,speed:.7,objType:"car1",gap:270,width:40},{row:12,type:"road",dir:-1,speed:.8,objType:"car2",gap:260,width:40},{row:11,type:"grass"},{row:10,type:"road",dir:1,speed:.9,objType:"car1",gap:240,width:40},{row:9,type:"road",dir:-1,speed:1.0,objType:"truck",gap:290,width:40},{row:8,type:"grass"},{row:7,type:"river",dir:1,speed:.5,objType:"log1",gap:270,width:90},{row:6,type:"grass"},{row:5,type:"river",dir:-1,speed:.6,objType:"log2",gap:280,width:100},{row:4,type:"grass"},{row:3,type:"grass"}]},
+        { name:"🏡 Suburban Dawn", homesNeeded:4, timeLimit:95, lanes:[{row:13,type:"road",dir:1,speed:1.2,objType:"car1",gap:220,width:40},{row:12,type:"road",dir:-1,speed:1.5,objType:"car2",gap:200,width:40},{row:11,type:"grass"},{row:10,type:"road",dir:1,speed:1.4,objType:"truck",gap:260,width:40},{row:9,type:"road",dir:-1,speed:1.8,objType:"car2",gap:180,width:40},{row:8,type:"grass"},{row:7,type:"river",dir:1,speed:1.0,objType:"log1",gap:200,width:75},{row:6,type:"grass"},{row:5,type:"river",dir:-1,speed:1.2,objType:"turtle",gap:220,width:65},{row:4,type:"river",dir:1,speed:1.5,objType:"log2",gap:230,width:85},{row:3,type:"grass"}]},
+        { name:"🚗 Rush Hour", homesNeeded:4, timeLimit:80, lanes:[{row:14,type:"road",dir:1,speed:1.2,objType:"car1",gap:210,width:40},{row:13,type:"grass"},{row:12,type:"road",dir:-1,speed:1.5,objType:"car2",gap:190,width:40},{row:11,type:"road",dir:1,speed:1.0,objType:"truck",gap:280,width:40},{row:10,type:"grass"},{row:9,type:"road",dir:-1,speed:1.4,objType:"car1",gap:200,width:40},{row:8,type:"river",dir:1,speed:0.9,objType:"log1",gap:210,width:65},{row:7,type:"river",dir:-1,speed:1.1,objType:"turtle",gap:200,width:60},{row:6,type:"grass"},{row:5,type:"river",dir:1,speed:1.3,objType:"log2",gap:190,width:70},{row:4,type:"river",dir:-1,speed:1.0,objType:"log1",gap:185,width:55},{row:3,type:"road",dir:1,speed:1.3,objType:"car2",gap:220,width:40}]},
+        { name:"🌊 Rapid River", homesNeeded:5, timeLimit:65, lanes:[{row:13,type:"road",dir:-1,speed:2.5,objType:"car2",gap:145,width:40},{row:12,type:"road",dir:1,speed:3.0,objType:"truck",gap:215,width:40},{row:11,type:"road",dir:-1,speed:2.2,objType:"car1",gap:165,width:40},{row:10,type:"road",dir:1,speed:3.2,objType:"car2",gap:130,width:40},{row:9,type:"road",dir:-1,speed:2.8,objType:"truck",gap:195,width:40},{row:8,type:"grass"},{row:7,type:"river",dir:1,speed:2.0,objType:"log1",gap:165,width:55},{row:6,type:"river",dir:-1,speed:2.2,objType:"turtle",gap:195,width:60},{row:5,type:"river",dir:1,speed:1.6,objType:"log2",gap:205,width:75},{row:4,type:"river",dir:-1,speed:2.5,objType:"log1",gap:155,width:50},{row:3,type:"river",dir:1,speed:1.8,objType:"turtle",gap:185,width:65}]},
+        { name:"🏙️ City Sprint", homesNeeded:5, timeLimit:55, lanes:[{row:13,type:"road",dir:1,speed:3.0,objType:"car2",gap:125,width:40},{row:12,type:"road",dir:-1,speed:3.5,objType:"truck",gap:185,width:40},{row:11,type:"road",dir:1,speed:2.8,objType:"car1",gap:140,width:40},{row:10,type:"road",dir:-1,speed:3.5,objType:"car2",gap:120,width:40},{row:9,type:"road",dir:1,speed:3.2,objType:"truck",gap:170,width:40},{row:8,type:"grass"},{row:7,type:"river",dir:-1,speed:2.5,objType:"log2",gap:155,width:55},{row:6,type:"river",dir:1,speed:2.8,objType:"turtle",gap:165,width:50},{row:5,type:"river",dir:-1,speed:3.0,objType:"log1",gap:145,width:48},{row:4,type:"river",dir:1,speed:2.2,objType:"log2",gap:170,width:65},{row:3,type:"grass"}]},
+        { name:"🔥 High Stakes", homesNeeded:5, timeLimit:48, lanes:[{row:13,type:"road",dir:1,speed:3.5,objType:"car2",gap:115,width:40},{row:12,type:"road",dir:-1,speed:4.0,objType:"truck",gap:175,width:40},{row:11,type:"road",dir:1,speed:2.8,objType:"car1",gap:135,width:40},{row:10,type:"road",dir:-1,speed:3.5,objType:"car2",gap:125,width:40},{row:9,type:"road",dir:1,speed:4.5,objType:"truck",gap:195,width:40},{row:8,type:"grass"},{row:7,type:"river",dir:-1,speed:2.8,objType:"log1",gap:155,width:48},{row:6,type:"river",dir:1,speed:3.0,objType:"turtle",gap:175,width:55},{row:5,type:"river",dir:-1,speed:3.2,objType:"log2",gap:185,width:68},{row:4,type:"river",dir:1,speed:2.5,objType:"log1",gap:145,width:42},{row:3,type:"river",dir:-1,speed:3.6,objType:"turtle",gap:165,width:50}]},
+        { name:"👑 Final Crossing", homesNeeded:5, timeLimit:42, lanes:[{row:13,type:"road",dir:-1,speed:4.2,objType:"truck",gap:155,width:40},{row:12,type:"road",dir:1,speed:4.8,objType:"car2",gap:105,width:40},{row:11,type:"road",dir:-1,speed:3.6,objType:"car1",gap:125,width:40},{row:10,type:"road",dir:1,speed:5.2,objType:"truck",gap:170,width:40},{row:9,type:"road",dir:-1,speed:4.0,objType:"car2",gap:115,width:40},{row:8,type:"grass"},{row:7,type:"river",dir:1,speed:3.2,objType:"log1",gap:135,width:42},{row:6,type:"river",dir:-1,speed:3.8,objType:"turtle",gap:155,width:48},{row:5,type:"river",dir:1,speed:3.0,objType:"log2",gap:165,width:62},{row:4,type:"river",dir:-1,speed:4.2,objType:"log1",gap:125,width:38},{row:3,type:"river",dir:1,speed:3.5,objType:"turtle",gap:145,width:42}]}
     ];
-    if (lvl > C.length) { var b = C[C.length-1], m = 1+(lvl-C.length)*.25; return { name:"⚡ 终极 Lv."+lvl, homesNeeded:5, timeLimit:Math.max(20,40-(lvl-8)*3), lanes:b.lanes.map(function(l){ return { ...l, speed:l.speed*m, gap:Math.max(80,l.gap/m)}; }) }; }
+    if (lvl > C.length) { var b = C[C.length-1], m = 1+(lvl-C.length)*.25; return { name:"⚡ Ultimate Lv."+lvl, homesNeeded:5, timeLimit:Math.max(20,40-(lvl-8)*3), lanes:b.lanes.map(function(l){ return { ...l, speed:l.speed*m, gap:Math.max(80,l.gap/m)}; }) }; }
     return C[lvl-1];
 }
 
@@ -656,7 +656,7 @@ function initLevel(lvl) {
     });
     flies = []; flySpawnTimer = 60;
     if (powerups.slowmo>0) powerups.slowmo=300;
-    setTimeout(function(){ if (state===STATE.PLAYING&&levelConfig) addPopup('第 '+level+' 关 · '+getLevelStartPopup(level),'#ffd700'); },220);
+    setTimeout(function(){ if (state===STATE.PLAYING&&levelConfig) addPopup('Level '+level+' · '+getLevelStartPopup(level),'#ffd700'); },220);
 }
 
 function getEffectiveSpeed(l) { return powerups.slowmo>0 ? l.speed*.35 : l.speed; }
@@ -672,8 +672,8 @@ function update() {
     if (state!==STATE.PLAYING) return; frame++;
     if (frogLockTimer>0) frogLockTimer--; if (frogInvincible>0) frogInvincible--;
     levelTimer++;
-    if (levelTimer%60===0) { timeLeft--; if (timeLeft<=0) { rememberFail('time'); gameOver('⏰ 时间耗尽了...'); return; } }
-    if (powerups.slowmo>0) { powerups.slowmo--; if (powerups.slowmo===0) addPopup('⏱️ 减速结束','#ffd700'); }
+    if (levelTimer%60===0) { timeLeft--; if (timeLeft<=0) { rememberFail('time'); gameOver('⏰ Time is up...'); return; } }
+    if (powerups.slowmo>0) { powerups.slowmo--; if (powerups.slowmo===0) addPopup('⏱️ Slow Motion ended','#ffd700'); }
     updateLaneObjects();
     exhaustParticles = exhaustParticles.filter(function(p){ p.life--; p.x+=p.vx; p.y+=p.vy; p.vy-=0.02; return p.life>0; });
     if (frogMoving) {
@@ -693,8 +693,8 @@ function update() {
         var l2 = lanes.find(function(l){return l.row===frog.row;});
         if (l2&&l2.type==='river') {
             var o2 = getObjectUnderFrog();
-            if (o2) { frog.col += getEffectiveSpeed(l2)*l2.dir*.02; if (frog.col<0||frog.col>=COLS) { rememberFail('swept'); gameOver('🌊 被冲走了...'); return; } if (frame%3===0) spawnParticle(frog.col*CELL+20,frog.row*CELL+24,'rgba(100,200,255,0.3)',2); }
-            else if (frogSafe&&!isTurtleUnderFrog()) { rememberFail('water'); gameOver('💦 掉进水里了...'); return; }
+            if (o2) { frog.col += getEffectiveSpeed(l2)*l2.dir*.02; if (frog.col<0||frog.col>=COLS) { rememberFail('swept'); gameOver('🌊 Swept away...'); return; } if (frame%3===0) spawnParticle(frog.col*CELL+20,frog.row*CELL+24,'rgba(100,200,255,0.3)',2); }
+            else if (frogSafe&&!isTurtleUnderFrog()) { rememberFail('water'); gameOver('💦 Fell in the water...'); return; }
         }
     }
     particles = particles.filter(function(p){ p.x+=p.vx; p.y+=p.vy; p.life--; p.vx*=.98; return p.life>0; });
@@ -780,16 +780,16 @@ function checkFrogPosition() {
             score += bonus;
             playSound('home');
             if (comboCount>=2) { playSound('combo'); comboFlash=1; }
-            addPopup(comboCount>=2?'🔥 '+comboCount+'x 连击! +'+bonus:'+'+bonus, comboCount>=2?'#ff6b6b':'#ffd700');
+            addPopup(comboCount>=2?'🔥 '+comboCount+'x Combo! +'+bonus:'+'+bonus, comboCount>=2?'#ff6b6b':'#ffd700');
             spawnParticle(h.x+20,h.y+20,'#ffd700',20); spawnParticle(h.x+20,h.y+20,'#ff6b6b',10); spawnParticle(h.x+20,h.y+20,'#feca57',15);
             restoreCrossingTime();
-            if (comboCount>=3) { var msgs = ['🔥 3连击!','🔥🔥 4连击!','🔥🔥🔥 5连击!','💥 超神!','💥💥 无敌!']; addPopup(msgs[Math.min(comboCount-3,msgs.length-1)],'#ff6b6b'); }
+            if (comboCount>=3) { var msgs = ['🔥 3 Combo!','🔥🔥 4 Combo!','🔥🔥🔥 5 Combo!','💥 Amazing!','💥💥 Unstoppable!']; addPopup(msgs[Math.min(comboCount-3,msgs.length-1)],'#ff6b6b'); }
             if (homesFilled>=homesNeeded) { setTimeout(function(){levelComplete();},400); return; }
             frog.row=14; frog.col=9; frogSafe=true; frogLockTimer=20;
-            addPopup('⬇️  回到起点','#ffd700'); return;
+            addPopup('⬇️ Back to start','#ffd700'); return;
         }
         frog.row=14; frog.col=9; frogSafe=true; frogLockTimer=20;
-        addPopup('⚠️ 此坑已占! 换一个目标','#ffd700'); return;
+        addPopup('⚠️ Home occupied! Pick another','#ffd700'); return;
     }
     if (lane&&lane.type==='road') { if (checkRoadCollision()) frogHit('road'); return; }
     if (lane&&lane.type==='river') { var o = getObjectUnderFrog(); if (!o&&!isTurtleUnderFrog()) { frogHit('water'); return; } frogSafe=true; if (frame%20===0) spawnParticle(frog.col*CELL+20,frog.row*CELL+30,'rgba(100,200,255,0.2)',3); return; }
@@ -821,13 +821,13 @@ function continuePlayingAfterAd(text) {
 
 function frogHit(type) { if (frogInvincible>0) return;
     rememberFail(type||'road');
-    if (powerups.shield>0) { powerups.shield--; flashOverlay=1; flashColor='#00b894'; playSound('shield'); addPopup('🛡️ 护盾抵挡!','#00b894'); spawnParticle(frog.col*CELL+20,frog.row*CELL+20,'#00b894',15); frog.row=Math.min(14,frog.row+1); frog.col=Math.max(0,Math.min(COLS-1,frog.col)); justSavedByShield=true; return; }
+    if (powerups.shield>0) { powerups.shield--; flashOverlay=1; flashColor='#00b894'; playSound('shield'); addPopup('🛡️ Shield blocked it!','#00b894'); spawnParticle(frog.col*CELL+20,frog.row*CELL+20,'#00b894',15); frog.row=Math.min(14,frog.row+1); frog.col=Math.max(0,Math.min(COLS-1,frog.col)); justSavedByShield=true; return; }
     deathAnim=30; screenShake=8; flashOverlay=1; flashColor='#ff6b6b'; comboCount=0;
     playSound('die');
     spawnParticle(frog.col*CELL+20,frog.row*CELL+20,'#ff6b6b',25); spawnParticle(frog.col*CELL+20,frog.row*CELL+20,'#ffd700',15); spawnParticle(frog.col*CELL+20,frog.row*CELL+20,'#ff9ff3',10);
     state=STATE.DYING;
-    if (powerups.secondChance>0) { powerups.secondChance--; addPopup('💫 附近复活!','#a29bfe'); setTimeout(function(){var spot=findReviveSpot();frog.row=spot.row;frog.col=spot.col;frogMoving=false;frogSafe=true;frogInvincible=60;state=STATE.PLAYING;},800); return; }
-    setTimeout(function(){lives--;if(lives<=0){gameOver('💀 生命值耗尽...');return;}frog.row=14;frog.col=9;frogMoving=false;frogSafe=true;frogInvincible=45;state=STATE.PLAYING;addPopup('❤️ 剩余 '+lives+' 条命','#ff6b6b');},600);
+    if (powerups.secondChance>0) { powerups.secondChance--; addPopup('💫 Revived nearby!','#a29bfe'); setTimeout(function(){var spot=findReviveSpot();frog.row=spot.row;frog.col=spot.col;frogMoving=false;frogSafe=true;frogInvincible=60;state=STATE.PLAYING;},800); return; }
+    setTimeout(function(){lives--;if(lives<=0){gameOver('💀 Out of lives...');return;}frog.row=14;frog.col=9;frogMoving=false;frogSafe=true;frogInvincible=45;state=STATE.PLAYING;addPopup('❤️ '+lives+' lives left','#ff6b6b');},600);
 }
 
 function moveFrog(dr,dc) {
@@ -840,7 +840,7 @@ function moveFrog(dr,dc) {
     for (var i=0;i<3;i++) spawnParticle(frog.col*CELL+20,frog.row*CELL+20,'#feca57',1.5);
     if (powerups.superJump>0&&dr!==0) {
         var nr2=frog.row+dr*2, nc2=frog.col+dc*2;
-        if (nr2>=0&&nr2<ROWS&&nc2>=0&&nc2<COLS) { frogTarget={row:nr2,col:nc2}; frogDir={dr:dr*2,dc:dc*2}; frogMoving=true; frogAnim=0; powerups.superJump--; if (powerups.superJump===0) addPopup('🦘 超级跳用完','#ffd700'); return; }
+        if (nr2>=0&&nr2<ROWS&&nc2>=0&&nc2<COLS) { frogTarget={row:nr2,col:nc2}; frogDir={dr:dr*2,dc:dc*2}; frogMoving=true; frogAnim=0; powerups.superJump--; if (powerups.superJump===0) addPopup('🦘 Super Jump used up','#ffd700'); return; }
     }
     frogTarget={row:nr,col:nc}; frogDir={dr,dc}; frogMoving=true; frogAnim=0;
 }
@@ -853,24 +853,24 @@ function addPopupAt(text,color,x,y) { popupTexts=popupTexts.filter(function(p){r
 const ITEM_PRICES = { shield:60, slowmo:80, superJump:70, extraLife:90, secondChance:120, revive:100 };
 function getItemPrice(type) { return ITEM_PRICES[type] || 100; }
 function showCoinStore() {
-    setWalletStatus('Google Play 版将在这里调起应用内购买金币包');
+    setWalletStatus('The Google Play version will open coin packs here.');
     document.getElementById('adScreen').classList.add('show');
-    document.getElementById('adMessage').textContent='正式 Android 版会打开 Google Play Billing 金币包；当前 Web 预览不会模拟真实付款。';
+    document.getElementById('adMessage').textContent='The Android release will open Google Play Billing here. This web preview does not simulate real payments.';
 }
 function showNotEnoughCoins(cost) {
     _adReturnState=state; state=STATE.AD; _adCallback=null;
     document.getElementById('adScreen').classList.add('show');
-    document.getElementById('adMessage').textContent='还需要 '+cost+' 金币。Google Play 版会在这里购买金币包。';
+    document.getElementById('adMessage').textContent='You need '+cost+' more coins. The Google Play version will offer coin packs here.';
     document.getElementById('adCountdown').textContent='🪙';
 }
 function skipAd(){document.getElementById('adScreen').classList.remove('show'); if(state===STATE.AD) state=_adReturnState;}
 
 function grantPowerup(type) {
-    if (type==='shield') { powerups.shield=(powerups.shield||0)+1; addPopup('🛡️ 获得护盾!','#00b894'); playSound('shield'); return true; }
-    if (type==='slowmo') { powerups.slowmo=600; addPopup('⏱️ 时间减速!','#fdcb6e'); playSound('shield'); return true; }
-    if (type==='superJump') { powerups.superJump=(powerups.superJump||0)+3; addPopup('🦘 获得超级跳!','#a29bfe'); playSound('shield'); return true; }
-    if (type==='extraLife') { lives=Math.min(maxLives,lives+1); addPopup('❤️ +1 生命!','#ff6b6b'); playSound('win'); return true; }
-    if (type==='secondChance') { powerups.secondChance=(powerups.secondChance||0)+1; addPopup('💫 获得续命!','#a29bfe'); playSound('shield'); return true; }
+    if (type==='shield') { powerups.shield=(powerups.shield||0)+1; addPopup('🛡️ Shield ready!','#00b894'); playSound('shield'); return true; }
+    if (type==='slowmo') { powerups.slowmo=600; addPopup('⏱️ Slow Motion!','#fdcb6e'); playSound('shield'); return true; }
+    if (type==='superJump') { powerups.superJump=(powerups.superJump||0)+3; addPopup('🦘 Super Jump ready!','#a29bfe'); playSound('shield'); return true; }
+    if (type==='extraLife') { lives=Math.min(maxLives,lives+1); addPopup('❤️ +1 Life!','#ff6b6b'); playSound('win'); return true; }
+    if (type==='secondChance') { powerups.secondChance=(powerups.secondChance||0)+1; addPopup('💫 Second Chance ready!','#a29bfe'); playSound('shield'); return true; }
     return false;
 }
 
@@ -883,24 +883,24 @@ async function spendCoinsForItem(type,quantity) {
         var data = await apiFetch('/api/wallet/spend',{ method:'POST', body:JSON.stringify({ itemId:type, quantity:quantity, levelId:level }) });
         applyPlayerState(data.state);
     } catch(e) {
-        setWalletStatus('离线消费已记录，本地继续游戏');
+        setWalletStatus('Offline spend recorded. You can keep playing locally.');
     }
     return true;
 }
 async function useCoinPowerup(type,mode) {
-    var names={shield:'🛡️ 护盾',slowmo:'⏱️ 减速',superJump:'🦘 超级跳',extraLife:'❤️ 额外生命',secondChance:'💫 自动续命'};
+    var names={shield:'🛡️ Shield',slowmo:'⏱️ Slow Motion',superJump:'🦘 Super Jump',extraLife:'❤️ Extra Life',secondChance:'💫 Second Chance'};
     mode = mode || 'bank';
     if (!names[type]) return;
     if (!(await spendCoinsForItem(type,1))) return;
     grantPowerup(type);
     if (mode==='continue') {
-        var spot=findReviveSpot(); frog.row=spot.row; frog.col=spot.col; continuePlayingAfterAd('道具已生效，继续挑战!');
+        var spot=findReviveSpot(); frog.row=spot.row; frog.col=spot.col; continuePlayingAfterAd('Power-up active. Keep going!');
     }
 }
 
 async function reviveWithCoins() {
     if (!(await spendCoinsForItem('revive',1))) return;
-    var spot=findReviveSpot();frog.row=spot.row;frog.col=spot.col;lives=Math.max(1,lives+1);powerups.shield=(powerups.shield||0)+1;playSound('win');continuePlayingAfterAd('复活+护盾，继续冲!');
+    var spot=findReviveSpot();frog.row=spot.row;frog.col=spot.col;lives=Math.max(1,lives+1);powerups.shield=(powerups.shield||0)+1;playSound('win');continuePlayingAfterAd('Revived with Shield. Keep pushing!');
 }
 
 function useAdPowerup(type,mode) {
@@ -913,7 +913,7 @@ function reviveAfterAd() {
 
 function buyPreviewCoins(amount) {
     coinBalance += amount;
-    setWalletStatus('Web 预览已增加 '+amount+' 金币；正式版由 Google Play 购买入账');
+    setWalletStatus('Web preview added '+amount+' coins. The release version will use Google Play purchases.');
     updateWalletUI(); saveProgress();
 }
 
@@ -924,22 +924,22 @@ function renderLevelSelect() {
     var grid=document.getElementById('levelGrid');
     if (!grid) return;
     grid.innerHTML='';
-    document.getElementById('campaignProgress').textContent='已通关 '+Math.min(levelsBeaten,CAMPAIGN_LEVELS)+'/'+CAMPAIGN_LEVELS+' · 已解锁第 '+getUnlockedLevel()+' 关';
+    document.getElementById('campaignProgress').textContent='Cleared '+Math.min(levelsBeaten,CAMPAIGN_LEVELS)+'/'+CAMPAIGN_LEVELS+' · Level '+getUnlockedLevel()+' unlocked';
     var btn=document.getElementById('continueBtn');
-    if (btn) btn.textContent = levelsBeaten>0 ? '继续第 '+getUnlockedLevel()+' 关' : '开始冒险';
+    if (btn) btn.textContent = levelsBeaten>0 ? 'Continue Level '+getUnlockedLevel() : 'Start Run';
     for (var i=1;i<=CAMPAIGN_LEVELS;i++) {
         var cfg=getLevelConfig(i), unlocked=isLevelUnlocked(i), cleared=i<=levelsBeaten, stars=levelStars[i]||0;
         var card=document.createElement('button');
         card.className='level-card '+(unlocked?'':'locked ')+(cleared?'cleared ':'')+(i===getUnlockedLevel()&&!cleared?'current':'');
         card.disabled=!unlocked;
         card.onclick=(function(lvl){return function(){startLevel(lvl);};})(i);
-        card.innerHTML='<div class="num">'+(cleared?'✓':'第 '+i+' 关')+'</div><div class="title">'+cfg.name.replace(/^\S+\s*/,'')+'</div><div class="stars-mini">'+(unlocked?('★'.repeat(stars)+'☆'.repeat(3-stars)):'🔒 未解锁')+'</div>';
+        card.innerHTML='<div class="num">'+(cleared?'✓':'Level '+i)+'</div><div class="title">'+cfg.name.replace(/^\S+\s*/,'')+'</div><div class="stars-mini">'+(unlocked?('★'.repeat(stars)+'☆'.repeat(3-stars)):'🔒 Locked')+'</div>';
         grid.appendChild(card);
     }
 }
 
 function startLevel(lvl) {
-    if (!isLevelUnlocked(lvl)) { addPopup('先通关上一关解锁','#ffd700'); return; }
+    if (!isLevelUnlocked(lvl)) { addPopup('Clear the previous level first','#ffd700'); return; }
     document.getElementById('startScreen').classList.remove('show');
     score=0;lives=maxLives;homes=[];maxCombo=0;
     powerups={shield:0,slowmo:0,superJump:0,secondChance:0};
@@ -955,12 +955,12 @@ function startGame() { startLevel(getUnlockedLevel()); }
 
 function getFailInsight() {
     var left = Math.max(0,homesNeeded-homesFilled);
-    var base = left<=1 ? '只差最后一个目标。' : '已经完成 '+homesFilled+'/'+homesNeeded+' 个目标。';
-    if (lastFailType==='road') return base+'车流窗口很窄，护盾能把一次失误变成继续冲。';
-    if (lastFailType==='water') return base+'河面落点不够稳，超级跳可以跨过最危险的一段。';
-    if (lastFailType==='swept') return base+'被水流带出边界，减速能放大可操作窗口。';
-    if (lastFailType==='time') return base+'时间压力是主因，减速能让最后几次送达更稳。';
-    return base+'继续本关会保留已送达目标，别让这局断掉。';
+    var base = left<=1 ? 'Only one home left. ' : 'You already filled '+homesFilled+'/'+homesNeeded+' homes. ';
+    if (lastFailType==='road') return base+'Traffic windows are tight. Shield can turn one mistake into a save.';
+    if (lastFailType==='water') return base+'River landings are risky. Super Jump skips the worst gap.';
+    if (lastFailType==='swept') return base+'The current pulled you out. Slow Motion widens the timing window.';
+    if (lastFailType==='time') return base+'Time pressure got you. Slow Motion can stabilize the final push.';
+    return base+'Keep this run alive and preserve your completed homes.';
 }
 
 function renderFailOffers() {
@@ -968,22 +968,22 @@ function renderFailOffers() {
     document.getElementById('failInsight').textContent = getFailInsight();
     var c=document.getElementById('failPowerups'); c.innerHTML='';
     var items=[
-        {type:'revive',icon:'💫',name:'继续本关',desc:'附近复活+护盾，保住已送达目标'},
-        {type:recommended,icon:recommended==='shield'?'🛡️':(recommended==='slowmo'?'⏱️':'🦘'),name:recommended==='shield'?'推荐：护盾':(recommended==='slowmo'?'推荐：减速':'推荐：超级跳'),desc:recommended==='shield'?'适合车流关，挡下一次致命撞击':(recommended==='slowmo'?'适合高速/倒计时，把节奏慢下来':'适合河流关，跨过短木头和空档')},
-        {type:'secondChance',icon:'💫',name:'自动续命',desc:'下一次失误自动附近复活一次'},
-        {type:'extraLife',icon:'❤️',name:'额外生命',desc:'补一条命，适合继续磨本关'}
+        {type:'revive',icon:'💫',name:'Continue Run',desc:'Revive nearby with Shield and keep filled homes'},
+        {type:recommended,icon:recommended==='shield'?'🛡️':(recommended==='slowmo'?'⏱️':'🦘'),name:recommended==='shield'?'Recommended: Shield':(recommended==='slowmo'?'Recommended: Slow Motion':'Recommended: Super Jump'),desc:recommended==='shield'?'Best for traffic. Blocks one lethal hit.':(recommended==='slowmo'?'Best for speed and timers. Slows the pattern.':'Best for river gaps and short logs.')},
+        {type:'secondChance',icon:'💫',name:'Second Chance',desc:'Automatically revive nearby after one mistake'},
+        {type:'extraLife',icon:'❤️',name:'Extra Life',desc:'Add one life for this run'}
     ];
     items.forEach(function(item,idx){
         var card=document.createElement('div'); card.className='powerup-card'+(idx<2?' recommended':'');
         card.onclick=function(){if(item.type==='revive')reviveAfterAd(); else useAdPowerup(item.type,'continue');};
-        card.innerHTML='<div class="icon">'+item.icon+'</div><div class="name">'+item.name+'</div><div class="desc">'+item.desc+'</div><div style="font-size:11px;color:#ffd700;margin-top:3px;">🪙 '+getItemPrice(item.type)+' 金币</div>';
+        card.innerHTML='<div class="icon">'+item.icon+'</div><div class="name">'+item.name+'</div><div class="desc">'+item.desc+'</div><div style="font-size:11px;color:#ffd700;margin-top:3px;">🪙 '+getItemPrice(item.type)+' coins</div>';
         c.appendChild(card);
     });
 }
 
 function showFailScreen() {
     document.getElementById('gameOverScreen').classList.add('show');
-    document.getElementById('failLevelName').textContent='第 '+level+' 关 · '+levelConfig.name; document.getElementById('failReason').textContent=lives<=0?'💀 生命值耗尽...':'💀 挑战失败...';
+    document.getElementById('failLevelName').textContent='Level '+level+' · '+levelConfig.name; document.getElementById('failReason').textContent=lives<=0?'💀 Out of lives...':'💀 Run failed...';
     renderFailOffers();
 }
 
@@ -993,15 +993,15 @@ function showShop() {
     ['startScreen','pauseScreen','gameOverScreen'].forEach(function(id){document.getElementById(id).classList.remove('show');});
     document.getElementById('shopScreen').classList.add('show');
     var c=document.getElementById('shopPowerups'); c.innerHTML='';
-    [{type:'shield',icon:'🛡️',name:'护盾',desc:'车流密集关最稳，抵挡一次致命撞击'},{type:'slowmo',icon:'⏱️',name:'时间减速',desc:'高速关核心道具，10秒内速度降低65%'},{type:'superJump',icon:'🦘',name:'超级跳',desc:'河流短木头关好用，3次跳跃两格'},{type:'secondChance',icon:'💫',name:'自动续命',desc:'失误后附近复活一次，保住连击节奏'},{type:'extraLife',icon:'❤️',name:'额外生命',desc:'增加一条命，上限5条'}].forEach(function(item){
+    [{type:'shield',icon:'🛡️',name:'Shield',desc:'Blocks one lethal hit. Best for heavy traffic.'},{type:'slowmo',icon:'⏱️',name:'Slow Motion',desc:'Slows hazards by 65% for 10 seconds.'},{type:'superJump',icon:'🦘',name:'Super Jump',desc:'Great for rivers. Jump two tiles 3 times.'},{type:'secondChance',icon:'💫',name:'Second Chance',desc:'Revive nearby once after a mistake.'},{type:'extraLife',icon:'❤️',name:'Extra Life',desc:'Add one life, up to 5 lives.'}].forEach(function(item){
         var card=document.createElement('div');card.className='powerup-card';
         card.onclick=function(){useCoinPowerup(item.type,'bank');};
-        card.innerHTML='<div class="icon">'+item.icon+'</div><div class="name">'+item.name+'</div><div class="desc">'+item.desc+'</div><div style="font-size:11px;color:#ffd700;margin-top:3px;">🪙 '+getItemPrice(item.type)+' 金币</div>';
+        card.innerHTML='<div class="icon">'+item.icon+'</div><div class="name">'+item.name+'</div><div class="desc">'+item.desc+'</div><div style="font-size:11px;color:#ffd700;margin-top:3px;">🪙 '+getItemPrice(item.type)+' coins</div>';
         c.appendChild(card);
     });
     var demo=document.createElement('div'); demo.className='powerup-card';
     demo.onclick=function(){buyPreviewCoins(300);};
-    demo.innerHTML='<div class="icon">🪙</div><div class="name">Web 预览金币</div><div class="desc">仅用于浏览器测试；正式版使用 Google Play 购买</div><div style="font-size:11px;color:#00d38f;margin-top:3px;">+300 预览金币</div>';
+    demo.innerHTML='<div class="icon">🪙</div><div class="name">Web Preview Coins</div><div class="desc">Browser testing only. Release builds use Google Play purchases.</div><div style="font-size:11px;color:#00d38f;margin-top:3px;">+300 preview coins</div>';
     c.appendChild(demo);
 }
 
@@ -1024,7 +1024,7 @@ function levelComplete() {
     levelsBeaten = Math.max(levelsBeaten,Math.min(level,CAMPAIGN_LEVELS));
     if (score>highScore) highScore=score;
     saveProgress();
-    document.getElementById('completeLevelName').textContent='第 '+level+' 关 · '+levelConfig.name;
+    document.getElementById('completeLevelName').textContent='Level '+level+' · '+levelConfig.name;
     document.getElementById('completeScore').textContent=score; document.getElementById('completeCombo').textContent=maxCombo;
     document.getElementById('completeTimeBonus').textContent='+'+Math.max(0,timeLeft)*2;
     document.getElementById('completeStars').textContent='★'.repeat(st)+'☆'.repeat(3-st);
@@ -1032,11 +1032,11 @@ function levelComplete() {
     var next = level+1;
     var prep = document.getElementById('prepNextBtn');
     if (next<=8) {
-        document.getElementById('nextLevelHook').textContent='下一关提示：'+getLevelStartPopup(next)+'。'+getPrepPowerupForLevel(next).replace('shield','护盾').replace('slowmo','减速').replace('superJump','超级跳')+'会更稳。';
+        document.getElementById('nextLevelHook').textContent='Next tip: '+getLevelStartPopup(next)+' Bring '+getPrepPowerupForLevel(next).replace('shield','Shield').replace('slowmo','Slow Motion').replace('superJump','Super Jump')+' for a cleaner run.';
         prep.style.display='inline-block';
-        prep.textContent='🪙 带补给进第 '+next+' 关';
+        prep.textContent='🪙 Prep Boost for Level '+next;
     } else {
-        document.getElementById('nextLevelHook').textContent='已完成主线，接下来进入无限挑战。';
+        document.getElementById('nextLevelHook').textContent='Main campaign cleared. Endless mode is unlocked.';
         prep.style.display='none';
     }
 }
@@ -1052,10 +1052,10 @@ function prepareNextLevelBoost() {
     var next = level+1;
     if (next>8) return;
     var type = getPrepPowerupForLevel(next);
-    var names={shield:'护盾',slowmo:'减速',superJump:'超级跳'};
+    var names={shield:'Shield',slowmo:'Slow Motion',superJump:'Super Jump'};
     spendCoinsForItem(type,1).then(function(ok){
         if(!ok) return;
-        grantPowerup(type);document.getElementById('levelCompleteScreen').classList.remove('show');initLevel(next);state=STATE.PLAYING;addPopup('已带入'+names[type]+'补给','#ffd700');
+        grantPowerup(type);document.getElementById('levelCompleteScreen').classList.remove('show');initLevel(next);state=STATE.PLAYING;addPopup(names[type]+' boost equipped','#ffd700');
     });
 }
 
@@ -1075,7 +1075,7 @@ function nextLevel() {
 function gameOver(reason) {
     stopMusic(); state=STATE.GAME_OVER; if (score>highScore) highScore=score; saveProgress();
     document.getElementById('gameOverScreen').classList.add('show');
-    document.getElementById('failLevelName').textContent='第 '+level+' 关 · '+levelConfig.name;
+    document.getElementById('failLevelName').textContent='Level '+level+' · '+levelConfig.name;
     document.getElementById('failReason').textContent=reason;
     renderFailOffers();
 }
@@ -1092,7 +1092,7 @@ function retryLevel() {
 function resumeGame() { state=STATE.PLAYING; document.getElementById('pauseScreen').classList.remove('show'); }
 function continueEndless() { document.getElementById('winScreen').classList.remove('show'); initLevel(levelsBeaten+1); state=STATE.PLAYING; }
 function backToMenu() { stopMusic(); state=STATE.MENU; document.getElementById('pauseBtn').style.display='none'; document.getElementById('exitBtn').style.display='none'; ['pauseScreen','gameOverScreen','levelCompleteScreen','winScreen','shopScreen'].forEach(function(id){document.getElementById(id).classList.remove('show');}); document.getElementById('startScreen').classList.add('show'); document.getElementById('highScoreDisplay').textContent=highScore; document.getElementById('totalStarsMenu').textContent=totalStars; renderLevelSelect(); document.getElementById('musicIndicator').classList.remove('show'); }
-function updateAdCount() { var e=document.getElementById('adCountDisplay'); if(e) e.textContent='金币消费会记录到账本，Google Play 购买接入后可跨设备恢复'; }
+function updateAdCount() { var e=document.getElementById('adCountDisplay'); if(e) e.textContent='Coin spending is recorded locally and will restore across devices after Google Play purchases are connected.'; }
 updateAdCount(); refreshMenuStats(); initPlayerSession();
 document.getElementById('soundToggleBtn').textContent='🔇'; var pb=document.getElementById('pauseSoundBtn'); if(pb) pb.textContent='🔇';
 
@@ -1332,7 +1332,7 @@ function drawFlies() {
         if (!drawAsset('fly',x-14,y-14,28,28,false)) {
             ctx.font='14px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('🪰',x,y);
         }
-        if (f.life<60) { var a=f.life/60; ctx.fillStyle='rgba(255,100,100,'+(a*0.5)+')'; ctx.font='10px sans-serif'; ctx.textBaseline='bottom'; ctx.fillText('即将消失',x,y-14); }
+        if (f.life<60) { var a=f.life/60; ctx.fillStyle='rgba(255,100,100,'+(a*0.5)+')'; ctx.font='10px sans-serif'; ctx.textBaseline='bottom'; ctx.fillText('Fading',x,y-14); }
     });
 }
 
@@ -1358,7 +1358,7 @@ function drawHomes() {
         ctx.textAlign='center'; ctx.textBaseline='alphabetic';
         ctx.fillStyle='rgba(255,107,107,'+(Math.min(1,comboFlash))+')';
         ctx.font='bold '+(20+comboFlash*8)+'px sans-serif';
-        ctx.fillText('🔥 '+comboCount+'x 连击!',400,110);
+        ctx.fillText('🔥 '+comboCount+'x Combo!',400,110);
         for (var i=0;i<3;i++) spawnParticle(380+Math.random()*40,100+Math.random()*20,'#ff6b6b',3);
     }
 }
@@ -1412,14 +1412,14 @@ function drawHUD() {
     ctx.fillStyle='#ffd700'; ctx.font='bold 14px sans-serif'; ctx.fillText('🏠 '+homesFilled+'/'+homesNeeded,10,17);
     var ls=''; for(var i=0;i<lives;i++)ls+='❤️'; for(var i=lives;i<maxLives;i++)ls+='🖤';
     ctx.fillStyle='#ff6b6b'; ctx.font='13px sans-serif'; ctx.fillText(ls+' ×'+lives,82,17);
-    ctx.fillStyle=th.accent; ctx.font='bold 15px sans-serif'; ctx.textAlign='center'; ctx.fillText('第 '+level+' 关 · '+levelConfig.name,360,17);
+    ctx.fillStyle=th.accent; ctx.font='bold 15px sans-serif'; ctx.textAlign='center'; ctx.fillText('Level '+level+' · '+levelConfig.name,360,17);
     drawTimerPanel();
-    ctx.textAlign='right'; ctx.fillStyle='#ffd700'; ctx.font='bold 14px sans-serif'; ctx.fillText('得分: '+score,712,17);
+    ctx.textAlign='right'; ctx.fillStyle='#ffd700'; ctx.font='bold 14px sans-serif'; ctx.fillText('Score: '+score,712,17);
     var y=86; ctx.textAlign='left'; ctx.font='12px sans-serif'; ctx.textBaseline='alphabetic';
     if(powerups.shield>0){ctx.fillStyle='#00b894';ctx.fillText('🛡️ '+powerups.shield,10,y);y+=15;}
     if(powerups.slowmo>0){ctx.fillStyle='#fdcb6e';ctx.fillText('⏱️ '+Math.ceil(powerups.slowmo/60)+'s',10,y);y+=15;}
     if(powerups.superJump>0){ctx.fillStyle='#a29bfe';ctx.fillText('🦘 '+powerups.superJump,10,y);y+=15;}
-    if (timeLeft<=10) { var f=Math.sin(frame*.15)>0; if(f){ctx.fillStyle='rgba(255,0,0,0.12)';ctx.fillRect(0,0,W,H); ctx.fillStyle='#ff6b6b';ctx.font='bold 20px sans-serif';ctx.textAlign='center'; ctx.fillText('⚠️ 时间快到了!',400,120);} }
+    if (timeLeft<=10) { var f=Math.sin(frame*.15)>0; if(f){ctx.fillStyle='rgba(255,0,0,0.12)';ctx.fillRect(0,0,W,H); ctx.fillStyle='#ff6b6b';ctx.font='bold 20px sans-serif';ctx.textAlign='center'; ctx.fillText('⚠️ Time is running out!',400,120);} }
 }
 
 function drawTimerPanel() {
@@ -1467,7 +1467,7 @@ document.querySelectorAll('.mobile-controls button').forEach(function(btn){btn.a
 // Boot
 window._gameLoopRunning=false;
 try{update();draw();}catch(e){console.warn('Init:',e);}
-console.log('🐸 Frog Frenzy 青蛙过河 (欢快增强版) - 背景音乐 | 车轮动画 | 动态场景 | 粒子特效');
+console.log('🐸 Frog Frenzy - polished arcade build with music, animated vehicles, dynamic scenes, and particles');
 </script>
 </body>
 </html>
