@@ -16,20 +16,20 @@ const STARTER_COINS = 300;
 const MAX_LEVELS = 40;
 
 const STORE_PRODUCTS = [
-  { id: 'coins_starter', kind: 'coins', coins: 300, bonus: 0, label: '新手金币包', googlePlayProductId: 'coins_starter' },
-  { id: 'coins_1000', kind: 'coins', coins: 1000, bonus: 0, label: '小袋金币', googlePlayProductId: 'coins_1000' },
-  { id: 'coins_5500', kind: 'coins', coins: 5500, bonus: 500, label: '冒险金币包', googlePlayProductId: 'coins_5500' },
-  { id: 'coins_12000', kind: 'coins', coins: 12000, bonus: 2000, label: '挑战金币箱', googlePlayProductId: 'coins_12000' },
-  { id: 'coins_26000', kind: 'coins', coins: 26000, bonus: 6000, label: '大师金币库', googlePlayProductId: 'coins_26000' }
+  { id: 'coins_starter', kind: 'coins', coins: 300, bonus: 0, label: 'Starter Coin Pack', googlePlayProductId: 'coins_starter' },
+  { id: 'coins_1000', kind: 'coins', coins: 1000, bonus: 0, label: 'Small Coin Pouch', googlePlayProductId: 'coins_1000' },
+  { id: 'coins_5500', kind: 'coins', coins: 5500, bonus: 500, label: 'Adventure Coin Pack', googlePlayProductId: 'coins_5500' },
+  { id: 'coins_12000', kind: 'coins', coins: 12000, bonus: 2000, label: 'Challenge Coin Chest', googlePlayProductId: 'coins_12000' },
+  { id: 'coins_26000', kind: 'coins', coins: 26000, bonus: 6000, label: 'Master Coin Vault', googlePlayProductId: 'coins_26000' }
 ];
 
 const ITEM_CATALOG = {
-  shield: { id: 'shield', name: '护盾', cost: 60, description: '抵挡一次致命碰撞' },
-  slowmo: { id: 'slowmo', name: '时间减速', cost: 80, description: '10 秒内危险速度降低' },
-  superJump: { id: 'superJump', name: '超级跳', cost: 70, description: '获得 3 次两格跳跃' },
-  secondChance: { id: 'secondChance', name: '自动续命', cost: 120, description: '下一次失误后附近复活' },
-  extraLife: { id: 'extraLife', name: '额外生命', cost: 90, description: '本局增加一条生命' },
-  revive: { id: 'revive', name: '继续本关', cost: 100, description: '附近复活并附带护盾' }
+  shield: { id: 'shield', name: 'Shield', cost: 60, description: 'Blocks one lethal collision' },
+  slowmo: { id: 'slowmo', name: 'Slow Motion', cost: 80, description: 'Slows hazards for 10 seconds' },
+  superJump: { id: 'superJump', name: 'Super Jump', cost: 70, description: 'Grants 3 two-tile jumps' },
+  secondChance: { id: 'secondChance', name: 'Second Chance', cost: 120, description: 'Revives nearby after one mistake' },
+  extraLife: { id: 'extraLife', name: 'Extra Life', cost: 90, description: 'Adds one life for this run' },
+  revive: { id: 'revive', name: 'Continue Run', cost: 100, description: 'Revives nearby with Shield' }
 };
 
 app.use(express.json({ limit: '128kb' }));
@@ -322,7 +322,7 @@ app.post('/api/inventory/use', requireServerConfig, requirePlayer, async (req, r
 app.post('/api/purchases/google-play/verify', requireServerConfig, requirePlayer, async (req, res) => {
   res.status(501).json({
     error: 'google_play_billing_not_connected',
-    message: '客户端 Play Billing 接入后，把 productId 和 purchaseToken 发到这里；后端验证 Google Play Developer API 后再入账。'
+    message: 'After Play Billing is integrated, send productId and purchaseToken here. The backend will verify the purchase with the Google Play Developer API before crediting coins.'
   });
 });
 
