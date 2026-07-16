@@ -7,7 +7,6 @@ final class FileUploadCoordinator: NSObject, UIImagePickerControllerDelegate, UI
 
     func presentOptions(
         from presenter: UIViewController,
-        parameters: WKOpenPanelParameters,
         completion: @escaping ([URL]?) -> Void
     ) {
         self.presenter = presenter

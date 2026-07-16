@@ -19,7 +19,6 @@
 		00000000000000000000010A /* FileUploadCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000020A /* FileUploadCoordinator.swift */; };
 		00000000000000000000010B /* WebBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000020B /* WebBridge.swift */; };
 		00000000000000000000010C /* WebPortalViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000020C /* WebPortalViewController.swift */; };
-		00000000000000000000010D /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000020D /* LaunchScreen.storyboard */; };
 		00000000000000000000010E /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000020E /* Assets.xcassets */; };
 		00000000000000000000010F /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000020F /* PrivacyInfo.xcprivacy */; };
 		000000000000000000000110 /* IAPPlaceholderService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000212 /* IAPPlaceholderService.swift */; };
@@ -38,7 +37,6 @@
 		00000000000000000000020A /* FileUploadCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileUploadCoordinator.swift; sourceTree = "<group>"; };
 		00000000000000000000020B /* WebBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebBridge.swift; sourceTree = "<group>"; };
 		00000000000000000000020C /* WebPortalViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebPortalViewController.swift; sourceTree = "<group>"; };
-		00000000000000000000020D /* LaunchScreen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = LaunchScreen.storyboard; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		00000000000000000000020E /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		00000000000000000000020F /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		000000000000000000000210 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -139,7 +137,6 @@
 			children = (
 				000000000000000000000210 /* Info.plist */,
 				00000000000000000000020F /* PrivacyInfo.xcprivacy */,
-				00000000000000000000020D /* LaunchScreen.storyboard */,
 				00000000000000000000020E /* Assets.xcassets */,
 			);
 			path = Resources;
@@ -205,7 +202,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				00000000000000000000010E /* Assets.xcassets in Resources */,
-				00000000000000000000010D /* LaunchScreen.storyboard in Resources */,
 				00000000000000000000010F /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

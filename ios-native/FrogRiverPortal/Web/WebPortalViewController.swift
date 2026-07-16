@@ -353,13 +353,14 @@ extension WebPortalViewController: WKUIDelegate {
         present(alert, animated: true)
     }
 
+    @available(iOS 18.4, *)
     func webView(
         _ webView: WKWebView,
         runOpenPanelWith parameters: WKOpenPanelParameters,
         initiatedByFrame frame: WKFrameInfo,
         completionHandler: @escaping ([URL]?) -> Void
     ) {
-        uploadCoordinator.presentOptions(from: self, parameters: parameters, completion: completionHandler)
+        uploadCoordinator.presentOptions(from: self, completion: completionHandler)
     }
 }
 

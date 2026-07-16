@@ -5,3 +5,4 @@ node_modules/
 www/
 android/keystores/
 android/release-signing.env
+ios-native/DerivedData/
