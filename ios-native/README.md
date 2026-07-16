@@ -5,7 +5,7 @@
 ## 必改内容
 
 - `FrogRiverPortal/Config/AppConfig.swift`
-  - `baseURL`: 替换为你的 Vercel 正式域名。
+  - `baseURL`: 已设置为 `https://frog-omega-rose.vercel.app`。
   - `reviewEmail` / `reviewPassword`: 替换为 App Store 审核测试账号。
   - `reviewLoginScript`: 按你的登录页表单选择器或 Web JS Bridge 调整。
 - `FrogRiverPortal/Resources/Info.plist`
@@ -21,7 +21,7 @@
 1. 使用 Xcode 打开 `ios-native/FrogRiverPortal.xcodeproj`。
 2. 选择 `FrogRiverPortal` Target，进入 `Signing & Capabilities`。
 3. 设置 Team，并确认 Bundle ID 可用。
-4. 在 `AppConfig.swift` 替换 Vercel 域名和审核账号。
+4. 在 `AppConfig.swift` 替换审核账号；Vercel 域名已设置为 `https://frog-omega-rose.vercel.app`。
 5. 选择 iOS 16.0 或更高的真机 / 模拟器运行。
 6. 真机测试相机、相册、本地通知和分享面板；模拟器无法完整验证相机。
 

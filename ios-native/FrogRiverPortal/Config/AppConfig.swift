@@ -3,8 +3,7 @@ import Foundation
 enum AppConfig {
     static let appDisplayName = "青蛙冲刺"
 
-    // TODO: Replace with your production Vercel HTTPS domain before archiving.
-    static let baseURL = URL(string: "https://YOUR-VERCEL-DOMAIN.vercel.app")!
+    static let baseURL = URL(string: "https://frog-omega-rose.vercel.app")!
 
     static let homePath = "/"
     static let discoverPath = "/discover"
