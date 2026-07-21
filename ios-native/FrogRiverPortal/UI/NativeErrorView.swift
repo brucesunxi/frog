@@ -29,18 +29,18 @@ final class NativeErrorView: UIView {
         imageView.tintColor = .systemGreen
         imageView.contentMode = .scaleAspectFit
 
-        titleLabel.text = "网络异常"
+        titleLabel.text = "Network Error"
         titleLabel.font = .preferredFont(forTextStyle: .title2)
         titleLabel.textAlignment = .center
 
-        messageLabel.text = "页面暂时无法加载，请检查网络后重试。"
+        messageLabel.text = "This page cannot load right now. Check your connection and try again."
         messageLabel.font = .preferredFont(forTextStyle: .body)
         messageLabel.textColor = .secondaryLabel
         messageLabel.textAlignment = .center
         messageLabel.numberOfLines = 0
 
         let retryButton = UIButton(type: .system)
-        retryButton.setTitle("重新加载", for: .normal)
+        retryButton.setTitle("Reload", for: .normal)
         retryButton.setImage(UIImage(systemName: "arrow.clockwise"), for: .normal)
         retryButton.configuration = .filled()
         retryButton.addTarget(self, action: #selector(retryTapped), for: .touchUpInside)

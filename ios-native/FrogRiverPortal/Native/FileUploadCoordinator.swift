@@ -12,16 +12,16 @@ final class FileUploadCoordinator: NSObject, UIImagePickerControllerDelegate, UI
         self.presenter = presenter
         self.completion = completion
 
-        let alert = UIAlertController(title: "选择图片", message: nil, preferredStyle: .actionSheet)
+        let alert = UIAlertController(title: "Choose Image", message: nil, preferredStyle: .actionSheet)
         if UIImagePickerController.isSourceTypeAvailable(.camera) {
-            alert.addAction(UIAlertAction(title: "拍照", style: .default) { [weak self] _ in
+            alert.addAction(UIAlertAction(title: "Take Photo", style: .default) { [weak self] _ in
                 self?.presentImagePicker(sourceType: .camera)
             })
         }
-        alert.addAction(UIAlertAction(title: "从相册选择", style: .default) { [weak self] _ in
+        alert.addAction(UIAlertAction(title: "Choose from Library", style: .default) { [weak self] _ in
             self?.presentImagePicker(sourceType: .photoLibrary)
         })
-        alert.addAction(UIAlertAction(title: "取消", style: .cancel) { [weak self] _ in
+        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel) { [weak self] _ in
             self?.finish(nil)
         })
 

@@ -7,9 +7,9 @@ final class MainTabBarController: UITabBarController {
         tabBar.backgroundColor = .systemBackground
 
         viewControllers = [
-            makeTab(title: "首页", systemImage: "house.fill", path: AppConfig.homePath, showsReviewLogin: false),
-            makeTab(title: "发现", systemImage: "safari.fill", path: AppConfig.discoverPath, showsReviewLogin: false),
-            makeTab(title: "我的", systemImage: "person.crop.circle.fill", path: AppConfig.profilePath, showsReviewLogin: true)
+            makeTab(title: "Home", systemImage: "house.fill", path: AppConfig.homePath, showsReviewLogin: false),
+            makeTab(title: "Discover", systemImage: "safari.fill", path: AppConfig.discoverPath, showsReviewLogin: false),
+            makeTab(title: "Profile", systemImage: "person.crop.circle.fill", path: AppConfig.profilePath, showsReviewLogin: true)
         ]
     }
 

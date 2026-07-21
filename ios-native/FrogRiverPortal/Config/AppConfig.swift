@@ -1,7 +1,7 @@
 import Foundation
 
 enum AppConfig {
-    static let appDisplayName = "青蛙冲刺"
+    static let appDisplayName = "Frog Frenzy"
 
     static let baseURL = URL(string: "https://frog-omega-rose.vercel.app")!
 

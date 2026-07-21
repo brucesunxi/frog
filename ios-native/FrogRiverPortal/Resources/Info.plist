@@ -3,9 +3,9 @@
 <plist version="1.0">
 <dict>
 	<key>CFBundleDevelopmentRegion</key>
-	<string>zh_CN</string>
+	<string>en</string>
 	<key>CFBundleDisplayName</key>
-	<string>青蛙冲刺</string>
+	<string>Frog Frenzy</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -65,12 +65,12 @@
 		<false/>
 	</dict>
 	<key>NSCameraUsageDescription</key>
-	<string>用于拍摄头像、上传图片或提交与青蛙冲刺相关的内容。</string>
+	<string>Used to take profile photos, upload images, or submit content related to Frog Frenzy.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>用于从相册选择头像、图片或内容素材并上传到网页服务。</string>
+	<string>Used to choose profile photos, images, or content assets from your photo library for upload.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
-	<string>用于在你主动保存图片时写入系统相册。</string>
+	<string>Used to save images to your photo library when you choose to save them.</string>
 	<key>NSUserNotificationUsageDescription</key>
-	<string>用于根据站内消息提醒你游戏进度、账号通知和重要更新。</string>
+	<string>Used to remind you about game progress, account notices, and important updates.</string>
 </dict>
 </plist>

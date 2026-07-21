@@ -160,7 +160,7 @@ final class WebPortalViewController: UIViewController {
         guard showsReviewLogin else { return }
 
         let button = UIButton(type: .system)
-        button.setTitle("审核账号一键登录", for: .normal)
+        button.setTitle("Review Account Login", for: .normal)
         button.setImage(UIImage(systemName: "person.badge.key.fill"), for: .normal)
         button.configuration = .filled()
         button.translatesAutoresizingMaskIntoConstraints = false
@@ -197,7 +197,7 @@ final class WebPortalViewController: UIViewController {
         let workItem = DispatchWorkItem { [weak self] in
             guard let self = self, self.webView.isLoading else { return }
             self.webView.stopLoading()
-            self.showError(title: "加载超时", message: "页面加载超过15秒，请稍后重试。")
+            self.showError(title: "Loading Timed Out", message: "The page took more than 15 seconds to load. Please try again later.")
         }
         loadingTimeoutWorkItem = workItem
         DispatchQueue.main.asyncAfter(deadline: .now() + 15, execute: workItem)
@@ -241,7 +241,7 @@ final class WebPortalViewController: UIViewController {
         Haptics.impact()
         webView.evaluateJavaScript(AppConfig.reviewLoginScript) { [weak self] _, error in
             if let error = error {
-                self?.showError(title: "审核登录未完成", message: "请确认登录页选择器或 JS Bridge 已适配：\(error.localizedDescription)")
+                self?.showError(title: "Review Login Failed", message: "Check the login form selectors or JS bridge setup: \(error.localizedDescription)")
             } else {
                 Haptics.success()
             }
@@ -262,12 +262,12 @@ extension WebPortalViewController: WKNavigationDelegate {
 
     func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
         finishLoading()
-        showError(title: "页面加载失败", message: error.localizedDescription)
+        showError(title: "Page Load Failed", message: error.localizedDescription)
     }
 
     func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
         finishLoading()
-        showError(title: "网络异常", message: error.localizedDescription)
+        showError(title: "Network Error", message: error.localizedDescription)
     }
 
     func webView(
@@ -307,7 +307,7 @@ extension WebPortalViewController: WKNavigationDelegate {
     ) {
         if let response = navigationResponse.response as? HTTPURLResponse,
            [403, 404, 500, 502, 503, 504].contains(response.statusCode) {
-            showError(title: "服务暂不可用", message: "服务器返回 \(response.statusCode)，请稍后重试。")
+            showError(title: "Service Unavailable", message: "The server returned \(response.statusCode). Please try again later.")
             decisionHandler(.cancel)
             return
         }
@@ -323,7 +323,7 @@ extension WebPortalViewController: WKUIDelegate {
         completionHandler: @escaping () -> Void
     ) {
         let alert = UIAlertController(title: title ?? AppConfig.appDisplayName, message: message, preferredStyle: .alert)
-        alert.addAction(UIAlertAction(title: "确定", style: .default) { _ in completionHandler() })
+        alert.addAction(UIAlertAction(title: "OK", style: .default) { _ in completionHandler() })
         present(alert, animated: true)
     }
 
@@ -334,8 +334,8 @@ extension WebPortalViewController: WKUIDelegate {
         completionHandler: @escaping (Bool) -> Void
     ) {
         let alert = UIAlertController(title: title ?? AppConfig.appDisplayName, message: message, preferredStyle: .alert)
-        alert.addAction(UIAlertAction(title: "取消", style: .cancel) { _ in completionHandler(false) })
-        alert.addAction(UIAlertAction(title: "确定", style: .default) { _ in completionHandler(true) })
+        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel) { _ in completionHandler(false) })
+        alert.addAction(UIAlertAction(title: "OK", style: .default) { _ in completionHandler(true) })
         present(alert, animated: true)
     }
 
@@ -348,8 +348,8 @@ extension WebPortalViewController: WKUIDelegate {
     ) {
         let alert = UIAlertController(title: title ?? AppConfig.appDisplayName, message: prompt, preferredStyle: .alert)
         alert.addTextField { textField in textField.text = defaultText }
-        alert.addAction(UIAlertAction(title: "取消", style: .cancel) { _ in completionHandler(nil) })
-        alert.addAction(UIAlertAction(title: "确定", style: .default) { _ in completionHandler(alert.textFields?.first?.text) })
+        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel) { _ in completionHandler(nil) })
+        alert.addAction(UIAlertAction(title: "OK", style: .default) { _ in completionHandler(alert.textFields?.first?.text) })
         present(alert, animated: true)
     }
 
@@ -372,7 +372,7 @@ extension WebPortalViewController: WebBridgeDelegate {
 
     func webBridgeDidRequestNotification(_ payload: [String: Any]) {
         let title = payload["title"] as? String ?? AppConfig.appDisplayName
-        let body = payload["body"] as? String ?? "你有一条新的站内消息"
+        let body = payload["body"] as? String ?? "You have a new in-app message."
         let delay = payload["delay"] as? TimeInterval ?? 1
         LocalNotificationService.schedule(title: title, body: body, delay: delay)
         Haptics.success()
