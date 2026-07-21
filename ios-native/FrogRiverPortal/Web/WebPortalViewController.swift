@@ -14,7 +14,6 @@ final class WebPortalViewController: UIViewController {
     private var webView: WKWebView!
     private var loadingTimeoutWorkItem: DispatchWorkItem?
     private var estimatedProgressObservation: NSKeyValueObservation?
-    private var titleObservation: NSKeyValueObservation?
 
     init(initialURL: URL, showsReviewLogin: Bool) {
         self.initialURL = initialURL
@@ -83,12 +82,6 @@ final class WebPortalViewController: UIViewController {
         estimatedProgressObservation = webView.observe(\.estimatedProgress, options: [.new]) { [weak self] webView, _ in
             self?.progressView.setProgress(Float(webView.estimatedProgress), animated: true)
             self?.progressView.isHidden = webView.estimatedProgress >= 1
-        }
-
-        titleObservation = webView.observe(\.title, options: [.new]) { [weak self] webView, _ in
-            if let pageTitle = webView.title, !pageTitle.isEmpty {
-                self?.title = pageTitle
-            }
         }
     }
 
