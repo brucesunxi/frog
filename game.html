@@ -414,7 +414,7 @@ canvas {
         <p style="font-size:12px;color:#636e72;" id="adCountDisplay"></p>
         <div class="shop-actions">
             <button class="btn btn-powerup btn-small" onclick="showCoinStore()">Buy Coins</button>
-            <button class="btn btn-retry btn-small" onclick="closeShop()">Close</button>
+            <button class="btn btn-retry btn-small" id="shopCloseBtn" onclick="closeShop()">Close</button>
         </div>
     </div>
     <div class="overlay" id="pauseScreen">
@@ -625,6 +625,14 @@ function showCoinPurchaseConfirmation(amount) {
     toast.classList.add('show');
     clearTimeout(purchaseToastTimer);
     purchaseToastTimer=setTimeout(function(){toast.classList.remove('show');},4200);
+}
+function updateShopExitButton() {
+    var button=document.getElementById('shopCloseBtn');
+    if (!button) return;
+    var resumesRun=_shopReturnState!==STATE.MENU&&_shopReturnState!==STATE.GAME_OVER&&_shopReturnState!==STATE.LEVEL_COMPLETE;
+    button.textContent=resumesRun?'▶ Continue game':'Close';
+    button.classList.toggle('btn-start',resumesRun);
+    button.classList.toggle('btn-retry',!resumesRun);
 }
 function updateWalletUI() {
     var ids=['coinBalanceMenu','coinBalanceShop'];
@@ -1188,6 +1196,7 @@ function closeCoinStore() {
         state=STATE.SHOP;
         document.getElementById('shopScreen').classList.add('show');
         renderShopContents();
+        updateShopExitButton();
     } else if (returnState===STATE.MENU) {
         state=STATE.MENU;
         document.getElementById('startScreen').classList.add('show');
@@ -1500,6 +1509,7 @@ function showShop() {
     ['startScreen','pauseScreen','gameOverScreen'].forEach(function(id){document.getElementById(id).classList.remove('show');});
     document.getElementById('shopScreen').classList.add('show');
     renderShopContents();
+    updateShopExitButton();
 }
 function renderShopContents() {
     var c=document.getElementById('shopPowerups'); c.innerHTML='';
@@ -1532,7 +1542,7 @@ function closeShop() {
         if(_shopReturnState===STATE.MENU){document.getElementById('startScreen').classList.add('show');state=STATE.MENU;}
         else if(_shopReturnState===STATE.GAME_OVER) { state=STATE.GAME_OVER; document.getElementById('gameOverScreen').classList.add('show'); }
         else if(_shopReturnState===STATE.LEVEL_COMPLETE) { state=STATE.LEVEL_COMPLETE; }
-        else { state=STATE.PLAYING; document.getElementById('pauseScreen').classList.remove('show'); }
+        else { state=STATE.PLAYING; ['pauseScreen','adScreen','coinStoreScreen'].forEach(function(id){document.getElementById(id).classList.remove('show');}); }
     }
 }
 
