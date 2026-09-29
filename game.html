@@ -1109,8 +1109,24 @@ function showCoinStore() {
 }
 function closeCoinStore() {
     document.getElementById('coinStoreScreen').classList.remove('show');
-    if (state===STATE.PURCHASE) state=_coinStoreReturnState;
-    if (state===STATE.SHOP) { document.getElementById('shopScreen').classList.add('show'); renderShopContents(); }
+    if (state!==STATE.PURCHASE) return;
+    var returnState=_coinStoreReturnState;
+    if (returnState===STATE.SHOP) {
+        state=STATE.SHOP;
+        document.getElementById('shopScreen').classList.add('show');
+        renderShopContents();
+    } else if (returnState===STATE.MENU) {
+        state=STATE.MENU;
+        document.getElementById('startScreen').classList.add('show');
+    } else if (returnState===STATE.GAME_OVER) {
+        state=STATE.GAME_OVER;
+        document.getElementById('gameOverScreen').classList.add('show');
+    } else {
+        // A pack screen can also be opened from an optional reward flow. Never
+        // restore its hidden paused state: return the player to a usable run.
+        state=STATE.PLAYING;
+        document.getElementById('pauseScreen').classList.remove('show');
+    }
 }
 function renderCoinStore() {
     var grid=document.getElementById('coinPackGrid'); if (!grid) return;
