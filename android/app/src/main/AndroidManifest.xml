@@ -22,6 +22,20 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="https"
+                    android:host="frog-omega-rose.vercel.app"
+                    android:pathPrefix="/c/" />
+                <data
+                    android:scheme="https"
+                    android:host="frog-omega-rose.vercel.app"
+                    android:pathPrefix="/r/" />
+            </intent-filter>
+
         </activity>
 
         <provider

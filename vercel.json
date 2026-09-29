@@ -16,6 +16,10 @@
     {
       "src": "assets/**",
       "use": "@vercel/static"
+    },
+    {
+      "src": "store-assets/**",
+      "use": "@vercel/static"
     }
   ],
   "routes": [
@@ -24,8 +28,24 @@
       "dest": "/api/index.js"
     },
     {
+      "src": "/c/(.*)",
+      "dest": "/api/index.js"
+    },
+    {
+      "src": "/r/(.*)",
+      "dest": "/api/index.js"
+    },
+    {
+      "src": "/.well-known/assetlinks.json",
+      "dest": "/api/index.js"
+    },
+    {
       "src": "/assets/(.*)",
       "dest": "/assets/$1"
+    },
+    {
+      "src": "/store-assets/(.*)",
+      "dest": "/store-assets/$1"
     },
     {
       "src": "/game.html",

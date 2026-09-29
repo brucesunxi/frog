@@ -6,6 +6,9 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node server.js",
+    "test": "node --test test/*.test.js",
+    "test:challenge-api": "node scripts/test-challenge-api.js",
+    "verify:share-deployment": "node scripts/verify-share-deployment.js",
     "db:init": "node scripts/init-db.js",
     "android:prepare": "node scripts/prepare-capacitor.js && npx cap sync android",
     "android:keystore": "node scripts/create-android-keystore.js",

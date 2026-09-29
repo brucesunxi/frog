@@ -103,6 +103,21 @@ canvas {
 .complete-tip { color:#ffd700; font-size:12px; line-height:1.35; max-width:420px; margin:4px 0 2px; padding:7px 12px; border-radius:9px; background:rgba(255,215,0,0.08); }
 .complete-actions { display:flex; gap:8px; flex-wrap:wrap; justify-content:center; margin-top:4px; }
 #levelCompleteScreen .btn { margin:4px; }
+.challenge-card { width:min(480px,94%); padding:18px; border-radius:18px; background:linear-gradient(150deg,rgba(0,211,143,.16),rgba(116,185,255,.10)); border:1px solid rgba(0,211,143,.35); }
+.challenge-score { color:#ffd700; font-size:clamp(48px,10vw,72px); font-weight:900; line-height:1; margin:8px 0 3px; }
+.challenge-rules { color:#b8c2cc; font-size:13px; margin-top:8px; }
+.challenge-status { min-height:22px; color:#55efc4; font-size:13px; margin-top:7px; }
+.btn-share { background:linear-gradient(135deg,#00b894,#00cec9); color:white; }
+.room-players { display:grid; grid-template-columns:1fr auto 1fr; gap:10px; align-items:center; width:min(480px,94%); margin:8px 0; }
+.room-player { min-height:86px; padding:13px 8px; border-radius:14px; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.13); }
+.room-player.ready { border-color:#00d38f; background:rgba(0,211,143,.12); }
+.room-player .avatar { font-size:28px; }
+.room-player .name { color:#fff; font-weight:800; font-size:13px; margin-top:4px; overflow:hidden; text-overflow:ellipsis; }
+.room-player .state { color:#8d99a5; font-size:11px; margin-top:3px; }
+.room-vs { color:#ffd700; font-weight:900; }
+.room-code { color:#b2bec3; font:700 12px monospace; letter-spacing:.12em; }
+.room-pulse { width:12px; height:12px; display:inline-block; margin-right:7px; border-radius:50%; background:#00d38f; box-shadow:0 0 0 rgba(0,211,143,.5); animation:roomPulse 1.35s infinite; }
+@keyframes roomPulse { 70% { box-shadow:0 0 0 12px rgba(0,211,143,0); } 100% { box-shadow:0 0 0 0 rgba(0,211,143,0); } }
 .level-select { width:min(640px,96%); margin:6px 0 4px; }
 .level-progress { color:#ffd700; font-size:clamp(13px,2.5vw,16px); margin-bottom:8px; font-weight:650; }
 .level-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; }
@@ -254,7 +269,9 @@ canvas {
     #levelCompleteScreen,
     #gameOverScreen,
     #adScreen,
-    #winScreen {
+    #winScreen,
+    #challengeInviteScreen,
+    #challengeResultScreen {
         overflow-y:auto;
         justify-content:center;
         padding:8px 12px 12px;
@@ -334,6 +351,7 @@ canvas {
         </div>
         <button class="btn btn-start menu-primary" onclick="startGame()" id="continueBtn">Start Run</button>
         <div class="menu-actions">
+            <button class="btn btn-small btn-share" onclick="openFriendChallenge()">🐸 Play with a Friend</button>
             <button class="btn btn-small btn-powerup" onclick="showShop()">🎁 Shop</button>
             <button class="btn btn-small" style="background:#636e72;color:white;min-width:50px;" onclick="toggleSound()" id="soundToggleBtn">🔇</button>
         </div>
@@ -353,6 +371,7 @@ canvas {
             <span id="totalStarsDisplay" style="color:#ffd700;font-size:16px;">⭐ 0</span>
         </div>
         <div class="complete-actions">
+            <button class="btn btn-share btn-small" onclick="openFriendChallenge()">🐸 Play with a friend</button>
             <button class="btn btn-powerup btn-small" id="prepNextBtn" onclick="prepareNextLevelBoost()">🪙 Prep next level</button>
             <button class="btn btn-next btn-small" onclick="nextLevel()">Next Level →</button>
         </div>
@@ -380,6 +399,54 @@ canvas {
         <div class="powerup-grid" id="failPowerups"></div>
         <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center;">
             <button class="btn btn-retry btn-small" onclick="retryLevel()">🔄 Retry</button>
+            <button class="btn btn-share btn-small" onclick="openFriendChallenge()">🐸 Play with a friend</button>
+            <button class="btn btn-small" style="background:#636e72;color:white;" onclick="backToMenu()">Menu</button>
+        </div>
+    </div>
+    <div class="overlay fade-in" id="challengeInviteScreen">
+        <h1>🐸 Friend Challenge</h1>
+        <div class="challenge-card">
+            <h2 id="challengeInviteTitle">Set the score to beat</h2>
+            <div class="challenge-score" id="challengeTargetScore">60s</div>
+            <p id="challengeInviteDetail">Rescue as many frogs as you can.</p>
+            <p class="challenge-rules">60 seconds · Same map · 3 lives · No boosts</p>
+        </div>
+        <div class="challenge-status" id="challengeInviteStatus"></div>
+        <button class="btn btn-start" id="challengeAcceptBtn" onclick="acceptFriendChallenge()">Start Challenge</button>
+        <button class="btn btn-small" style="background:#636e72;color:white;" onclick="closeChallengeInvite()">Back</button>
+    </div>
+    <div class="overlay fade-in" id="challengeLobbyScreen">
+        <div class="eyebrow" style="color:#00d38f;font-size:12px;font-weight:900;letter-spacing:.12em;">LIVE FRIEND ROOM</div>
+        <h1 id="challengeLobbyTitle" style="color:#ffd700;">Invite a friend</h1>
+        <p class="room-code" id="challengeLobbyCode">ROOM ••••••</p>
+        <div class="room-players">
+            <div class="room-player ready" id="roomHostCard"><div class="avatar">🐸</div><div class="name" id="roomHostName">You</div><div class="state">Ready</div></div>
+            <div class="room-vs">VS</div>
+            <div class="room-player" id="roomGuestCard"><div class="avatar">⏳</div><div class="name" id="roomGuestName">Waiting…</div><div class="state" id="roomGuestState">Share the link</div></div>
+        </div>
+        <p class="challenge-rules">60 seconds · Same map · 3 lives · No boosts</p>
+        <div class="challenge-status" id="challengeLobbyStatus" role="status" aria-live="polite"><span class="room-pulse"></span>Creating room…</div>
+        <div class="complete-actions">
+            <button class="btn btn-share btn-small" id="roomShareBtn" onclick="shareFriendRoom()">Share Invite</button>
+            <button class="btn btn-powerup btn-small" id="roomCopyBtn" onclick="copyFriendRoomLink()">Copy Link</button>
+            <button class="btn btn-start btn-small" id="roomJoinBtn" onclick="joinFriendRoom()">Join Room</button>
+            <button class="btn btn-start btn-small" id="roomStartBtn" onclick="startFriendRoom()">Start Together</button>
+            <button class="btn btn-small" style="background:#636e72;color:white;" onclick="closeFriendRoom()">Back</button>
+        </div>
+    </div>
+    <div class="overlay fade-in" id="challengeResultScreen">
+        <h1 id="challengeResultEmoji">🏁</h1>
+        <h1 id="challengeResultTitle" style="color:#ffd700;">Challenge Complete</h1>
+        <div class="challenge-card">
+            <div class="challenge-score"><span id="challengeResultRescues">0</span> 🐸</div>
+            <p id="challengeResultDetail">Frogs rescued in 60 seconds</p>
+            <p id="challengeComparison" class="highlight"></p>
+        </div>
+        <div class="challenge-status" id="challengeShareStatus" role="status" aria-live="polite"></div>
+        <div class="complete-actions">
+            <button class="btn btn-share btn-small" id="challengeShareBtn" onclick="shareChallengeResult()">Share Challenge</button>
+            <button class="btn btn-powerup btn-small" id="challengeCopyBtn" onclick="copyChallengeLink()">Copy Link</button>
+            <button class="btn btn-retry btn-small" onclick="retryFriendChallenge()">Try Again</button>
             <button class="btn btn-small" style="background:#636e72;color:white;" onclick="backToMenu()">Menu</button>
         </div>
     </div>
@@ -426,7 +493,7 @@ canvas {
         <button class="btn btn-small" style="background:#636e72;color:white;" onclick="backToMenu()">Menu</button>
     </div>
     <div id="exitBtn" style="position:absolute;top:24px;right:68px;z-index:5;cursor:pointer;font-size:15px;width:32px;height:32px;border-radius:50%;background:rgba(0,0,0,0.45);border:1px solid rgba(255,255,255,0.18);color:white;display:none;align-items:center;justify-content:center;transition:all 0.2s;" onclick="backToMenu()" onmouseover="this.style.background='rgba(255,100,100,0.6)';" onmouseout="this.style.background='rgba(0,0,0,0.45)';">✕</div>
-    <div id="pauseBtn" style="position:absolute;top:24px;right:32px;z-index:5;cursor:pointer;font-size:18px;width:32px;height:32px;border-radius:50%;background:rgba(0,0,0,0.45);border:1px solid rgba(255,255,255,0.18);color:white;display:none;align-items:center;justify-content:center;transition:all 0.2s;" onclick="if(state===STATE.PLAYING){state=STATE.PAUSED;document.getElementById('pauseScreen').classList.add('show');}" onmouseover="this.style.background='rgba(0,0,0,0.6)';" onmouseout="this.style.background='rgba(0,0,0,0.45)';">⏸</div>
+    <div id="pauseBtn" style="position:absolute;top:24px;right:32px;z-index:5;cursor:pointer;font-size:18px;width:32px;height:32px;border-radius:50%;background:rgba(0,0,0,0.45);border:1px solid rgba(255,255,255,0.18);color:white;display:none;align-items:center;justify-content:center;transition:all 0.2s;" onclick="pauseGame()" onmouseover="this.style.background='rgba(0,0,0,0.6)';" onmouseout="this.style.background='rgba(0,0,0,0.45)';">⏸</div>
     <div class="mobile-controls">
         <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
             <button data-dir="up">▲</button>
@@ -463,6 +530,10 @@ let flies = [], flySpawnTimer = 0;
 let activeContract = null, contractCoinsEarned = 0, briefingLevel = null, selectedLoadout = null;
 let totalRewardAds = 0, rewardedAdsThisExpedition = 0, _coinStoreReturnState = STATE.MENU;
 let clouds = [], roadDecor = [], stars = [], exhaustParticles = [];
+let challengeActive = false, challengeRescues = 0, challengeDeaths = 0, challengeSeed = 0;
+let challengeInvite = null, challengeAttemptId = null, challengeLastResult = null, challengeShare = null;
+let pendingChallengeToken = '', pendingChallengeKind = 'challenge', gameplayRandom = Math.random, challengePauseStartedAt = 0, challengePauseTotal = 0;
+let challengeRoom = null, challengeRoomRole = '', challengeRoomShareUrl = '', challengeRoomSource = 'app_link', challengeRoomPollTimer = null, challengeRoomStartTimer = null, challengeRoomCountdownTimer = null, challengeRoomStarting = false;
 const PRODUCTION_API_BASE = 'https://frog-omega-rose.vercel.app';
 const COIN_PACKS = [
     { productId:'coins_starter', label:'Starter Pack', coins:300, bonus:0 },
@@ -484,6 +555,388 @@ function getApiUrl(path) {
 }
 function getAppPlatform() {
     return isNativeAndroid() ? 'android' : 'web';
+}
+function getFrogSharePlugin() {
+    return window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.FrogShare;
+}
+function makeSeededRandom(seed) {
+    var value=(Number(seed)||1)>>>0;
+    return function(){ value=(value+0x6D2B79F5)>>>0; var t=value; t=Math.imul(t^(t>>>15),t|1); t^=t+Math.imul(t^(t>>>7),t|61); return ((t^(t>>>14))>>>0)/4294967296; };
+}
+function createLocalChallengeSeed() {
+    if (window.crypto && window.crypto.getRandomValues) { var a=new Uint32Array(1); window.crypto.getRandomValues(a); return (a[0]&0x7fffffff)||1; }
+    return Math.max(1,Math.floor(Math.random()*0x7fffffff));
+}
+function clientEventId() {
+    return 'evt_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,12);
+}
+function trackGrowthEvent(eventName, properties, token) {
+    if (!playerToken) return;
+    apiFetch('/api/events',{method:'POST',body:JSON.stringify({eventName:eventName,clientEventId:clientEventId(),challengeToken:token||null,properties:properties||{}})}).catch(function(){});
+}
+async function readPendingChallenge() {
+    var plugin=getFrogSharePlugin();
+    if (isNativeAndroid()&&plugin&&plugin.getPendingChallenge) {
+        try { return await plugin.getPendingChallenge(); } catch(e) { return {token:'',source:'none',kind:''}; }
+    }
+    var query=new URLSearchParams(window.location.search);
+    var room=query.get('room')||'', challenge=query.get('challenge')||'', token=room||challenge;
+    return {token:token,source:token?'web':'none',kind:room?'room':(challenge?'challenge':'')};
+}
+function openPendingInvite(data) {
+    if (!data||!data.token) return;
+    if (data.kind==='room') loadFriendRoom(data.token,data.source||'app_link');
+    else loadChallengeInvite(data.token,data.source||'app_link');
+}
+function setupChallengeLinkListener() {
+    var plugin=getFrogSharePlugin();
+    if (!plugin||!plugin.addListener||window._frogChallengeListener) return;
+    window._frogChallengeListener=true;
+    plugin.addListener('challengeOpen',function(data){
+        if (!data||!data.token) return;
+        if (state===STATE.PLAYING||state===STATE.DYING) {
+            pendingChallengeToken=data.token;
+            pendingChallengeKind=data.kind||'challenge';
+            addPopup(data.kind==='room'?'🐸 Friend room ready after this run':'🐸 Friend challenge ready after this run','#00d38f');
+            return;
+        }
+        openPendingInvite(data);
+    });
+}
+
+function hidePrimaryOverlays() {
+    ['startScreen','levelCompleteScreen','gameOverScreen','winScreen','briefingScreen','pauseScreen','challengeInviteScreen','challengeLobbyScreen','challengeResultScreen'].forEach(function(id){var e=document.getElementById(id);if(e)e.classList.remove('show');});
+}
+function openFriendChallenge(token) {
+    if (token) { loadChallengeInvite(token,'app_link'); return; }
+    createFriendRoom();
+}
+function clearFriendRoomTimers() {
+    clearTimeout(challengeRoomPollTimer); clearTimeout(challengeRoomStartTimer); clearInterval(challengeRoomCountdownTimer);
+    challengeRoomPollTimer=null; challengeRoomStartTimer=null; challengeRoomCountdownTimer=null;
+}
+function showFriendRoomLoading() {
+    hidePrimaryOverlays();
+    document.getElementById('challengeLobbyTitle').textContent='Opening a friend room…';
+    document.getElementById('challengeLobbyCode').textContent='ROOM ••••••';
+    document.getElementById('challengeLobbyStatus').innerHTML='<span class="room-pulse"></span>Connecting…';
+    ['roomShareBtn','roomCopyBtn','roomJoinBtn','roomStartBtn'].forEach(function(id){document.getElementById(id).style.display='none';});
+    document.getElementById('challengeLobbyScreen').classList.add('show'); state=STATE.MENU;
+}
+async function createFriendRoom() {
+    clearFriendRoomTimers(); challengeActive=false; challengeLastResult=null; challengeInvite=null; challengeShare=null; challengeRoom=null; challengeRoomRole=''; challengeRoomShareUrl=''; challengeRoomStarting=false;
+    showFriendRoomLoading();
+    if (!playerToken) {
+        document.getElementById('challengeLobbyStatus').textContent='Connect to the internet to create a room.';
+        return;
+    }
+    try {
+        var data=await apiFetch('/api/challenge-rooms',{method:'POST',body:JSON.stringify({seed:createLocalChallengeSeed()})});
+        challengeRoomShareUrl=data.shareUrl; applyFriendRoom(data.room);
+        trackGrowthEvent('room_created',{},data.room.token);
+    } catch(e) {
+        document.getElementById('challengeLobbyStatus').textContent='Could not create the room. Check your connection and try again.';
+    }
+}
+async function loadFriendRoom(token,source) {
+    if (!/^[A-Za-z0-9_-]{16,64}$/.test(String(token||''))) return;
+    pendingChallengeToken=''; pendingChallengeKind='challenge'; clearFriendRoomTimers(); challengeActive=false; challengeLastResult=null; challengeInvite=null; challengeShare=null; showFriendRoomLoading();
+    challengeRoomSource=source||'app_link';
+    try {
+        var data=await apiFetch('/api/challenge-rooms/'+encodeURIComponent(token));
+        if (playerToken) {
+            try { data=await apiFetch('/api/challenge-rooms/'+encodeURIComponent(token)+'/status'); } catch(memberError) {}
+        }
+        challengeRoomShareUrl=(isNativeAndroid()?PRODUCTION_API_BASE:window.location.origin)+'/r/'+token;
+        applyFriendRoom(data.room);
+        trackGrowthEvent('room_open',{source:challengeRoomSource},token);
+        if (playerToken) apiFetch('/api/referrals/resolve',{method:'POST',body:JSON.stringify({token:token,source:challengeRoomSource})}).catch(function(){});
+    } catch(e) {
+        document.getElementById('challengeLobbyStatus').textContent='This friend room is unavailable or has expired.';
+    }
+}
+function applyFriendRoom(room) {
+    challengeRoom=room; challengeRoomRole=room.viewerRole||challengeRoomRole||'';
+    if (!challengeRoomShareUrl&&room.token) challengeRoomShareUrl=(isNativeAndroid()?PRODUCTION_API_BASE:window.location.origin)+'/r/'+room.token;
+    if (challengeLastResult&&challengeRoomRole) updateLiveRoomResult();
+    else if (!challengeActive) renderFriendRoom();
+    if (room.status==='playing'&&room.startsAt&&!challengeActive&&!challengeLastResult) scheduleFriendRoomStart(room);
+    else if (challengeRoomRole&&room.status!=='finished'&&!room.expired&&!challengeActive) scheduleFriendRoomPoll();
+}
+function renderFriendRoom() {
+    if (!challengeRoom) return;
+    hidePrimaryOverlays(); state=STATE.MENU;
+    var room=challengeRoom, guest=room.participants.guest, isHost=challengeRoomRole==='host', isGuest=challengeRoomRole==='guest';
+    document.getElementById('challengeLobbyTitle').textContent=isHost?'Your friend room':(isGuest?'You joined the room':(room.participants.host.name+' invited you'));
+    document.getElementById('challengeLobbyCode').textContent='ROOM '+String(room.token||'').slice(-6).toUpperCase();
+    document.getElementById('roomHostName').textContent=(isHost?'You · ':'')+room.participants.host.name;
+    document.getElementById('roomGuestName').textContent=guest?((isGuest?'You · ':'')+guest.name):'Waiting…';
+    document.getElementById('roomGuestState').textContent=guest?'Ready':'Share the link';
+    document.getElementById('roomGuestCard').classList.toggle('ready',!!guest);
+    document.getElementById('roomGuestCard').querySelector('.avatar').textContent=guest?'🐸':'⏳';
+    var status='';
+    if (room.expired) status='This room expired. Create a new room to play.';
+    else if (room.status==='waiting') status=isHost?'Waiting for your friend to open the link…':'Your friend is waiting. Join when you are ready.';
+    else if (room.status==='ready') status=isHost?'Your friend joined! Start when both of you are ready.':'You are in! Waiting for your friend to start.';
+    else if (room.status==='playing') status='The challenge is starting…';
+    else if (room.status==='finished') status='This room has finished.';
+    document.getElementById('challengeLobbyStatus').innerHTML=(room.status==='waiting'&&!room.expired?'<span class="room-pulse"></span>':'')+status;
+    document.getElementById('roomShareBtn').style.display=isHost&&['waiting','ready'].includes(room.status)&&!room.expired?'inline-flex':'none';
+    document.getElementById('roomCopyBtn').style.display=isHost&&['waiting','ready'].includes(room.status)&&!room.expired?'inline-flex':'none';
+    document.getElementById('roomJoinBtn').style.display=!challengeRoomRole&&room.status==='waiting'&&!room.expired?'inline-flex':'none';
+    document.getElementById('roomStartBtn').style.display=isHost&&room.status==='ready'&&!room.expired?'inline-flex':'none';
+    document.getElementById('roomStartBtn').disabled=false;
+    document.getElementById('challengeLobbyScreen').classList.add('show');
+}
+async function joinFriendRoom() {
+    if (!challengeRoom||!playerToken) { document.getElementById('challengeLobbyStatus').textContent='Connect to the internet to join.'; return; }
+    document.getElementById('challengeLobbyStatus').textContent='Joining your friend…';
+    try {
+        var data=await apiFetch('/api/challenge-rooms/'+encodeURIComponent(challengeRoom.token)+'/join',{method:'POST',body:JSON.stringify({source:challengeRoomSource})});
+        applyFriendRoom(data.room); trackGrowthEvent('room_joined',{},challengeRoom.token);
+    } catch(e) {
+        document.getElementById('challengeLobbyStatus').textContent='The room is full, expired, or unavailable.';
+    }
+}
+async function startFriendRoom() {
+    if (!challengeRoom||challengeRoomRole!=='host') return;
+    document.getElementById('roomStartBtn').disabled=true;
+    document.getElementById('challengeLobbyStatus').textContent='Starting together…';
+    try {
+        var data=await apiFetch('/api/challenge-rooms/'+encodeURIComponent(challengeRoom.token)+'/start',{method:'POST',body:'{}'});
+        applyFriendRoom(data.room); trackGrowthEvent('room_start',{},challengeRoom.token);
+    } catch(e) {
+        document.getElementById('roomStartBtn').disabled=false;
+        document.getElementById('challengeLobbyStatus').textContent='Could not start yet. Make sure your friend has joined.';
+    }
+}
+function scheduleFriendRoomPoll() {
+    clearTimeout(challengeRoomPollTimer);
+    if (!challengeRoom||!challengeRoomRole||challengeRoom.status==='finished') return;
+    challengeRoomPollTimer=setTimeout(pollFriendRoom,1200);
+}
+async function pollFriendRoom() {
+    if (!challengeRoom||!challengeRoomRole) return;
+    try {
+        var data=await apiFetch('/api/challenge-rooms/'+encodeURIComponent(challengeRoom.token)+'/status');
+        applyFriendRoom(data.room);
+    } catch(e) {
+        if (!challengeActive) document.getElementById('challengeLobbyStatus').textContent='Reconnecting to the room…';
+        scheduleFriendRoomPoll();
+    }
+}
+function scheduleFriendRoomStart(room) {
+    if (challengeRoomStarting||challengeActive||challengeLastResult) return;
+    challengeRoomStarting=true; clearTimeout(challengeRoomPollTimer);
+    var wait=Math.max(0,Date.parse(room.startsAt)-Date.parse(room.serverNow||new Date().toISOString()));
+    var localDeadline=Date.now()+wait;
+    function updateCountdown(){
+        var seconds=Math.max(1,Math.ceil((localDeadline-Date.now())/1000));
+        document.getElementById('challengeLobbyStatus').textContent=localDeadline>Date.now()?('Starting together in '+seconds+'…'):'Go!';
+    }
+    updateCountdown(); challengeRoomCountdownTimer=setInterval(updateCountdown,150);
+    challengeRoomStartTimer=setTimeout(function(){
+        clearInterval(challengeRoomCountdownTimer); challengeRoomCountdownTimer=null; challengeRoomStarting=false;
+        startChallengeRun({token:room.token,seed:room.seed,target:null,room:true});
+    },wait);
+}
+function createRoomCardDataUrl(url) {
+    var card=document.createElement('canvas');card.width=1080;card.height=1350;var c=card.getContext('2d');
+    var gradient=c.createLinearGradient(0,0,1080,1350);gradient.addColorStop(0,'#081127');gradient.addColorStop(1,'#163d43');c.fillStyle=gradient;c.fillRect(0,0,1080,1350);
+    c.fillStyle='#00d38f';c.font='800 44px sans-serif';c.textAlign='center';c.fillText('FROG FRENZY LIVE ROOM',540,150);
+    c.font='190px sans-serif';c.fillText('🐸',540,430);c.fillStyle='#ffd700';c.font='900 82px sans-serif';c.fillText('PLAY TOGETHER',540,635);
+    c.fillStyle='#fff';c.font='700 48px sans-serif';c.fillText('I\'M WAITING FOR YOU',540,760);c.fillStyle='#b8c2cc';c.font='500 38px sans-serif';c.fillText('60 seconds · Same map · No boosts',540,850);
+    c.fillStyle='#ffd700';c.font='500 30px sans-serif';c.fillText(url.replace(/^https?:\/\//,''),540,1120);return card.toDataURL('image/png');
+}
+async function shareFriendRoom() {
+    if (!challengeRoomShareUrl||!challengeRoom) return;
+    var status=document.getElementById('challengeLobbyStatus'), text='I\'m waiting in Frog Frenzy 🐸 Join my room and let\'s start the 60-second challenge together!';
+    try {
+        var plugin=getFrogSharePlugin(),imageDataUrl=createRoomCardDataUrl(challengeRoomShareUrl);
+        trackGrowthEvent('room_invite_share',{},challengeRoom.token);
+        if (isNativeAndroid()&&plugin&&plugin.share) await plugin.share({title:'Join my Frog Frenzy room',text:text,url:challengeRoomShareUrl,imageDataUrl:imageDataUrl});
+        else if (navigator.share) await navigator.share({title:'Join my Frog Frenzy room',text:text,url:challengeRoomShareUrl});
+        else { await navigator.clipboard.writeText(text+' '+challengeRoomShareUrl); status.textContent='Room link copied. Send it to one friend.'; return; }
+        status.textContent='Invite sent. Keep this room open while your friend joins.';
+    } catch(e) { if(e&&e.name==='AbortError') status.textContent='Share cancelled. Your room is still open.'; else status.textContent='Could not share. Try Copy Link instead.'; }
+}
+async function copyFriendRoomLink() {
+    if (!challengeRoomShareUrl) return;
+    try { await navigator.clipboard.writeText(challengeRoomShareUrl); trackGrowthEvent('room_link_copy',{},challengeRoom&&challengeRoom.token); document.getElementById('challengeLobbyStatus').textContent='Room link copied. Send it to one friend.'; }
+    catch(e) { document.getElementById('challengeLobbyStatus').textContent='Could not copy the link. Use Share Invite instead.'; }
+}
+function closeFriendRoom() { clearFriendRoomTimers(); challengeRoom=null; challengeRoomRole=''; challengeRoomShareUrl=''; challengeRoomStarting=false; backToMenu(); }
+async function loadChallengeInvite(token,source) {
+    if (!/^[A-Za-z0-9_-]{16,64}$/.test(String(token||''))) return;
+    pendingChallengeToken=''; pendingChallengeKind='challenge';
+    try {
+        var data=await apiFetch('/api/challenges/'+encodeURIComponent(token));
+        challengeInvite=data.challenge;
+        renderChallengeInvite();
+        trackGrowthEvent('challenge_open',{source:source||'app_link'},token);
+        if (playerToken) apiFetch('/api/referrals/resolve',{method:'POST',body:JSON.stringify({token:token,source:source||'app_link'})}).catch(function(){});
+    } catch(e) {
+        setWalletStatus('That friend challenge could not be loaded.');
+    }
+}
+function renderChallengeInvite() {
+    if (!challengeInvite) return;
+    hidePrimaryOverlays();
+    var inbound=!!challengeInvite.token, target=challengeInvite.target;
+    document.getElementById('challengeInviteTitle').textContent=inbound?(challengeInvite.ownerName+' challenges you'):'Set the score to beat';
+    document.getElementById('challengeTargetScore').textContent=inbound?(target.rescues+' 🐸'):'60s';
+    document.getElementById('challengeInviteDetail').textContent=inbound?('Beat '+target.rescues+' rescued frog'+(target.rescues===1?'':'s')+'.'):'Rescue as many frogs as you can, then share your score.';
+    document.getElementById('challengeInviteStatus').textContent=challengeInvite.expired?'This challenge has expired. Start a fresh one instead.':'';
+    document.getElementById('challengeAcceptBtn').textContent=challengeInvite.expired?'Start Fresh Challenge':(inbound?'Accept Challenge':'Start Challenge');
+    document.getElementById('challengeInviteScreen').classList.add('show');
+    state=STATE.MENU;
+}
+function closeChallengeInvite() {
+    challengeInvite=null;
+    document.getElementById('challengeInviteScreen').classList.remove('show');
+    backToMenu();
+}
+async function acceptFriendChallenge() {
+    if (!challengeInvite) return;
+    document.getElementById('challengeInviteStatus').textContent='Preparing the same map…';
+    var invite=challengeInvite;
+    if (invite.expired) invite={token:'',seed:createLocalChallengeSeed(),target:null};
+    try {
+        challengeAttemptId=null;
+        if (invite.token) {
+            var data=await apiFetch('/api/challenges/'+encodeURIComponent(invite.token)+'/attempts',{method:'POST',body:'{}'});
+            challengeAttemptId=data.attempt.id;
+            invite=data.challenge;
+        }
+        challengeInvite=invite;
+        startChallengeRun(invite);
+    } catch(e) {
+        document.getElementById('challengeInviteStatus').textContent=playerToken?'Challenge is unavailable. Please try again.':'Connect to the internet to accept this challenge.';
+    }
+}
+function startChallengeRun(invite) {
+    clearTimeout(challengeRoomPollTimer); clearTimeout(challengeRoomStartTimer); clearInterval(challengeRoomCountdownTimer);
+    challengeInvite=invite; hidePrimaryOverlays();
+    challengeActive=true; challengeRescues=0; challengeDeaths=0; challengeLastResult=null; challengeShare=null; challengePauseStartedAt=0; challengePauseTotal=0;
+    challengeSeed=Number(invite.seed)||createLocalChallengeSeed(); gameplayRandom=makeSeededRandom(challengeSeed);
+    score=0;lives=3;homes=[];maxCombo=0;powerups={shield:0,slowmo:0,superJump:0,secondChance:0};
+    initLevel(1); state=STATE.PLAYING; initAudio();
+    if (!soundMuted) startMusic();
+    document.getElementById('pauseBtn').style.display='flex'; document.getElementById('exitBtn').style.display='flex';
+    document.getElementById('musicIndicator').classList.add('show');
+    ensureGameLoop();
+    trackGrowthEvent('challenge_start',{seed:challengeSeed},invite.token);
+}
+async function finishChallenge(reason) {
+    if (!challengeActive||challengeLastResult) return;
+    stopMusic(); state=STATE.LEVEL_COMPLETE;
+    document.getElementById('pauseBtn').style.display='none'; document.getElementById('exitBtn').style.display='none';
+    var elapsedMs=Math.min(60000,Math.round(levelTimer*1000/60));
+    var interrupted=reason==='interrupted';
+    challengeLastResult={rescues:challengeRescues,elapsedMs:elapsedMs,deaths:challengeDeaths,reason:reason||'complete',outcome:null,invalid:interrupted};
+    var target=challengeInvite&&challengeInvite.target;
+    var liveRoom=!!(challengeInvite&&challengeInvite.room&&challengeRoom&&challengeRoomRole);
+    if (liveRoom) {
+        try {
+            var roomResponse=await apiFetch('/api/challenge-rooms/'+encodeURIComponent(challengeRoom.token)+'/finish',{method:'POST',body:JSON.stringify(Object.assign({},challengeLastResult,{forfeit:interrupted}))});
+            challengeRoom=roomResponse.room; challengeRoomRole=roomResponse.room.viewerRole||challengeRoomRole;
+            challengeLastResult.outcome=roomResponse.room.viewerOutcome;
+            target=getLiveRoomOpponentResult();
+        } catch(e) { challengeLastResult.syncError=true; }
+    } else if (challengeAttemptId&&!interrupted) {
+        try {
+            var response=await apiFetch('/api/challenge-attempts/'+encodeURIComponent(challengeAttemptId)+'/finish',{method:'POST',body:JSON.stringify(challengeLastResult)});
+            challengeLastResult.outcome=response.result.outcome;
+            target=response.target;
+        } catch(e) {
+            challengeLastResult.syncError=true;
+        }
+    }
+    renderChallengeResult(target);
+    if (liveRoom&&challengeRoom&&challengeRoom.status!=='finished') scheduleFriendRoomPoll();
+    trackGrowthEvent('challenge_finish',{rescues:challengeRescues,elapsedMs:elapsedMs,outcome:challengeLastResult.outcome||'solo'},challengeInvite&&challengeInvite.token);
+}
+function renderChallengeResult(target) {
+    hidePrimaryOverlays();
+    var result=challengeLastResult, outcome=result.outcome;
+    document.getElementById('challengeResultRescues').textContent=result.rescues;
+    document.getElementById('challengeResultDetail').textContent='Frogs rescued in '+Math.ceil(result.elapsedMs/1000)+' seconds · '+result.deaths+' '+(result.deaths===1?'mistake':'mistakes');
+    document.getElementById('challengeResultEmoji').textContent=result.invalid?'⏸️':(outcome==='win'?'🏆':(outcome==='loss'?'🐸':'🏁'));
+    document.getElementById('challengeResultTitle').textContent=result.invalid?'Challenge Interrupted':(outcome==='win'?'You won!':(outcome==='loss'?'So close!':'Challenge Complete'));
+    var liveRoom=!!(challengeInvite&&challengeInvite.room&&challengeRoom);
+    document.getElementById('challengeComparison').textContent=target?('You '+result.rescues+' · Friend '+target.rescues):(liveRoom?'Waiting for your friend to finish…':'Share this score and see who can beat it.');
+    document.getElementById('challengeShareStatus').textContent=result.invalid?'A pause longer than 30 seconds cannot be shared. Try again for a fair result.':(result.syncError?'Score saved on this device, but the result could not be verified online.':(liveRoom&&!target?'The result will update here automatically.':''));
+    document.getElementById('challengeShareBtn').style.display=result.invalid?'none':'inline-flex';
+    document.getElementById('challengeCopyBtn').style.display=result.invalid?'none':'inline-flex';
+    document.getElementById('challengeResultScreen').classList.add('show');
+}
+function getLiveRoomOpponentResult() {
+    if (!challengeRoom||!challengeRoom.participants) return null;
+    var opponent=challengeRoomRole==='host'?challengeRoom.participants.guest:challengeRoom.participants.host;
+    return opponent&&opponent.result||null;
+}
+function updateLiveRoomResult() {
+    if (!challengeLastResult||!challengeRoom) return;
+    var target=getLiveRoomOpponentResult();
+    if (challengeRoom.viewerOutcome) challengeLastResult.outcome=challengeRoom.viewerOutcome;
+    renderChallengeResult(target);
+    if (challengeRoom.status!=='finished') scheduleFriendRoomPoll();
+}
+async function ensureShareChallenge() {
+    if (!challengeLastResult) throw new Error('missing_result');
+    if (challengeLastResult.invalid) throw new Error('invalid_result');
+    if (challengeShare) return challengeShare;
+    var body=Object.assign({},challengeLastResult,{seed:challengeSeed,parentToken:challengeInvite&&challengeInvite.token||null});
+    var data=await apiFetch('/api/challenges',{method:'POST',body:JSON.stringify(body)});
+    challengeShare=data;
+    return data;
+}
+function createChallengeCardDataUrl(url) {
+    var card=document.createElement('canvas'); card.width=1080; card.height=1350; var c=card.getContext('2d');
+    var gradient=c.createLinearGradient(0,0,1080,1350); gradient.addColorStop(0,'#081127'); gradient.addColorStop(1,'#163d43'); c.fillStyle=gradient;c.fillRect(0,0,1080,1350);
+    c.fillStyle='#00d38f';c.font='800 44px sans-serif';c.textAlign='center';c.fillText('FROG FRENZY CHALLENGE',540,145);
+    c.font='180px sans-serif';c.fillText('🐸',540,390);
+    c.fillStyle='#ffd700';c.font='900 220px sans-serif';c.fillText(String(challengeLastResult.rescues),540,670);
+    c.fillStyle='#ffffff';c.font='700 54px sans-serif';c.fillText('FROGS RESCUED',540,755);
+    c.fillStyle='#b8c2cc';c.font='500 38px sans-serif';c.fillText('60 seconds · Same map · No boosts',540,840);
+    c.fillStyle='#ffffff';c.font='800 56px sans-serif';c.fillText('CAN YOU BEAT ME?',540,1010);
+    c.fillStyle='#ffd700';c.font='500 30px sans-serif';c.fillText(url.replace(/^https?:\/\//,''),540,1165);
+    return card.toDataURL('image/png');
+}
+async function shareChallengeResult() {
+    var status=document.getElementById('challengeShareStatus'); status.textContent='Creating your challenge…';
+    try {
+        var data=await ensureShareChallenge(), url=data.shareUrl;
+        var text='I rescued '+challengeLastResult.rescues+' frog'+(challengeLastResult.rescues===1?'':'s')+' in 60 seconds 🐸 Can you beat me?';
+        var imageDataUrl=createChallengeCardDataUrl(url), plugin=getFrogSharePlugin();
+        trackGrowthEvent('share_sheet_open',{rescues:challengeLastResult.rescues},data.challenge.token);
+        if (isNativeAndroid()&&plugin&&plugin.share) {
+            await plugin.share({title:'Frog Frenzy Challenge',text:text,url:url,imageDataUrl:imageDataUrl});
+        } else if (navigator.share) {
+            var blob=await (await fetch(imageDataUrl)).blob(), file=new File([blob],'frog-frenzy-challenge.png',{type:'image/png'}), payload={title:'Frog Frenzy Challenge',text:text,url:url};
+            if (navigator.canShare&&navigator.canShare({files:[file]})) payload.files=[file];
+            await navigator.share(payload);
+        } else {
+            await navigator.clipboard.writeText(text+' '+url);
+            status.textContent='Challenge link copied.';
+            return;
+        }
+        status.textContent='Choose a friend to challenge.';
+    } catch(e) {
+        if (e&&e.name==='AbortError') { status.textContent='Share cancelled.'; return; }
+        status.textContent='Could not create the share link. Check your connection and try again.';
+    }
+}
+async function copyChallengeLink() {
+    var status=document.getElementById('challengeShareStatus');status.textContent='Creating your link…';
+    try { var data=await ensureShareChallenge(); await navigator.clipboard.writeText(data.shareUrl); trackGrowthEvent('share_link_copy',{},data.challenge.token); status.textContent='Challenge link copied.'; }
+    catch(e) { status.textContent='Could not copy the link. Check your connection.'; }
+}
+function retryFriendChallenge() {
+    if (challengeInvite&&challengeInvite.room) { createFriendRoom(); return; }
+    if (!challengeInvite) challengeInvite={token:'',seed:challengeSeed,target:null};
+    challengeLastResult=null; challengeShare=null;
+    if (challengeInvite.token) acceptFriendChallenge(); else startChallengeRun(challengeInvite);
 }
 
 const ASSET_SOURCES = {
@@ -673,11 +1126,13 @@ function getInstallId() {
 async function initPlayerSession() {
     installId = getInstallId();
     playerToken = localStorage.getItem('frog_player_token') || null;
+    setupChallengeLinkListener();
+    var pending=await readPendingChallenge();
     try {
         var data = await fetch(getApiUrl('/api/play/session'),{
             method:'POST',
             headers:{'Content-Type':'application/json'},
-            body:JSON.stringify({ installId:installId, platform:getAppPlatform(), appVersion:isNativeAndroid()?'android-1.0.0':'web-preview' })
+            body:JSON.stringify({ installId:installId, platform:getAppPlatform(), appVersion:isNativeAndroid()?'android-1.0.2':'web-preview', referralToken:pending.token||null, referralSource:pending.source||'web' })
         }).then(function(r){return r.ok?r.json():null;});
         if (!data) throw new Error('session_failed');
         playerToken=data.token; localStorage.setItem('frog_player_token',playerToken);
@@ -688,6 +1143,7 @@ async function initPlayerSession() {
         setWalletStatus('Offline mode: coins, items, and progress are saved locally.');
         updateWalletUI();
     }
+    if (pending.token) openPendingInvite(pending);
 }
 loadProgress();
 let adInterval = null, _adCallback = null, _adReturnState = STATE.MENU, _shopReturnState = STATE.MENU;
@@ -971,11 +1427,11 @@ function getLevelConfig(lvl) {
 
 // Init Level
 function initLevel(lvl) {
-    level = lvl; levelConfig = getLevelConfig(lvl);
+    level = lvl; levelConfig = challengeActive ? Object.assign({},getLevelConfig(1),{name:'🐸 Friend Challenge',homesNeeded:999,timeLimit:60}) : getLevelConfig(lvl);
     lanes = levelConfig.lanes; homesNeeded = levelConfig.homesNeeded;
     timeTotal = getLevelTimeLimit(); timeLeft = timeTotal; levelTimer = 0; levelStartFrame = frame; scoreAtLevelStart = score;
     homes = []; homesFilled = 0; comboCount = 0; nearMissFlash = 0; trailParticles = []; exhaustParticles = [];
-    activeContract = getContractForLevel(lvl); contractCoinsEarned = 0; rewardedAdsThisExpedition = 0;
+    activeContract = challengeActive ? null : getContractForLevel(lvl); contractCoinsEarned = 0; rewardedAdsThisExpedition = 0;
     var hs = 800/5;
     for (var i=0;i<5;i++) homes.push({ x:hs*i+hs/2-20, y:20, filled:false, idx:i });
     frog.row = 14; frog.col = 9; frogMoving = false; frogSafe = true; frogLockTimer = 0; deathAnim = 0; frogInvincible = 0;
@@ -987,13 +1443,13 @@ function initLevel(lvl) {
         for (var i=0;i<cnt;i++) objs.push({ x:i*l.gap+(l.dir>0?0:800), width:l.width||40, visible:true });
         laneObjects.push(objs);
     });
-    flies = []; flySpawnTimer = activeContract.type==='flies' ? 25 : 60;
+    flies = []; flySpawnTimer = challengeActive ? 999999 : (activeContract&&activeContract.type==='flies' ? 25 : 60);
     if (powerups.slowmo>0) powerups.slowmo=300;
-    setTimeout(function(){ if (state===STATE.PLAYING&&levelConfig) addPopup('Level '+level+' · '+getLevelStartPopup(level),'#ffd700'); },220);
+    setTimeout(function(){ if (state===STATE.PLAYING&&levelConfig) addPopup(challengeActive?'60 seconds · No boosts':'Level '+level+' · '+getLevelStartPopup(level),'#ffd700'); },220);
 }
 
 function getEffectiveSpeed(l) { return powerups.slowmo>0 ? l.speed*.35 : l.speed; }
-function restoreCrossingTime() { timeTotal = getLevelTimeLimit(); timeLeft = timeTotal; levelTimer = 0; }
+function restoreCrossingTime() { if (challengeActive) return; timeTotal = getLevelTimeLimit(); timeLeft = timeTotal; levelTimer = 0; }
 function rememberFail(type) {
     lastFailType = type || 'generic';
     lastFailRow = Math.max(0,Math.min(ROWS-1,Math.round(frog.row)));
@@ -1005,7 +1461,7 @@ function update() {
     if (state!==STATE.PLAYING) return; frame++;
     if (frogLockTimer>0) frogLockTimer--; if (frogInvincible>0) frogInvincible--; if (nearMissCooldown>0) nearMissCooldown--;
     levelTimer++;
-    if (levelTimer%60===0) { timeLeft--; if (timeLeft<=0) { rememberFail('time'); gameOver('⏰ Time is up...'); return; } }
+    if (levelTimer%60===0) { timeLeft--; if (timeLeft<=0) { rememberFail('time'); if(challengeActive) finishChallenge('time'); else gameOver('⏰ Time is up...'); return; } }
     if (powerups.slowmo>0) { powerups.slowmo--; if (powerups.slowmo===0) addPopup('⏱️ Slow Motion ended','#ffd700'); }
     updateLaneObjects();
     exhaustParticles = exhaustParticles.filter(function(p){ p.life--; p.x+=p.vx; p.y+=p.vy; p.vy-=0.02; return p.life>0; });
@@ -1026,8 +1482,8 @@ function update() {
         var l2 = lanes.find(function(l){return l.row===frog.row;});
         if (l2&&l2.type==='river') {
             var o2 = getObjectUnderFrog();
-            if (o2) { frog.col += getEffectiveSpeed(l2)*l2.dir*.02; if (frog.col<0||frog.col>=COLS) { rememberFail('swept'); gameOver('🌊 Swept away...'); return; } if (frame%3===0) spawnParticle(frog.col*CELL+20,frog.row*CELL+24,'rgba(100,200,255,0.3)',2); }
-            else if (frogSafe&&!isTurtleUnderFrog()) { rememberFail('water'); gameOver('💦 Fell in the water...'); return; }
+            if (o2) { frog.col += getEffectiveSpeed(l2)*l2.dir*.02; if (frog.col<0||frog.col>=COLS) { rememberFail('swept'); if(challengeActive)frogHit('swept');else gameOver('🌊 Swept away...'); return; } if (frame%3===0) spawnParticle(frog.col*CELL+20,frog.row*CELL+24,'rgba(100,200,255,0.3)',2); }
+            else if (frogSafe&&!isTurtleUnderFrog()) { rememberFail('water'); if(challengeActive)frogHit('water');else gameOver('💦 Fell in the water...'); return; }
         }
     }
     particles = particles.filter(function(p){ p.x+=p.vx; p.y+=p.vy; p.life--; p.vx*=.98; return p.life>0; });
@@ -1039,10 +1495,10 @@ function update() {
     flySpawnTimer--;
     if (flySpawnTimer<=0&&flies.length<3) {
         var safeRows = [2,3,6,8,11,14];
-        var r = safeRows[Math.floor(Math.random()*safeRows.length)];
-        var c = 2+Math.floor(Math.random()*16);
-        if (!flies.some(function(f){return Math.abs(f.row-r)<2&&Math.abs(f.col-c)<3;})) flies.push({row:r,col:c,life:300,glow:0,golden:Math.random()<getLevelPacing(level).goldenChance});
-        flySpawnTimer=(activeContract&&activeContract.type==='flies'?75:120)+Math.floor(Math.random()*90);
+        var r = safeRows[Math.floor(gameplayRandom()*safeRows.length)];
+        var c = 2+Math.floor(gameplayRandom()*16);
+        if (!flies.some(function(f){return Math.abs(f.row-r)<2&&Math.abs(f.col-c)<3;})) flies.push({row:r,col:c,life:300,glow:0,golden:gameplayRandom()<getLevelPacing(level).goldenChance});
+        flySpawnTimer=(activeContract&&activeContract.type==='flies'?75:120)+Math.floor(gameplayRandom()*90);
     }
     for (var i=flies.length-1;i>=0;i--) { flies[i].life--; if (flies[i].life<=0) flies.splice(i,1); }
 }
@@ -1116,6 +1572,12 @@ function checkFrogPosition() {
             addPopup(comboCount>=2?'🔥 '+comboCount+'x Combo! +'+bonus:'+'+bonus, comboCount>=2?'#ff6b6b':'#ffd700');
             spawnParticle(h.x+20,h.y+20,'#ffd700',20); spawnParticle(h.x+20,h.y+20,'#ff6b6b',10); spawnParticle(h.x+20,h.y+20,'#feca57',15);
             restoreCrossingTime();
+            if (challengeActive) {
+                challengeRescues++; homesFilled=challengeRescues;
+                setTimeout(function(){h.filled=false;},260);
+                frog.row=14; frog.col=9; frogSafe=true; frogLockTimer=20;
+                addPopup('🐸 Rescue '+challengeRescues+'!','#00d38f'); return;
+            }
             if (comboCount>=3) { var msgs = ['🔥 3 Combo!','🔥🔥 4 Combo!','🔥🔥🔥 5 Combo!','💥 Amazing!','💥💥 Unstoppable!']; addPopup(msgs[Math.min(comboCount-3,msgs.length-1)],'#ff6b6b'); }
             if (homesFilled>=homesNeeded) { setTimeout(function(){levelComplete();},400); return; }
             frog.row=14; frog.col=9; frogSafe=true; frogLockTimer=20;
@@ -1156,6 +1618,7 @@ function frogHit(type) { if (frogInvincible>0) return;
     rememberFail(type||'road');
     if (powerups.shield>0) { powerups.shield--; flashOverlay=1; flashColor='#00b894'; playSound('shield'); addPopup('🛡️ Shield blocked it!','#00b894'); spawnParticle(frog.col*CELL+20,frog.row*CELL+20,'#00b894',15); frog.row=Math.min(14,frog.row+1); frog.col=Math.max(0,Math.min(COLS-1,frog.col)); justSavedByShield=true; return; }
     deathAnim=30; screenShake=8; flashOverlay=1; flashColor='#ff6b6b'; comboCount=0;
+    if (challengeActive) challengeDeaths++;
     playSound('die');
     spawnParticle(frog.col*CELL+20,frog.row*CELL+20,'#ff6b6b',25); spawnParticle(frog.col*CELL+20,frog.row*CELL+20,'#ffd700',15); spawnParticle(frog.col*CELL+20,frog.row*CELL+20,'#ff9ff3',10);
     state=STATE.DYING;
@@ -1465,6 +1928,16 @@ function launchBriefedLevel() {
     briefingLevel=null; selectedLoadout=null;
     startLevel(target,chosen);
 }
+function ensureGameLoop() {
+    if (window._gameLoopRunning) return;
+    window._gameLoopRunning=true;
+    var previous=performance.now(), accumulator=0, step=1000/60;
+    (function loop(now){
+        var delta=Math.min(100,Math.max(0,now-previous)); previous=now; accumulator+=delta;
+        try { while(accumulator>=step){update();accumulator-=step;} draw(); } catch(e){console.error('Game:',e);}
+        requestAnimationFrame(loop);
+    })(previous);
+}
 function startLevel(lvl, loadout) {
     if (!isLevelUnlocked(lvl)) { addPopup('Clear the previous level first','#ffd700'); return; }
     document.getElementById('startScreen').classList.remove('show');
@@ -1479,7 +1952,7 @@ function startLevel(lvl, loadout) {
     if (!soundMuted) startMusic();
     document.getElementById('pauseBtn').style.display='flex'; document.getElementById('exitBtn').style.display='flex';
     document.getElementById('musicIndicator').classList.add('show');
-    if (!window._gameLoopRunning) { window._gameLoopRunning=true; (function loop(){try{update();draw();}catch(e){console.error('Game:',e);}requestAnimationFrame(loop);})(); }
+    ensureGameLoop();
 }
 
 function startGame() { openBriefing(getUnlockedLevel()); }
@@ -1627,6 +2100,7 @@ function nextLevel() {
 }
 
 function gameOver(reason) {
+    if (challengeActive) { finishChallenge(reason||'lives'); return; }
     stopMusic(); state=STATE.GAME_OVER; if (score>highScore) highScore=score; saveProgress();
     document.getElementById('gameOverScreen').classList.add('show');
     document.getElementById('failLevelName').textContent='Level '+level+' · '+levelConfig.name;
@@ -1635,6 +2109,7 @@ function gameOver(reason) {
 }
 
 function retryLevel() {
+    if (challengeActive) { retryFriendChallenge(); return; }
     stopMusic();
     ['gameOverScreen','pauseScreen','adScreen'].forEach(function(id){document.getElementById(id).classList.remove('show');});
     score=scoreAtLevelStart; lives=maxLives; powerups={shield:0,slowmo:0,superJump:0,secondChance:0};
@@ -1643,9 +2118,31 @@ function retryLevel() {
     document.getElementById('pauseBtn').style.display='flex'; document.getElementById('exitBtn').style.display='flex';
     document.getElementById('musicIndicator').classList.add('show');
 }
-function resumeGame() { state=STATE.PLAYING; document.getElementById('pauseScreen').classList.remove('show'); }
+function pauseGame() {
+    if (state!==STATE.PLAYING) return;
+    state=STATE.PAUSED;
+    if (challengeActive&&!challengePauseStartedAt) challengePauseStartedAt=Date.now();
+    document.getElementById('pauseScreen').classList.add('show');
+}
+function resumeGame() {
+    document.getElementById('pauseScreen').classList.remove('show');
+    if (challengeActive&&challengePauseStartedAt) {
+        challengePauseTotal+=Date.now()-challengePauseStartedAt; challengePauseStartedAt=0;
+        if (challengePauseTotal>30000) { finishChallenge('interrupted'); return; }
+    }
+    state=STATE.PLAYING;
+}
 function continueEndless() { document.getElementById('winScreen').classList.remove('show'); initLevel(levelsBeaten+1); state=STATE.PLAYING; }
-function backToMenu() { stopMusic(); state=STATE.MENU; document.getElementById('pauseBtn').style.display='none'; document.getElementById('exitBtn').style.display='none'; ['pauseScreen','gameOverScreen','levelCompleteScreen','winScreen','shopScreen','briefingScreen','coinStoreScreen','adScreen'].forEach(function(id){document.getElementById(id).classList.remove('show');}); resetAdScreen(); document.getElementById('startScreen').classList.add('show'); document.getElementById('highScoreDisplay').textContent=highScore; document.getElementById('totalStarsMenu').textContent=totalStars; renderLevelSelect(); renderMenuContract(); document.getElementById('musicIndicator').classList.remove('show'); }
+function backToMenu() {
+    if (challengeRoom&&challengeRoomRole&&challengeRoom.status==='playing'&&!challengeLastResult&&playerToken) {
+        apiFetch('/api/challenge-rooms/'+encodeURIComponent(challengeRoom.token)+'/finish',{method:'POST',body:JSON.stringify({forfeit:true})}).catch(function(){});
+    }
+    stopMusic(); clearFriendRoomTimers(); challengeActive=false; gameplayRandom=Math.random; challengeAttemptId=null; challengeLastResult=null; challengeShare=null; challengeInvite=null; challengeRoom=null; challengeRoomRole=''; challengeRoomShareUrl=''; challengeRoomStarting=false; state=STATE.MENU;
+    document.getElementById('pauseBtn').style.display='none'; document.getElementById('exitBtn').style.display='none';
+    ['pauseScreen','gameOverScreen','levelCompleteScreen','winScreen','shopScreen','briefingScreen','coinStoreScreen','adScreen','challengeInviteScreen','challengeLobbyScreen','challengeResultScreen'].forEach(function(id){document.getElementById(id).classList.remove('show');});
+    resetAdScreen(); document.getElementById('startScreen').classList.add('show'); document.getElementById('highScoreDisplay').textContent=highScore; document.getElementById('totalStarsMenu').textContent=totalStars; renderLevelSelect(); renderMenuContract(); document.getElementById('musicIndicator').classList.remove('show');
+    if(pendingChallengeToken){var token=pendingChallengeToken,kind=pendingChallengeKind;pendingChallengeToken='';pendingChallengeKind='challenge';setTimeout(function(){openPendingInvite({token:token,kind:kind,source:'app_link'});},0);}
+}
 function updateAdCount() { var e=document.getElementById('adCountDisplay'); if(e) e.textContent='Reward breaks: '+rewardedAdsThisExpedition+'/3 this expedition · '+totalRewardAds+' claimed overall. Ads are optional and never interrupt a crossing.'; }
 updateAdCount(); refreshMenuStats(); initPlayerSession();
 document.getElementById('soundToggleBtn').textContent='🔇'; var pb=document.getElementById('pauseSoundBtn'); if(pb) pb.textContent='🔇';
@@ -1966,12 +2463,12 @@ function drawHUD() {
     ctx.fillStyle='rgba(255,255,255,0.08)'; ctx.fillRect(0,33,W,1);
     ctx.textBaseline='middle';
     ctx.textAlign='left';
-    ctx.fillStyle='#ffd700'; ctx.font='bold 14px sans-serif'; ctx.fillText('🏠 '+homesFilled+'/'+homesNeeded,10,17);
-    var ls=''; for(var i=0;i<lives;i++)ls+='❤️'; for(var i=lives;i<maxLives;i++)ls+='🖤';
+    ctx.fillStyle='#ffd700'; ctx.font='bold 14px sans-serif'; ctx.fillText(challengeActive?('🐸 '+challengeRescues):('🏠 '+homesFilled+'/'+homesNeeded),10,17);
+    var lifeCap=challengeActive?3:maxLives, ls=''; for(var i=0;i<lives;i++)ls+='❤️'; for(var i=lives;i<lifeCap;i++)ls+='🖤';
     ctx.fillStyle='#ff6b6b'; ctx.font='13px sans-serif'; ctx.fillText(ls+' ×'+lives,82,17);
-    ctx.fillStyle=th.accent; ctx.font='bold 15px sans-serif'; ctx.textAlign='center'; ctx.fillText('Level '+level+' · '+levelConfig.name,360,17);
+    ctx.fillStyle=th.accent; ctx.font='bold 15px sans-serif'; ctx.textAlign='center'; ctx.fillText(challengeActive?'Friend Challenge':('Level '+level+' · '+levelConfig.name),360,17);
     drawTimerPanel();
-    ctx.textAlign='right'; ctx.fillStyle='#ffd700'; ctx.font='bold 14px sans-serif'; ctx.fillText('Score: '+score,712,17);
+    ctx.textAlign='right'; ctx.fillStyle='#ffd700'; ctx.font='bold 14px sans-serif'; ctx.fillText(challengeActive?('Rescues: '+challengeRescues):('Score: '+score),712,17);
     var y=86; ctx.textAlign='left'; ctx.font='12px sans-serif'; ctx.textBaseline='alphabetic';
     if(powerups.shield>0){ctx.fillStyle='#00b894';ctx.fillText('🛡️ '+powerups.shield,10,y);y+=15;}
     if(powerups.slowmo>0){ctx.fillStyle='#fdcb6e';ctx.fillText('⏱️ '+Math.ceil(powerups.slowmo/60)+'s',10,y);y+=15;}
@@ -2019,7 +2516,7 @@ document.addEventListener('click',function(e){
     playSound('ui');
 });
 document.addEventListener('keydown',function(e){
-    if(e.key==='Escape'){if(state===STATE.PLAYING){state=STATE.PAUSED;document.getElementById('pauseScreen').classList.add('show');}else if(state===STATE.PAUSED)resumeGame();return;}
+    if(e.key==='Escape'){if(state===STATE.PLAYING)pauseGame();else if(state===STATE.PAUSED)resumeGame();return;}
     if(state===STATE.PLAYING){switch(e.key){case'ArrowUp':case'w':case'W':e.preventDefault();moveFrog(-1,0);break;case'ArrowDown':case's':case'S':e.preventDefault();moveFrog(1,0);break;case'ArrowLeft':case'a':case'A':e.preventDefault();moveFrog(0,-1);break;case'ArrowRight':case'd':case'D':e.preventDefault();moveFrog(0,1);break;}}
     if(e.key==='r'&&state===STATE.GAME_OVER)retryLevel();
 });
@@ -2035,6 +2532,7 @@ canvas.addEventListener('pointerup',function(e){
     if (Math.abs(dx)>Math.abs(dy)) moveFrog(0,dx>0?1:-1); else moveFrog(dy>0?1:-1,0);
 });
 document.querySelectorAll('.mobile-controls button').forEach(function(btn){btn.addEventListener('touchstart',function(e){e.preventDefault();var d=btn.dataset.dir;if(d==='up')moveFrog(-1,0);else if(d==='down')moveFrog(1,0);else if(d==='left')moveFrog(0,-1);else if(d==='right')moveFrog(0,1);});});
+document.addEventListener('visibilitychange',function(){if(document.hidden&&state===STATE.PLAYING)pauseGame();});
 
 // Boot
 window._gameLoopRunning=false;
