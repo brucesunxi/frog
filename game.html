@@ -693,7 +693,29 @@ loadProgress();
 let adInterval = null, _adCallback = null, _adReturnState = STATE.MENU, _shopReturnState = STATE.MENU;
 
 // Sound System
-let audioCtx = null, audioMaster = null, noiseBuffer = null;
+let audioCtx = null, audioMaster = null, noiseBuffer = null, samplePreloads = [];
+const REAL_SFX = {
+    ui:{src:'assets/audio/frog-ui.wav',volume:.28},
+    jump:{src:'assets/audio/frog-jump.wav',volume:.42},
+    die:{src:'assets/audio/frog-hit.wav',volume:.54,rate:.86},
+    home:{src:'assets/audio/frog-win.wav',volume:.42,rate:1.12},
+    combo:{src:'assets/audio/frog-powerup.wav',volume:.34,rate:1.16},
+    win:{src:'assets/audio/frog-win.wav',volume:.48},
+    shield:{src:'assets/audio/frog-powerup.wav',volume:.36,rate:.9},
+    nearmiss:{src:'assets/audio/frog-nearmiss.wav',volume:.24,rate:1.18},
+    coin:{src:'assets/audio/frog-coin.wav',volume:.38},
+    powerup:{src:'assets/audio/frog-powerup.wav',volume:.4},
+    revive:{src:'assets/audio/frog-revive.wav',volume:.45},
+    purchase:{src:'assets/audio/frog-win.wav',volume:.5,rate:1.06}
+};
+function preloadRealSfx() {
+    if (samplePreloads.length || typeof Audio==='undefined') return;
+    Object.keys(REAL_SFX).forEach(function(key){
+        var clip=new Audio(REAL_SFX[key].src);
+        clip.preload='auto';
+        samplePreloads.push(clip);
+    });
+}
 function initAudio() {
     if (audioCtx) { if (audioCtx.state==='suspended') audioCtx.resume(); return; }
     try {
@@ -705,6 +727,19 @@ function initAudio() {
     } catch(e) {}
 }
 function audioDestination() { return audioMaster || (audioCtx&&audioCtx.destination); }
+function playRealSfx(type,onUnavailable) {
+    var config=REAL_SFX[type];
+    if (!config || typeof Audio==='undefined') return false;
+    try {
+        var clip=new Audio(config.src);
+        clip.preload='auto';
+        clip.volume=config.volume;
+        clip.playbackRate=config.rate||1;
+        var started=clip.play();
+        if (started&&typeof started.catch==='function') started.catch(function(){if(onUnavailable)onUnavailable();});
+        return true;
+    } catch(e) { return false; }
+}
 function playTone(shape, from, to, duration, volume, when) {
     if (!audioCtx || soundMuted) return;
     try {
@@ -804,10 +839,10 @@ function toggleSound() {
     var pb = document.getElementById('pauseSoundBtn'); if (pb) pb.textContent = em;
     saveProgress();
     if (soundMuted) stopMusic();
-    else { initAudio(); if (!bgMusic.mOsc) startMusic(); }
+    else { initAudio(); preloadRealSfx(); if (!bgMusic.mOsc) startMusic(); }
 }
 
-function playSound(type) {
+function playSynthSound(type) {
     if (!audioCtx||soundMuted) return;
     switch(type) {
         case 'ui': playTone('triangle',620,760,.045,.035); break;
@@ -823,6 +858,13 @@ function playSound(type) {
         case 'revive': playJingle([330,494,659,880],.07,'triangle',.075,.16); break;
         case 'purchase': playJingle([523,659,784,1047,1319],.075,'triangle',.075,.15); break;
     }
+}
+function playSound(type) {
+    if (soundMuted) return;
+    initAudio();
+    if (!audioCtx) return;
+    if (playRealSfx(type,function(){playSynthSound(type);})) return;
+    playSynthSound(type);
 }
 
 // Ambient
