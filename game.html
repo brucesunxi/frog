@@ -117,6 +117,20 @@ canvas {
 .wallet-panel { display:flex; align-items:center; justify-content:center; gap:8px; flex-wrap:wrap; margin:3px 0; }
 .wallet-pill { min-height:32px; padding:6px 13px; border-radius:16px; display:flex; align-items:center; gap:6px; background:rgba(255,215,0,.1); border:1px solid rgba(255,215,0,.28); color:#ffd700; font-size:clamp(13px,2.4vw,16px); font-weight:800; line-height:1.1; }
 .wallet-status { color:#8d99a5; font-size:clamp(11px,2.1vw,14px); min-height:14px; line-height:1.3; max-width:620px; padding:0 8px; }
+.contract-panel { width:min(640px,96%); padding:9px 12px; border-radius:12px; background:linear-gradient(135deg,rgba(0,211,143,.12),rgba(116,185,255,.08)); border:1px solid rgba(0,211,143,.3); color:#dfe6e9; text-align:left; }
+.contract-panel .eyebrow { color:#00d38f; font-size:11px; font-weight:800; letter-spacing:.12em; text-transform:uppercase; }
+.contract-panel .contract-text { margin-top:3px; font-size:13px; line-height:1.35; font-weight:650; }
+.contract-panel .contract-reward { color:#ffd700; font-size:12px; margin-top:4px; }
+.briefing-card { width:min(510px,94%); background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.13); border-radius:14px; padding:14px; text-align:left; }
+.briefing-card h3 { color:#ffd700; margin:0 0 6px; font-size:17px; }
+.briefing-card p { font-size:13px; margin:3px 0; }
+.loadout-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:7px; width:min(510px,94%); }
+.loadout-option { min-height:94px; background:rgba(255,255,255,.055); border:2px solid rgba(255,255,255,.11); border-radius:11px; color:#dfe6e9; padding:8px 5px; cursor:pointer; font:inherit; transition:all .18s; }
+.loadout-option:hover,.loadout-option.selected { border-color:#ffd700; background:rgba(255,215,0,.11); transform:translateY(-2px); }
+.loadout-option.disabled { opacity:.48; cursor:not-allowed; }
+.loadout-option .loadout-icon { display:block; font-size:22px; line-height:1.1; }
+.loadout-option .loadout-name { display:block; margin-top:4px; color:#ffd700; font-size:12px; font-weight:800; }
+.loadout-option .loadout-count { display:block; margin-top:3px; color:#b2bec3; font-size:11px; }
 .ad-countdown { font-size: 56px; color: #ffd700; font-weight: bold; margin: 15px 0; text-shadow: 0 0 40px rgba(255,215,0,0.5); }
 .stars { font-size: 32px; margin: 5px 0; letter-spacing: 4px; }
 .fade-in { animation: fadeIn 0.3s ease-out; }
@@ -220,6 +234,9 @@ canvas {
     .powerup-card .icon { font-size:18px; margin-bottom:2px; }
     .powerup-card .name { font-size:11px; }
     .powerup-card .desc { display:none; }
+    .loadout-option { min-height:65px; padding:5px; }
+    .loadout-option .loadout-icon { font-size:18px; }
+    .loadout-option .loadout-count { display:none; }
     .shop-actions { padding-top:5px; gap:6px; }
     #levelCompleteScreen,
     #gameOverScreen,
@@ -289,6 +306,11 @@ canvas {
             <p>🏠 Reach the homes at the top · Dodge traffic and cross rivers</p>
             <p style="color:#ffd700;">🔥 Chain safe deliveries for combo points!</p>
         </div>
+        <div class="contract-panel" id="menuContract">
+            <div class="eyebrow">Expedition contract</div>
+            <div class="contract-text">Clear a level to reveal your first contract.</div>
+            <div class="contract-reward">Complete it for bonus coins.</div>
+        </div>
         <div class="level-select">
             <div class="level-progress" id="campaignProgress">Cleared 0/8</div>
             <div class="level-grid" id="levelGrid"></div>
@@ -307,6 +329,7 @@ canvas {
         <p>Score: <span class="highlight" id="completeScore">0</span></p>
         <p>Best combo: <span class="highlight" id="completeCombo">0</span>x</p>
         <p>Time bonus: <span class="highlight" id="completeTimeBonus">+0</span></p>
+        <p>Expedition reward: <span class="highlight" id="completeCoinReward">🪙 +0</span></p>
         <div id="nextLevelHook" class="complete-tip">Next level tip</div>
         <div style="margin:4px 0;padding:5px 14px;background:rgba(255,215,0,0.1);border-radius:8px;">
             <span style="color:#b2bec3;font-size:12px;">Total stars: </span>
@@ -316,6 +339,20 @@ canvas {
             <button class="btn btn-powerup btn-small" id="prepNextBtn" onclick="prepareNextLevelBoost()">🪙 Prep next level</button>
             <button class="btn btn-next btn-small" onclick="nextLevel()">Next Level →</button>
         </div>
+    </div>
+    <div class="overlay fade-in scroll-panel" id="briefingScreen">
+        <h1 style="color:#ffd700;">🐸 Expedition Briefing</h1>
+        <h2 id="briefingTitle">Level 1</h2>
+        <div class="briefing-card">
+            <h3 id="briefingLesson">Read the rhythm</h3>
+            <p id="briefingTip">Watch the lane for one beat, then take the safe opening.</p>
+            <p id="briefingContract">Contract</p>
+            <p class="highlight" id="briefingReward">Reward: 🪙 0</p>
+        </div>
+        <p style="font-size:13px;margin-top:3px;">Choose one stored tool for this expedition — optional.</p>
+        <div class="loadout-grid" id="loadoutGrid"></div>
+        <button class="btn btn-start" onclick="launchBriefedLevel()">Start Expedition</button>
+        <button class="btn btn-small" style="background:#636e72;color:white;" onclick="closeBriefing()">Back</button>
     </div>
     <div class="overlay fade-in" id="gameOverScreen">
         <h1>💀</h1>
@@ -348,7 +385,7 @@ canvas {
     </div>
     <div class="overlay fade-in scroll-panel" id="shopScreen">
         <h1 class="shop-title">🎁 Item Shop</h1>
-        <p class="shop-subtitle">Spend coins on power-ups. In the Google Play version, coins come from in-app purchases.</p>
+        <p class="shop-subtitle">Earn coins by clearing expeditions, fulfilling contracts, and collecting fireflies. Store a tool, then choose it before a run.</p>
         <div class="wallet-pill" style="margin:5px 0;">🪙 Coins <span id="coinBalanceShop">0</span></div>
         <div class="powerup-grid" id="shopPowerups"></div>
         <p style="font-size:12px;color:#636e72;" id="adCountDisplay"></p>
@@ -400,6 +437,7 @@ let justSavedByShield = false, levelStartFrame = 0, totalStars = 0, bestCombo = 
 let lastFailType = 'generic', lastFailRow = 14, lastFailCol = 9;
 let levelsBeaten = 0, levelStars = {}, highScore = 0, soundMuted = true, deathAnim = 0;
 let flies = [], flySpawnTimer = 0;
+let activeContract = null, contractCoinsEarned = 0, briefingLevel = null, selectedLoadout = null;
 let clouds = [], roadDecor = [], stars = [], exhaustParticles = [];
 const PRODUCTION_API_BASE = 'https://frog-omega-rose.vercel.app';
 const COIN_PACKS = [
@@ -544,6 +582,7 @@ function refreshMenuStats() {
     if (ts) ts.textContent=totalStars;
     updateWalletUI();
     renderLevelSelect();
+    renderMenuContract();
 }
 function setWalletStatus(text) {
     var e=document.getElementById('walletStatus');
@@ -748,6 +787,55 @@ function getRecommendedPowerup(type) {
     if (type==='swept') return 'slowmo';
     return level>=6 ? 'slowmo' : 'shield';
 }
+function getContractForLevel(lvl) {
+    var contracts = [
+        { type:'combo', target:2, reward:18, title:'Warm-up Rhythm', text:'Deliver 2 frogs in one combo streak.' },
+        { type:'flies', target:1, reward:22, title:'Firefly Scout', text:'Collect 1 glowing firefly on the route.' },
+        { type:'safe', target:3, reward:26, title:'Careful Crossing', text:'Finish with at least 3 lives remaining.' },
+        { type:'combo', target:3, reward:30, title:'Rush Hour Relay', text:'Build a 3x delivery combo.' },
+        { type:'flies', target:2, reward:34, title:'River Forager', text:'Collect 2 glowing fireflies.' },
+        { type:'safe', target:3, reward:38, title:'City Discipline', text:'Finish with at least 3 lives remaining.' },
+        { type:'combo', target:4, reward:42, title:'High-Stakes Streak', text:'Build a 4x delivery combo.' },
+        { type:'perfect', target:1, reward:50, title:'Crown Crossing', text:'Complete the level without losing a life.' }
+    ];
+    var base = contracts[Math.min(lvl - 1, contracts.length - 1)];
+    return Object.assign({ progress:0, complete:false, startingLives:maxLives }, base);
+}
+function getContractProgressLabel(contract) {
+    if (!contract) return '';
+    if (contract.type==='safe') return Math.max(0,lives)+'/'+contract.target+' lives';
+    if (contract.type==='perfect') return lives===contract.startingLives ? 'Perfect run' : 'Life lost';
+    return Math.min(contract.progress,contract.target)+'/'+contract.target;
+}
+function renderMenuContract() {
+    var panel=document.getElementById('menuContract');
+    if (!panel) return;
+    var next=getContractForLevel(getUnlockedLevel());
+    panel.innerHTML='<div class="eyebrow">Next expedition contract</div><div class="contract-text">'+next.title+' · '+next.text+'</div><div class="contract-reward">Reward: 🪙 '+next.reward+' bonus coins</div>';
+}
+function renderContractHUD() {
+    if (!activeContract) return;
+    var label=activeContract.complete ? '✓ Contract complete' : activeContract.title+' '+getContractProgressLabel(activeContract);
+    ctx.fillStyle=activeContract.complete?'#00d38f':'#ffd700'; ctx.font='bold 12px sans-serif'; ctx.textAlign='right'; ctx.textBaseline='alphabetic';
+    ctx.fillText('📜 '+label,790,84);
+}
+function progressContract(type, amount) {
+    if (!activeContract || activeContract.complete || activeContract.type!==type) return;
+    activeContract.progress=Math.min(activeContract.target,activeContract.progress+(amount||1));
+    if (activeContract.progress>=activeContract.target) {
+        activeContract.complete=true;
+        addPopup('📜 Contract complete! +'+activeContract.reward+' coins','#00d38f');
+        playSound('win');
+    }
+}
+function settleContract() {
+    if (!activeContract) return 0;
+    if (activeContract.type==='safe' && lives>=activeContract.target) activeContract.complete=true;
+    if (activeContract.type==='perfect' && lives===activeContract.startingLives) activeContract.complete=true;
+    if (!activeContract.complete) return 0;
+    contractCoinsEarned=activeContract.reward;
+    return contractCoinsEarned;
+}
 
 function getLevelConfig(lvl) {
     var C = [
@@ -770,6 +858,7 @@ function initLevel(lvl) {
     lanes = levelConfig.lanes; homesNeeded = levelConfig.homesNeeded;
     timeTotal = getLevelTimeLimit(); timeLeft = timeTotal; levelTimer = 0; levelStartFrame = frame; scoreAtLevelStart = score;
     homes = []; homesFilled = 0; comboCount = 0; nearMissFlash = 0; trailParticles = []; exhaustParticles = [];
+    activeContract = getContractForLevel(lvl); contractCoinsEarned = 0;
     var hs = 800/5;
     for (var i=0;i<5;i++) homes.push({ x:hs*i+hs/2-20, y:20, filled:false, idx:i });
     frog.row = 14; frog.col = 9; frogMoving = false; frogSafe = true; frogLockTimer = 0; deathAnim = 0; frogInvincible = 0;
@@ -781,7 +870,7 @@ function initLevel(lvl) {
         for (var i=0;i<cnt;i++) objs.push({ x:i*l.gap+(l.dir>0?0:800), width:l.width||40, visible:true });
         laneObjects.push(objs);
     });
-    flies = []; flySpawnTimer = 60;
+    flies = []; flySpawnTimer = activeContract.type==='flies' ? 25 : 60;
     if (powerups.slowmo>0) powerups.slowmo=300;
     setTimeout(function(){ if (state===STATE.PLAYING&&levelConfig) addPopup('Level '+level+' · '+getLevelStartPopup(level),'#ffd700'); },220);
 }
@@ -809,7 +898,7 @@ function update() {
             frog.row=frogTarget.row; frog.col=frogTarget.col; frogMoving=false; frogAnim=0;
             checkFrogPosition();
             var fr=Math.round(frog.row), fc=Math.round(frog.col);
-            for (var i=flies.length-1;i>=0;i--) { var f=flies[i]; if (fr===f.row&&fc===f.col) { score+=50; addPopup('🪰 +50!','#ffd700'); spawnParticle(f.col*CELL+20,f.row*CELL+20,'#ffd700',8); flies.splice(i,1); playSound('shield'); } }
+            for (var i=flies.length-1;i>=0;i--) { var f=flies[i]; if (fr===f.row&&fc===f.col) { score+=50; coinBalance+=5; progressContract('flies',1); addPopup('🪰 +50 · 🪙 +5!','#ffd700'); spawnParticle(f.col*CELL+20,f.row*CELL+20,'#ffd700',8); flies.splice(i,1); updateWalletUI(); saveProgress(); playSound('shield'); } }
             for (var i=0;i<5;i++) spawnParticle(frog.col*CELL+20,frog.row*CELL+20,'#feca57',2);
         }
         return;
@@ -836,7 +925,7 @@ function update() {
         var r = safeRows[Math.floor(Math.random()*safeRows.length)];
         var c = 2+Math.floor(Math.random()*16);
         if (!flies.some(function(f){return Math.abs(f.row-r)<2&&Math.abs(f.col-c)<3;})) flies.push({row:r,col:c,life:300,glow:0});
-        flySpawnTimer=120+Math.floor(Math.random()*120);
+        flySpawnTimer=(activeContract&&activeContract.type==='flies'?75:120)+Math.floor(Math.random()*90);
     }
     for (var i=flies.length-1;i>=0;i--) { flies[i].life--; if (flies[i].life<=0) flies.splice(i,1); }
 }
@@ -902,7 +991,7 @@ function checkFrogPosition() {
         var h = homes[idx];
         if (h&&!h.filled) {
             h.filled=true; homesFilled++;
-            comboCount++; if (comboCount>maxCombo) maxCombo=comboCount;
+            comboCount++; if (comboCount>maxCombo) maxCombo=comboCount; progressContract('combo',1);
             var comboBonus = Math.min(comboCount,10), base = 100+Math.max(0,timeLeft)*2, bonus = base*comboBonus;
             score += bonus;
             playSound('home');
@@ -1029,6 +1118,14 @@ async function useCoinPowerup(type,mode) {
         var spot=findReviveSpot(); frog.row=spot.row; frog.col=spot.col; continuePlayingAfterAd('Power-up active. Keep going!');
     }
 }
+async function buyInventoryItem(type) {
+    if (!(await spendCoinsForItem(type,1))) return;
+    inventory[type]=(inventory[type]||0)+1;
+    updateWalletUI(); saveProgress();
+    setWalletStatus('Stored '+type.replace('slowmo','Slow Motion').replace('superJump','Super Jump')+' for your next expedition.');
+    addPopup('🎒 Item stored!','#00d38f');
+    renderShopContents();
+}
 
 async function reviveWithCoins() {
     if (!(await spendCoinsForItem('revive',1))) return;
@@ -1093,18 +1190,67 @@ function renderLevelSelect() {
         var card=document.createElement('button');
         card.className='level-card '+(unlocked?'':'locked ')+(cleared?'cleared ':'')+(i===getUnlockedLevel()&&!cleared?'current':'');
         card.disabled=!unlocked;
-        card.onclick=(function(lvl){return function(){startLevel(lvl);};})(i);
+        card.onclick=(function(lvl){return function(){openBriefing(lvl);};})(i);
         card.innerHTML='<div class="num">'+(cleared?'✓':'Level '+i)+'</div><div class="title">'+cfg.name.replace(/^\S+\s*/,'')+'</div><div class="stars-mini">'+(unlocked?('★'.repeat(stars)+'☆'.repeat(3-stars)):'🔒 Locked')+'</div>';
         grid.appendChild(card);
     }
 }
 
-function startLevel(lvl) {
+function openBriefing(lvl) {
+    if (!isLevelUnlocked(lvl)) return;
+    briefingLevel=lvl; selectedLoadout=null;
+    var cfg=getLevelConfig(lvl), contract=getContractForLevel(lvl);
+    document.getElementById('startScreen').classList.remove('show');
+    document.getElementById('briefingScreen').classList.add('show');
+    document.getElementById('briefingTitle').textContent='Level '+lvl+' · '+cfg.name;
+    document.getElementById('briefingLesson').textContent=getLevelStartPopup(lvl);
+    document.getElementById('briefingTip').textContent=getLevelTip(lvl);
+    document.getElementById('briefingContract').textContent='📜 '+contract.title+' — '+contract.text;
+    document.getElementById('briefingReward').textContent='Contract reward: 🪙 '+contract.reward;
+    renderLoadoutChoices();
+}
+function renderLoadoutChoices() {
+    var grid=document.getElementById('loadoutGrid'); if (!grid) return;
+    var options=[
+        {type:'shield',icon:'🛡️',name:'Shield'},
+        {type:'slowmo',icon:'⏱️',name:'Slow Motion'},
+        {type:'superJump',icon:'🦘',name:'Super Jump'},
+        {type:'secondChance',icon:'💫',name:'Second Chance'},
+        {type:null,icon:'🐸',name:'No tool'}
+    ];
+    grid.innerHTML='';
+    options.forEach(function(option){
+        var count=option.type?Number(inventory[option.type]||0):0;
+        var button=document.createElement('button');
+        button.className='loadout-option '+(selectedLoadout===option.type?'selected ':'')+(option.type&&count<=0?'disabled ':'');
+        button.disabled=!!(option.type&&count<=0);
+        button.innerHTML='<span class="loadout-icon">'+option.icon+'</span><span class="loadout-name">'+option.name+'</span><span class="loadout-count">'+(option.type?'Stored: '+count:'Pure skill run')+'</span>';
+        button.onclick=function(){ selectedLoadout=option.type; renderLoadoutChoices(); };
+        grid.appendChild(button);
+    });
+}
+function closeBriefing() {
+    document.getElementById('briefingScreen').classList.remove('show');
+    document.getElementById('startScreen').classList.add('show');
+    briefingLevel=null; selectedLoadout=null;
+}
+function launchBriefedLevel() {
+    if (!briefingLevel) return;
+    var chosen=selectedLoadout, target=briefingLevel;
+    document.getElementById('briefingScreen').classList.remove('show');
+    briefingLevel=null; selectedLoadout=null;
+    startLevel(target,chosen);
+}
+function startLevel(lvl, loadout) {
     if (!isLevelUnlocked(lvl)) { addPopup('Clear the previous level first','#ffd700'); return; }
     document.getElementById('startScreen').classList.remove('show');
     score=0;lives=maxLives;homes=[];maxCombo=0;
     powerups={shield:0,slowmo:0,superJump:0,secondChance:0};
     initLevel(lvl); state=STATE.PLAYING; initAudio();
+    if (loadout && inventory[loadout]>0) {
+        inventory[loadout]--; grantPowerup(loadout); updateWalletUI(); saveProgress();
+        addPopup('Equipped '+loadout.replace('slowmo','Slow Motion').replace('superJump','Super Jump'),'#ffd700');
+    }
     
     if (!soundMuted) startMusic();
     document.getElementById('pauseBtn').style.display='flex'; document.getElementById('exitBtn').style.display='flex';
@@ -1112,7 +1258,7 @@ function startLevel(lvl) {
     if (!window._gameLoopRunning) { window._gameLoopRunning=true; (function loop(){try{update();draw();}catch(e){console.error('Game:',e);}requestAnimationFrame(loop);})(); }
 }
 
-function startGame() { startLevel(getUnlockedLevel()); }
+function startGame() { openBriefing(getUnlockedLevel()); }
 
 function getFailInsight() {
     var left = Math.max(0,homesNeeded-homesFilled);
@@ -1149,15 +1295,18 @@ function showFailScreen() {
 }
 
 function showShop() {
-    _shopReturnState=state;
+    if (state!==STATE.SHOP) _shopReturnState=state;
     state=STATE.SHOP;
     ['startScreen','pauseScreen','gameOverScreen'].forEach(function(id){document.getElementById(id).classList.remove('show');});
     document.getElementById('shopScreen').classList.add('show');
+    renderShopContents();
+}
+function renderShopContents() {
     var c=document.getElementById('shopPowerups'); c.innerHTML='';
-    [{type:'shield',icon:'🛡️',name:'Shield',desc:'Blocks one lethal hit. Best for heavy traffic.'},{type:'slowmo',icon:'⏱️',name:'Slow Motion',desc:'Slows hazards by 65% for 10 seconds.'},{type:'superJump',icon:'🦘',name:'Super Jump',desc:'Great for rivers. Jump two tiles 3 times.'},{type:'secondChance',icon:'💫',name:'Second Chance',desc:'Revive nearby once after a mistake.'},{type:'extraLife',icon:'❤️',name:'Extra Life',desc:'Add one life, up to 5 lives.'}].forEach(function(item){
+    [{type:'shield',icon:'🛡️',name:'Shield',desc:'Store it, then bring it to block one lethal hit.'},{type:'slowmo',icon:'⏱️',name:'Slow Motion',desc:'Store it, then bring it to slow hazards for 10 seconds.'},{type:'superJump',icon:'🦘',name:'Super Jump',desc:'Store it, then bring it for 3 two-tile jumps.'},{type:'secondChance',icon:'💫',name:'Second Chance',desc:'Store it for an automatic nearby revive.'}].forEach(function(item){
         var card=document.createElement('div');card.className='powerup-card';
-        card.onclick=function(){useCoinPowerup(item.type,'bank');};
-        card.innerHTML='<div class="icon">'+item.icon+'</div><div class="name">'+item.name+'</div><div class="desc">'+item.desc+'</div><div style="font-size:11px;color:#ffd700;margin-top:3px;">🪙 '+getItemPrice(item.type)+' coins</div>';
+        card.onclick=function(){ buyInventoryItem(item.type);};
+        card.innerHTML='<div class="icon">'+item.icon+'</div><div class="name">'+item.name+' · '+(inventory[item.type]||0)+'</div><div class="desc">'+item.desc+'</div><div style="font-size:11px;color:#ffd700;margin-top:3px;">🪙 '+getItemPrice(item.type)+' coins</div>';
         c.appendChild(card);
     });
     if (isNativeAndroid()) {
@@ -1194,10 +1343,16 @@ function levelComplete() {
     if (st>oldStars) { levelStars[level]=st; totalStars += st-oldStars; }
     levelsBeaten = Math.max(levelsBeaten,Math.min(level,CAMPAIGN_LEVELS));
     if (score>highScore) highScore=score;
+    var timeBonus=Math.max(0,timeLeft)*2;
+    score+=timeBonus;
+    if (score>highScore) highScore=score;
+    var clearCoins=12+level*4+st*3, contractCoins=settleContract(), earnedCoins=clearCoins+contractCoins;
+    coinBalance+=earnedCoins; updateWalletUI();
     saveProgress();
     document.getElementById('completeLevelName').textContent='Level '+level+' · '+levelConfig.name;
     document.getElementById('completeScore').textContent=score; document.getElementById('completeCombo').textContent=maxCombo;
-    document.getElementById('completeTimeBonus').textContent='+'+Math.max(0,timeLeft)*2;
+    document.getElementById('completeTimeBonus').textContent='+'+timeBonus;
+    document.getElementById('completeCoinReward').textContent='🪙 +'+earnedCoins+(contractCoins?' (contract +'+contractCoins+')':'');
     document.getElementById('completeStars').textContent='★'.repeat(st)+'☆'.repeat(3-st);
     document.getElementById('totalStarsDisplay').textContent='⭐ '+totalStars;
     var next = level+1;
@@ -1262,8 +1417,8 @@ function retryLevel() {
 }
 function resumeGame() { state=STATE.PLAYING; document.getElementById('pauseScreen').classList.remove('show'); }
 function continueEndless() { document.getElementById('winScreen').classList.remove('show'); initLevel(levelsBeaten+1); state=STATE.PLAYING; }
-function backToMenu() { stopMusic(); state=STATE.MENU; document.getElementById('pauseBtn').style.display='none'; document.getElementById('exitBtn').style.display='none'; ['pauseScreen','gameOverScreen','levelCompleteScreen','winScreen','shopScreen'].forEach(function(id){document.getElementById(id).classList.remove('show');}); document.getElementById('startScreen').classList.add('show'); document.getElementById('highScoreDisplay').textContent=highScore; document.getElementById('totalStarsMenu').textContent=totalStars; renderLevelSelect(); document.getElementById('musicIndicator').classList.remove('show'); }
-function updateAdCount() { var e=document.getElementById('adCountDisplay'); if(e) e.textContent='Coin spending is recorded locally and will restore across devices after Google Play purchases are connected.'; }
+function backToMenu() { stopMusic(); state=STATE.MENU; document.getElementById('pauseBtn').style.display='none'; document.getElementById('exitBtn').style.display='none'; ['pauseScreen','gameOverScreen','levelCompleteScreen','winScreen','shopScreen','briefingScreen'].forEach(function(id){document.getElementById(id).classList.remove('show');}); document.getElementById('startScreen').classList.add('show'); document.getElementById('highScoreDisplay').textContent=highScore; document.getElementById('totalStarsMenu').textContent=totalStars; renderLevelSelect(); renderMenuContract(); document.getElementById('musicIndicator').classList.remove('show'); }
+function updateAdCount() { var e=document.getElementById('adCountDisplay'); if(e) e.textContent='Coins are earned from expeditions and saved locally; connected players can sync progress across devices.'; }
 updateAdCount(); refreshMenuStats(); initPlayerSession();
 document.getElementById('soundToggleBtn').textContent='🔇'; var pb=document.getElementById('pauseSoundBtn'); if(pb) pb.textContent='🔇';
 
@@ -1281,6 +1436,7 @@ function draw() {
     ctx.save();
     if (screenShake>0) ctx.translate((Math.random()-.5)*screenShake,(Math.random()-.5)*screenShake);
     drawBackground();
+    drawDecorations();
     drawRoads();
     drawRiver();
     drawExhaustParticles();
@@ -1590,6 +1746,8 @@ function drawHUD() {
     if(powerups.shield>0){ctx.fillStyle='#00b894';ctx.fillText('🛡️ '+powerups.shield,10,y);y+=15;}
     if(powerups.slowmo>0){ctx.fillStyle='#fdcb6e';ctx.fillText('⏱️ '+Math.ceil(powerups.slowmo/60)+'s',10,y);y+=15;}
     if(powerups.superJump>0){ctx.fillStyle='#a29bfe';ctx.fillText('🦘 '+powerups.superJump,10,y);y+=15;}
+    if(powerups.secondChance>0){ctx.fillStyle='#a29bfe';ctx.fillText('💫 '+powerups.secondChance,10,y);y+=15;}
+    renderContractHUD();
     if (timeLeft<=10) { var f=Math.sin(frame*.15)>0; if(f){ctx.fillStyle='rgba(255,0,0,0.12)';ctx.fillRect(0,0,W,H); ctx.fillStyle='#ff6b6b';ctx.font='bold 20px sans-serif';ctx.textAlign='center'; ctx.fillText('⚠️ Time is running out!',400,120);} }
 }
 
