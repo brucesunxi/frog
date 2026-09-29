@@ -147,6 +147,18 @@ canvas {
     width: 3px; background: #ffd700; border-radius: 1px;
     animation: musicBounce 0.5s ease-in-out infinite alternate;
 }
+.purchase-toast {
+    position:absolute; z-index:30; top:calc(var(--frame-pad) + 14px); left:50%;
+    transform:translate(-50%,-12px); display:none; min-width:min(330px,calc(100% - 32px));
+    padding:12px 18px; border:1px solid rgba(0,211,143,.8); border-radius:14px;
+    background:linear-gradient(135deg,rgba(0,76,69,.97),rgba(5,23,36,.97));
+    box-shadow:0 10px 30px rgba(0,0,0,.42),0 0 22px rgba(0,211,143,.2);
+    color:#fff; text-align:center; pointer-events:none; opacity:0;
+}
+.purchase-toast.show { display:block; animation:purchaseToastIn .22s ease-out forwards; }
+.purchase-toast .title { color:#55efc4; font-size:15px; font-weight:800; }
+.purchase-toast .detail { margin-top:3px; color:#fff; font-size:14px; font-weight:700; }
+@keyframes purchaseToastIn { to { opacity:1; transform:translate(-50%,0); } }
 
 .mobile-controls { display: none; justify-content: center; margin-top: clamp(8px, 1.6vh, 12px); padding-bottom: env(safe-area-inset-bottom); }
 .mobile-controls button {
@@ -287,6 +299,10 @@ canvas {
         <div class="music-bar" style="animation-delay:0.2s;height:14px;"></div>
         <div class="music-bar" style="animation-delay:0.15s;height:8px;"></div>
         <div class="music-bar" style="animation-delay:0.05s;height:12px;"></div>
+    </div>
+    <div class="purchase-toast" id="purchaseToast" role="status" aria-live="polite">
+        <div class="title" id="purchaseToastTitle">🪙 Coins added!</div>
+        <div class="detail" id="purchaseToastDetail"></div>
     </div>
     <div class="overlay show" id="startScreen">
         <h1 class="brand-frog">🐸</h1>
@@ -596,6 +612,19 @@ function refreshMenuStats() {
 function setWalletStatus(text) {
     var e=document.getElementById('walletStatus');
     if (e) e.textContent=text||'';
+}
+let purchaseToastTimer = null;
+function showCoinPurchaseConfirmation(amount) {
+    var toast=document.getElementById('purchaseToast');
+    if (!toast) return;
+    var added=Math.max(0,Number(amount)||0), total=getAvailableCoins();
+    document.getElementById('purchaseToastTitle').textContent='🪙 Purchase complete!';
+    document.getElementById('purchaseToastDetail').textContent='+'+added+' coins added · Total: '+total+' coins';
+    toast.classList.remove('show');
+    void toast.offsetWidth;
+    toast.classList.add('show');
+    clearTimeout(purchaseToastTimer);
+    purchaseToastTimer=setTimeout(function(){toast.classList.remove('show');},4200);
 }
 function updateWalletUI() {
     var ids=['coinBalanceMenu','coinBalanceShop'];
@@ -1196,9 +1225,11 @@ function watchRewardAdForRevive() {
 }
 function simulateCoinPurchase(pack) {
     startMockAd('🪙 Preview Checkout','Simulating '+pack.price+' checkout. Your '+(pack.coins+pack.bonus)+' coins will arrive in 3 seconds.',function(){
-        previewCoinBalance+=pack.coins+pack.bonus; updateWalletUI(); saveProgress(); playSound('win');
-        setWalletStatus('Preview purchase complete: +'+(pack.coins+pack.bonus)+' coins. No real payment was taken.');
+        var added=pack.coins+pack.bonus;
+        previewCoinBalance+=added; updateWalletUI(); saveProgress(); playSound('win');
+        setWalletStatus('Preview purchase complete: +'+added+' coins. No real payment was taken.');
         closeCoinStore();
+        showCoinPurchaseConfirmation(added);
     });
 }
 
@@ -1265,6 +1296,7 @@ function buyPreviewCoins(amount) {
     previewCoinBalance += amount;
     setWalletStatus('Web preview added '+amount+' coins. The release version will use Google Play purchases.');
     updateWalletUI(); saveProgress();
+    showCoinPurchaseConfirmation(amount);
 }
 
 async function buyCoinPack(productId, fallbackCoins) {
@@ -1291,6 +1323,7 @@ async function buyCoinPack(productId, fallbackCoins) {
         saveProgress();
         setWalletStatus('Purchase verified. Coins added to your wallet.');
         playSound('win');
+        showCoinPurchaseConfirmation(fallbackCoins || 0);
     } catch(e) {
         setWalletStatus(e && e.message ? e.message : 'Purchase could not be completed.');
     }
