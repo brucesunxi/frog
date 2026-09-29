@@ -1121,6 +1121,10 @@ function closeCoinStore() {
     } else if (returnState===STATE.GAME_OVER) {
         state=STATE.GAME_OVER;
         document.getElementById('gameOverScreen').classList.add('show');
+    } else if (returnState===STATE.LEVEL_COMPLETE) {
+        // Coin packs can be opened while preparing a boost on the clear screen.
+        // Keep that screen active instead of dropping into a completed level.
+        state=STATE.LEVEL_COMPLETE;
     } else {
         // A pack screen can also be opened from an optional reward flow. Never
         // restore its hidden paused state: return the player to a usable run.
@@ -1315,6 +1319,7 @@ function renderLevelSelect() {
 
 function openBriefing(lvl) {
     if (!isLevelUnlocked(lvl)) return;
+    state=STATE.MENU;
     briefingLevel=lvl; selectedLoadout=null;
     var cfg=getLevelConfig(lvl), contract=getContractForLevel(lvl), pacing=getLevelPacing(lvl);
     document.getElementById('startScreen').classList.remove('show');
@@ -1349,6 +1354,7 @@ function renderLoadoutChoices() {
 function closeBriefing() {
     document.getElementById('briefingScreen').classList.remove('show');
     document.getElementById('startScreen').classList.add('show');
+    state=STATE.MENU;
     briefingLevel=null; selectedLoadout=null;
 }
 function launchBriefedLevel() {
@@ -1448,6 +1454,7 @@ function closeShop() {
     if(state===STATE.SHOP){
         if(_shopReturnState===STATE.MENU){document.getElementById('startScreen').classList.add('show');state=STATE.MENU;}
         else if(_shopReturnState===STATE.GAME_OVER) { state=STATE.GAME_OVER; document.getElementById('gameOverScreen').classList.add('show'); }
+        else if(_shopReturnState===STATE.LEVEL_COMPLETE) { state=STATE.LEVEL_COMPLETE; }
         else { state=STATE.PLAYING; document.getElementById('pauseScreen').classList.remove('show'); }
     }
 }
