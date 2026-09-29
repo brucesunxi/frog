@@ -685,8 +685,53 @@ loadProgress();
 let adInterval = null, _adCallback = null, _adReturnState = STATE.MENU, _shopReturnState = STATE.MENU;
 
 // Sound System
-let audioCtx = null;
-function initAudio() { if (audioCtx) return; try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); if (audioCtx.state==='suspended') audioCtx.resume(); } catch(e) {} }
+let audioCtx = null, audioMaster = null, noiseBuffer = null;
+function initAudio() {
+    if (audioCtx) { if (audioCtx.state==='suspended') audioCtx.resume(); return; }
+    try {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        audioMaster = audioCtx.createGain();
+        audioMaster.gain.setValueAtTime(0.48,audioCtx.currentTime);
+        audioMaster.connect(audioCtx.destination);
+        if (audioCtx.state==='suspended') audioCtx.resume();
+    } catch(e) {}
+}
+function audioDestination() { return audioMaster || (audioCtx&&audioCtx.destination); }
+function playTone(shape, from, to, duration, volume, when) {
+    if (!audioCtx || soundMuted) return;
+    try {
+        var at=when===undefined?audioCtx.currentTime:when, osc=audioCtx.createOscillator(), gain=audioCtx.createGain();
+        osc.type=shape||'sine'; osc.connect(gain); gain.connect(audioDestination());
+        osc.frequency.setValueAtTime(Math.max(1,from),at);
+        if (to && to!==from) osc.frequency.exponentialRampToValueAtTime(Math.max(1,to),at+duration*.82);
+        gain.gain.setValueAtTime(0.0001,at);
+        gain.gain.exponentialRampToValueAtTime(Math.max(.001,volume||.06),at+.008);
+        gain.gain.exponentialRampToValueAtTime(.0001,at+duration);
+        osc.start(at); osc.stop(at+duration+.02);
+    } catch(e) {}
+}
+function playNoise(duration, volume, cutoff, when) {
+    if (!audioCtx || soundMuted) return;
+    try {
+        var at=when===undefined?audioCtx.currentTime:when;
+        if (!noiseBuffer) {
+            noiseBuffer=audioCtx.createBuffer(1,Math.floor(audioCtx.sampleRate*.24),audioCtx.sampleRate);
+            var data=noiseBuffer.getChannelData(0);
+            for (var i=0;i<data.length;i++) data[i]=Math.random()*2-1;
+        }
+        var source=audioCtx.createBufferSource(), filter=audioCtx.createBiquadFilter(), gain=audioCtx.createGain();
+        source.buffer=noiseBuffer; filter.type='lowpass'; filter.frequency.setValueAtTime(cutoff||1800,at);
+        source.connect(filter); filter.connect(gain); gain.connect(audioDestination());
+        gain.gain.setValueAtTime(Math.max(.001,volume||.03),at);
+        gain.gain.exponentialRampToValueAtTime(.0001,at+duration);
+        source.start(at); source.stop(at+duration+.02);
+    } catch(e) {}
+}
+function playJingle(notes, spacing, shape, volume, duration) {
+    if (!audioCtx || soundMuted) return;
+    var at=audioCtx.currentTime;
+    notes.forEach(function(note,index){playTone(shape,note,note,duration,volume,at+index*spacing);});
+}
 
 // Background Music
 let bgMusic = { playing: false, bpm: 170, beat: 0, melodyNotes: [], bassNotes: [], totalBeats: 0, mOsc: null, bOsc: null, mGain: null, bGain: null, _interval: null };
@@ -706,16 +751,16 @@ function startMusic() { createBgMusic();
     var mOsc = audioCtx.createOscillator();
     var mGain = audioCtx.createGain();
     mOsc.type = 'square';
-    mGain.gain.setValueAtTime(0.06, audioCtx.currentTime);
+    mGain.gain.setValueAtTime(0.045, audioCtx.currentTime);
     mOsc.connect(mGain);
-    mGain.connect(audioCtx.destination);
+    mGain.connect(audioDestination());
     mOsc.start();
     var bOsc = audioCtx.createOscillator();
     var bGain = audioCtx.createGain();
     bOsc.type = 'triangle';
-    bGain.gain.setValueAtTime(0.04, audioCtx.currentTime);
+    bGain.gain.setValueAtTime(0.032, audioCtx.currentTime);
     bOsc.connect(bGain);
-    bGain.connect(audioCtx.destination);
+    bGain.connect(audioDestination());
     bOsc.start();
     bgMusic.mOsc = mOsc;
     bgMusic.mGain = mGain;
@@ -730,6 +775,8 @@ function startMusic() { createBgMusic();
         var now = audioCtx.currentTime;
         bgMusic.mOsc.frequency.setValueAtTime(bgMusic.melodyNotes[beat], now);
         bgMusic.bOsc.frequency.setValueAtTime(bgMusic.bassNotes[Math.floor(beat/2) % bgMusic.bassNotes.length], now);
+        if (beat%4===0) playTone('sine',92,48,.09,.045,now);
+        else if (beat%2===1) playNoise(.025,.012,4800,now);
         bgMusic.beat++;
     }, 60 / bgMusic.bpm * 1000);
 }
@@ -752,25 +799,22 @@ function toggleSound() {
     else { initAudio(); if (!bgMusic.mOsc) startMusic(); }
 }
 
-
 function playSound(type) {
     if (!audioCtx||soundMuted) return;
-    try {
-        var o = audioCtx.createOscillator();
-        var g = audioCtx.createGain();
-        o.connect(g); g.connect(audioCtx.destination);
-        var n = audioCtx.currentTime;
-        g.gain.setValueAtTime(0.12, n);
-        switch(type) {
-            case 'jump': o.frequency.setValueAtTime(400, n); o.frequency.exponentialRampToValueAtTime(600, n+0.06); g.gain.exponentialRampToValueAtTime(0.001, n+0.08); o.start(n); o.stop(n+0.08); break;
-            case 'die': o.type='sawtooth'; o.frequency.setValueAtTime(400, n); o.frequency.exponentialRampToValueAtTime(80, n+0.3); g.gain.setValueAtTime(0.1, n); g.gain.exponentialRampToValueAtTime(0.001, n+0.3); o.start(n); o.stop(n+0.3); break;
-            case 'home': o.frequency.setValueAtTime(523, n); o.frequency.setValueAtTime(659, n+0.08); o.frequency.setValueAtTime(784, n+0.16); g.gain.exponentialRampToValueAtTime(0.001, n+0.35); o.start(n); o.stop(n+0.35); break;
-            case 'combo': o.frequency.setValueAtTime(880, n); o.frequency.setValueAtTime(1100, n+0.06); g.gain.setValueAtTime(0.08, n); g.gain.exponentialRampToValueAtTime(0.001, n+0.15); o.start(n); o.stop(n+0.15); break;
-            case 'win': [523,587,659,784].forEach(function(f,i){var o2=audioCtx.createOscillator();var g2=audioCtx.createGain();o2.connect(g2);g2.connect(audioCtx.destination);o2.frequency.setValueAtTime(f,n+i*0.1);g2.gain.setValueAtTime(0.1,n+i*0.1);g2.gain.exponentialRampToValueAtTime(0.001,n+i*0.1+0.2);o2.start(n+i*0.1);o2.stop(n+i*0.1+0.2);}); break;
-            case 'shield': o.type='sine'; o.frequency.setValueAtTime(600, n); o.frequency.exponentialRampToValueAtTime(1000, n+0.1); g.gain.setValueAtTime(0.08, n); g.gain.exponentialRampToValueAtTime(0.001, n+0.15); o.start(n); o.stop(n+0.15); break;
-            case 'nearmiss': o.type='sine'; o.frequency.setValueAtTime(1200, n); o.frequency.exponentialRampToValueAtTime(1800, n+0.04); g.gain.setValueAtTime(0.04, n); g.gain.exponentialRampToValueAtTime(0.001, n+0.06); o.start(n); o.stop(n+0.06); break;
-        }
-    } catch(e) {}
+    switch(type) {
+        case 'ui': playTone('triangle',620,760,.045,.035); break;
+        case 'jump': playTone('square',360,620,.075,.075); playTone('sine',170,130,.055,.025); break;
+        case 'die': playNoise(.15,.08,900); playTone('sawtooth',310,48,.34,.10); playTone('triangle',115,42,.38,.045); break;
+        case 'home': playJingle([523,659,784],.075,'triangle',.082,.18); playTone('sine',196,392,.23,.04); break;
+        case 'combo': playJingle([880,1047],.055,'square',.055,.11); break;
+        case 'win': playJingle([523,659,784,1047],.085,'triangle',.085,.18); break;
+        case 'shield': playTone('sine',450,1180,.16,.075); playNoise(.07,.025,3200); break;
+        case 'nearmiss': playTone('sine',1180,1760,.07,.045); playTone('sine',1450,2050,.055,.025,.035+audioCtx.currentTime); break;
+        case 'coin': playJingle([988,1319],.06,'triangle',.065,.13); break;
+        case 'powerup': playJingle([392,587,784],.06,'sine',.06,.13); break;
+        case 'revive': playJingle([330,494,659,880],.07,'triangle',.075,.16); break;
+        case 'purchase': playJingle([523,659,784,1047,1319],.075,'triangle',.075,.15); break;
+    }
 }
 
 // Ambient
@@ -948,7 +992,7 @@ function update() {
             frog.row=frogTarget.row; frog.col=frogTarget.col; frogMoving=false; frogAnim=0;
             checkFrogPosition();
             var fr=Math.round(frog.row), fc=Math.round(frog.col);
-            for (var i=flies.length-1;i>=0;i--) { var f=flies[i]; if (fr===f.row&&fc===f.col) { var flyScore=f.golden?125:50, flyCoins=f.golden?12:5; score+=flyScore; coinBalance+=flyCoins; progressContract('flies',1); addPopup((f.golden?'✨ Golden firefly! ':'🪰 ')+'+'+flyScore+' · 🪙 +'+flyCoins+'!','#ffd700'); spawnParticle(f.col*CELL+20,f.row*CELL+20,'#ffd700',f.golden?15:8); flies.splice(i,1); updateWalletUI(); saveProgress(); playSound('shield'); } }
+            for (var i=flies.length-1;i>=0;i--) { var f=flies[i]; if (fr===f.row&&fc===f.col) { var flyScore=f.golden?125:50, flyCoins=f.golden?12:5; score+=flyScore; coinBalance+=flyCoins; progressContract('flies',1); addPopup((f.golden?'✨ Golden firefly! ':'🪰 ')+'+'+flyScore+' · 🪙 +'+flyCoins+'!','#ffd700'); spawnParticle(f.col*CELL+20,f.row*CELL+20,'#ffd700',f.golden?15:8); flies.splice(i,1); updateWalletUI(); saveProgress(); playSound(f.golden?'win':'coin'); } }
             for (var i=0;i<5;i++) spawnParticle(frog.col*CELL+20,frog.row*CELL+20,'#feca57',2);
         }
         return;
@@ -1213,20 +1257,20 @@ function watchRewardAdForCoins() {
         rewardedAdsThisExpedition++; totalRewardAds++; previewCoinBalance+=25; updateWalletUI(); saveProgress();
         setWalletStatus('Reward claimed: +25 coins. '+(3-rewardedAdsThisExpedition)+' reward breaks left this expedition.');
         if (state===STATE.SHOP) renderShopContents();
-        addPopup('▶ Reward claimed · 🪙 +25','#00d38f'); playSound('win');
+        addPopup('▶ Reward claimed · 🪙 +25','#00d38f'); playSound('coin');
     });
 }
 function watchRewardAdForRevive() {
     startMockAd('▶ Last-Chance Reward','Watch this 3-second preview for one free revive and a temporary Shield.',function(){
         var spot=findReviveSpot(); frog.row=spot.row; frog.col=spot.col; lives=Math.max(1,lives); powerups.shield=(powerups.shield||0)+1;
-        totalRewardAds++; saveProgress(); playSound('win');
+        totalRewardAds++; saveProgress(); playSound('revive');
         continuePlayingAfterAd('Reward revive! Shield active — make this run count.');
     });
 }
 function simulateCoinPurchase(pack) {
     startMockAd('🪙 Preview Checkout','Simulating '+pack.price+' checkout. Your '+(pack.coins+pack.bonus)+' coins will arrive in 3 seconds.',function(){
         var added=pack.coins+pack.bonus;
-        previewCoinBalance+=added; updateWalletUI(); saveProgress(); playSound('win');
+        previewCoinBalance+=added; updateWalletUI(); saveProgress(); playSound('purchase');
         setWalletStatus('Preview purchase complete: +'+added+' coins. No real payment was taken.');
         closeCoinStore();
         showCoinPurchaseConfirmation(added);
@@ -1235,10 +1279,10 @@ function simulateCoinPurchase(pack) {
 
 function grantPowerup(type) {
     if (type==='shield') { powerups.shield=(powerups.shield||0)+1; addPopup('🛡️ Shield ready!','#00b894'); playSound('shield'); return true; }
-    if (type==='slowmo') { powerups.slowmo=600; addPopup('⏱️ Slow Motion!','#fdcb6e'); playSound('shield'); return true; }
-    if (type==='superJump') { powerups.superJump=(powerups.superJump||0)+3; addPopup('🦘 Super Jump ready!','#a29bfe'); playSound('shield'); return true; }
-    if (type==='extraLife') { lives=Math.min(maxLives,lives+1); addPopup('❤️ +1 Life!','#ff6b6b'); playSound('win'); return true; }
-    if (type==='secondChance') { powerups.secondChance=(powerups.secondChance||0)+1; addPopup('💫 Second Chance ready!','#a29bfe'); playSound('shield'); return true; }
+    if (type==='slowmo') { powerups.slowmo=600; addPopup('⏱️ Slow Motion!','#fdcb6e'); playSound('powerup'); return true; }
+    if (type==='superJump') { powerups.superJump=(powerups.superJump||0)+3; addPopup('🦘 Super Jump ready!','#a29bfe'); playSound('powerup'); return true; }
+    if (type==='extraLife') { lives=Math.min(maxLives,lives+1); addPopup('❤️ +1 Life!','#ff6b6b'); playSound('revive'); return true; }
+    if (type==='secondChance') { powerups.secondChance=(powerups.secondChance||0)+1; addPopup('💫 Second Chance ready!','#a29bfe'); playSound('revive'); return true; }
     return false;
 }
 
@@ -1281,7 +1325,7 @@ async function buyInventoryItem(type) {
 
 async function reviveWithCoins() {
     if (!(await spendCoinsForItem('revive',1))) return;
-    var spot=findReviveSpot();frog.row=spot.row;frog.col=spot.col;lives=Math.max(1,lives+1);powerups.shield=(powerups.shield||0)+1;playSound('win');continuePlayingAfterAd('Revived with Shield. Keep pushing!');
+    var spot=findReviveSpot();frog.row=spot.row;frog.col=spot.col;lives=Math.max(1,lives+1);powerups.shield=(powerups.shield||0)+1;playSound('revive');continuePlayingAfterAd('Revived with Shield. Keep pushing!');
 }
 
 function useAdPowerup(type,mode) {
@@ -1322,7 +1366,7 @@ async function buyCoinPack(productId, fallbackCoins) {
         applyPlayerState(data.state);
         saveProgress();
         setWalletStatus('Purchase verified. Coins added to your wallet.');
-        playSound('win');
+        playSound('purchase');
         showCoinPurchaseConfirmation(fallbackCoins || 0);
     } catch(e) {
         setWalletStatus(e && e.message ? e.message : 'Purchase could not be completed.');
@@ -1943,6 +1987,12 @@ function drawPopups() {
 }
 
 // Input
+document.addEventListener('click',function(e){
+    var target=e.target&&e.target.closest&&e.target.closest('button,.powerup-card,.level-card,.loadout-option');
+    if (!target || soundMuted) return;
+    initAudio();
+    playSound('ui');
+});
 document.addEventListener('keydown',function(e){
     if(e.key==='Escape'){if(state===STATE.PLAYING){state=STATE.PAUSED;document.getElementById('pauseScreen').classList.add('show');}else if(state===STATE.PAUSED)resumeGame();return;}
     if(state===STATE.PLAYING){switch(e.key){case'ArrowUp':case'w':case'W':e.preventDefault();moveFrog(-1,0);break;case'ArrowDown':case's':case'S':e.preventDefault();moveFrog(1,0);break;case'ArrowLeft':case'a':case'A':e.preventDefault();moveFrog(0,-1);break;case'ArrowRight':case'd':case'D':e.preventDefault();moveFrog(0,1);break;}}
