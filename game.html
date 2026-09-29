@@ -695,18 +695,18 @@ let adInterval = null, _adCallback = null, _adReturnState = STATE.MENU, _shopRet
 // Sound System
 let audioCtx = null, audioMaster = null, noiseBuffer = null, samplePreloads = [];
 const REAL_SFX = {
-    ui:{src:'assets/audio/frog-ui.wav',volume:.28},
-    jump:{src:'assets/audio/frog-jump.wav',volume:.42},
-    die:{src:'assets/audio/frog-hit.wav',volume:.54,rate:.86},
-    home:{src:'assets/audio/frog-win.wav',volume:.42,rate:1.12},
-    combo:{src:'assets/audio/frog-powerup.wav',volume:.34,rate:1.16},
-    win:{src:'assets/audio/frog-win.wav',volume:.48},
-    shield:{src:'assets/audio/frog-powerup.wav',volume:.36,rate:.9},
-    nearmiss:{src:'assets/audio/frog-nearmiss.wav',volume:.24,rate:1.18},
-    coin:{src:'assets/audio/frog-coin.wav',volume:.38},
-    powerup:{src:'assets/audio/frog-powerup.wav',volume:.4},
-    revive:{src:'assets/audio/frog-revive.wav',volume:.45},
-    purchase:{src:'assets/audio/frog-win.wav',volume:.5,rate:1.06}
+    ui:{src:'assets/audio/frog-ui.mp3',volume:.25},
+    jump:{src:'assets/audio/frog-jump.mp3',volume:.36},
+    die:{src:'assets/audio/frog-hit.mp3',volume:.42,rate:.92},
+    home:{src:'assets/audio/frog-powerup.mp3',volume:.36,rate:1.07},
+    combo:{src:'assets/audio/frog-powerup.mp3',volume:.29,rate:1.22},
+    win:{src:'assets/audio/frog-win.mp3',volume:.38},
+    shield:{src:'assets/audio/frog-shield.mp3',volume:.28},
+    nearmiss:{src:'assets/audio/frog-nearmiss.mp3',volume:.18,rate:1.1},
+    coin:{src:'assets/audio/frog-coin.mp3',volume:.32},
+    powerup:{src:'assets/audio/frog-powerup.mp3',volume:.34},
+    revive:{src:'assets/audio/frog-revive.mp3',volume:.36},
+    purchase:{src:'assets/audio/frog-purchase.mp3',volume:.38}
 };
 function preloadRealSfx() {
     if (samplePreloads.length || typeof Audio==='undefined') return;
@@ -776,59 +776,32 @@ function playJingle(notes, spacing, shape, volume, duration) {
     notes.forEach(function(note,index){playTone(shape,note,note,duration,volume,at+index*spacing);});
 }
 
-// Background Music
-let bgMusic = { playing: false, bpm: 170, beat: 0, melodyNotes: [], bassNotes: [], totalBeats: 0, mOsc: null, bOsc: null, mGain: null, bGain: null, _interval: null };
+// Background Music — a mastered CC0 loop, kept intentionally below gameplay effects.
+const BACKGROUND_TRACK = 'assets/audio/frog-bgm.mp3';
+let bgMusic = { playing: false, track: null };
 
-function createBgMusic() {
-    if (!audioCtx) return;
-    try {
-        bgMusic.melodyNotes = [262,330,392,523,587,523,392,330, 262,330,392,523,659,587,523,392, 330,392,440,523,587,523,440,392, 294,392,440,587,659,587,440,392, 262,330,523,392,523,659,523,392, 262,294,330,392,440,523,587,523, 330,392,523,440,392,330,262,294, 262,330,392,523,392,330,262,196];
-        bgMusic.bassNotes = [131,131,131,131,165,165,165,165, 147,147,147,147,175,175,175,175, 165,165,165,165,196,196,196,196, 131,131,131,131,165,165,165,165, 131,131,131,131,165,165,165,165, 147,147,147,147,175,175,175,175, 165,165,165,165,196,196,196,196, 131,131,131,131,165,165,165,165];
-        bgMusic.totalBeats = bgMusic.melodyNotes.length;
-    } catch(e) {}
-}
-
-function startMusic() { createBgMusic();
-    if (!audioCtx || soundMuted || bgMusic.playing) return;
-    if (audioCtx.state === 'suspended') audioCtx.resume();
-    var mOsc = audioCtx.createOscillator();
-    var mGain = audioCtx.createGain();
-    mOsc.type = 'square';
-    mGain.gain.setValueAtTime(0.045, audioCtx.currentTime);
-    mOsc.connect(mGain);
-    mGain.connect(audioDestination());
-    mOsc.start();
-    var bOsc = audioCtx.createOscillator();
-    var bGain = audioCtx.createGain();
-    bOsc.type = 'triangle';
-    bGain.gain.setValueAtTime(0.032, audioCtx.currentTime);
-    bOsc.connect(bGain);
-    bGain.connect(audioDestination());
-    bOsc.start();
-    bgMusic.mOsc = mOsc;
-    bgMusic.mGain = mGain;
-    bgMusic.bOsc = bOsc;
-    bgMusic.bGain = bGain;
+function startMusic() {
+    if (soundMuted || bgMusic.playing || typeof Audio==='undefined') return;
+    var track = bgMusic.track || new Audio(BACKGROUND_TRACK);
+    track.loop = true;
+    track.preload = 'auto';
+    track.volume = .16;
+    bgMusic.track = track;
     bgMusic.playing = true;
-    bgMusic.beat = 0;
     document.getElementById('musicIndicator').classList.add('show');
-    bgMusic._interval = setInterval(function() {
-        if (!bgMusic.playing || !audioCtx || soundMuted) return;
-        var beat = bgMusic.beat % bgMusic.totalBeats;
-        var now = audioCtx.currentTime;
-        bgMusic.mOsc.frequency.setValueAtTime(bgMusic.melodyNotes[beat], now);
-        bgMusic.bOsc.frequency.setValueAtTime(bgMusic.bassNotes[Math.floor(beat/2) % bgMusic.bassNotes.length], now);
-        if (beat%4===0) playTone('sine',92,48,.09,.045,now);
-        else if (beat%2===1) playNoise(.025,.012,4800,now);
-        bgMusic.beat++;
-    }, 60 / bgMusic.bpm * 1000);
+    var started = track.play();
+    if (started && typeof started.catch==='function') started.catch(function(){
+        bgMusic.playing = false;
+        document.getElementById('musicIndicator').classList.remove('show');
+    });
 }
 
 function stopMusic() {
     bgMusic.playing = false;
-    if (bgMusic._interval) { clearInterval(bgMusic._interval); bgMusic._interval = null; }
-    try { if (bgMusic.mOsc) { bgMusic.mOsc.stop(); bgMusic.bOsc.stop(); } } catch(e) {}
-    bgMusic.mOsc = null; bgMusic.bOsc = null;
+    if (bgMusic.track) {
+        bgMusic.track.pause();
+        bgMusic.track.currentTime = 0;
+    }
     document.getElementById('musicIndicator').classList.remove('show');
 }
 
@@ -839,7 +812,7 @@ function toggleSound() {
     var pb = document.getElementById('pauseSoundBtn'); if (pb) pb.textContent = em;
     saveProgress();
     if (soundMuted) stopMusic();
-    else { initAudio(); preloadRealSfx(); if (!bgMusic.mOsc) startMusic(); }
+    else { initAudio(); preloadRealSfx(); if (!bgMusic.playing) startMusic(); }
 }
 
 function playSynthSound(type) {

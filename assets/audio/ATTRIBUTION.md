@@ -1,9 +1,15 @@
-# Frog Frenzy sound effects
+# Frog Frenzy audio credits
 
-The `.wav` files in this folder are selected from **8-Bit Sound Effect Pack (Vol. 001)** by Deva (Shades), downloaded from OpenGameArt.org.
+All bundled audio is sourced from OpenGameArt under the **CC0 1.0 Universal** public-domain dedication. Attribution is not required, but the credits are preserved here.
 
-- Source: https://opengameart.org/content/8-bit-sound-effect-pack-vol-001
-- License: CC0 1.0 Universal
-- Files used: `Coin 4.wav`, `Fly 3.wav`, `Hit 3.wav`, `Jump 3.wav`, `Powerup 1.wav`, `Powerup 2.wav`, `Powerup 3.wav`, and `Select 1.wav`.
+## Background music
 
-The source is CC0, so attribution is not legally required. This note preserves the creator credit requested on the original asset page.
+- **Flowerbed Fields [Loop]** by Zane Little Music
+- Source: https://opengameart.org/content/flowerbed-fields-loop
+- File used: `frog-bgm.mp3` (a browser-compatible MP3 transcode of the supplied OGG loop)
+
+## Sound effects
+
+- **Sound effects Pack 2** by phoenix1291 / SwissArcadeGameEntertainment
+- Source: https://opengameart.org/content/sound-effects-pack-2
+- Files used: the pack's Blip, Jump, Lose, Coins, Power-up, 1up, Teleport, and Laser-weapon variations, saved here with the `frog-*.mp3` names.
