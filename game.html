@@ -32,6 +32,7 @@ canvas {
     min-height: 0;
 }
 .overlay.show { display: flex; }
+#adScreen, #coinStoreScreen { z-index: 20; background:rgba(5,8,20,.97); }
 #startScreen {
     background: #050814; backdrop-filter: none; justify-content:flex-start;
     overflow-y:auto; overflow-x:hidden; gap:8px;
@@ -367,11 +368,17 @@ canvas {
         </div>
     </div>
     <div class="overlay fade-in" id="adScreen">
-        <h2 style="color:#ffd700;">🪙 Not Enough Coins</h2>
+        <h2 style="color:#ffd700;" id="adTitle">🪙 Not Enough Coins</h2>
         <p style="margin:8px 0;" id="adMessage">The Google Play version will open coin purchases here.</p>
         <div class="ad-countdown" id="adCountdown">🪙</div>
-        <button class="btn btn-powerup btn-small" onclick="showCoinStore()">Buy Coins</button>
-        <button class="btn btn-small" style="background:#636e72;color:white;font-size:13px;min-width:100px;" onclick="skipAd()">Later</button>
+        <button class="btn btn-powerup btn-small" id="adActionBtn" onclick="showCoinStore()">Buy Coins</button>
+        <button class="btn btn-small" id="adCancelBtn" style="background:#636e72;color:white;font-size:13px;min-width:100px;" onclick="skipAd()">Later</button>
+    </div>
+    <div class="overlay fade-in scroll-panel" id="coinStoreScreen">
+        <h1 class="shop-title">🪙 Coin Packs</h1>
+        <p class="shop-subtitle">Preview checkout only — no real money is charged in this build. Google Play Billing can replace this flow later.</p>
+        <div class="powerup-grid" id="coinPackGrid"></div>
+        <div class="shop-actions"><button class="btn btn-retry btn-small" onclick="closeCoinStore()">Back</button></div>
     </div>
     <div class="overlay fade-in" id="winScreen">
         <h1>🏆</h1>
@@ -420,24 +427,25 @@ canvas {
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 const W = 800, H = 640, CELL = 40, COLS = 20, ROWS = 16;
-const STATE = { MENU:0, PLAYING:1, DYING:2, LEVEL_COMPLETE:3, GAME_OVER:4, PAUSED:5, AD:6, SHOP:7 };
+const STATE = { MENU:0, PLAYING:1, DYING:2, LEVEL_COMPLETE:3, GAME_OVER:4, PAUSED:5, AD:6, SHOP:7, PURCHASE:8 };
 let state = STATE.MENU, level = 1, score = 0, lives = 3, maxLives = 5, frame = 0, totalCoinsSpent = 0;
 let frog = { row:14, col:9 }, frogTarget = { row:14, col:9 };
 let frogMoving = false, frogDir = { dr:0, dc:0 }, frogAnim = 0, frogSafe = true, frogLockTimer = 0, frogInvincible = 0;
 let powerups = { shield:0, slowmo:0, superJump:0, secondChance:0 };
 let inventory = { shield:0, slowmo:0, superJump:0, extraLife:0, secondChance:0 };
-let coinBalance = 0, playerToken = null, syncTimer = null, installId = null;
+let coinBalance = 0, previewCoinBalance = 0, playerToken = null, syncTimer = null, installId = null;
 let levelConfig = null, lanes = [], homes = [], homesFilled = 0, homesNeeded = 5;
 let timeLeft = 60, timeTotal = 60, levelTimer = 0, laneObjects = [];
 const DEFAULT_CROSSING_TIME_LIMIT = 100;
 const CAMPAIGN_LEVELS = 8;
 let particles = [], popupTexts = [], screenShake = 0, flashOverlay = 0, flashColor = '#fff';
-let nearMissFlash = 0, trailParticles = [], comboCount = 0, maxCombo = 0, comboFlash = 0;
+let nearMissFlash = 0, nearMissCooldown = 0, trailParticles = [], comboCount = 0, maxCombo = 0, comboFlash = 0;
 let justSavedByShield = false, levelStartFrame = 0, totalStars = 0, bestCombo = 0, scoreAtLevelStart = 0;
 let lastFailType = 'generic', lastFailRow = 14, lastFailCol = 9;
 let levelsBeaten = 0, levelStars = {}, highScore = 0, soundMuted = true, deathAnim = 0;
 let flies = [], flySpawnTimer = 0;
 let activeContract = null, contractCoinsEarned = 0, briefingLevel = null, selectedLoadout = null;
+let totalRewardAds = 0, rewardedAdsThisExpedition = 0, _coinStoreReturnState = STATE.MENU;
 let clouds = [], roadDecor = [], stars = [], exhaustParticles = [];
 const PRODUCTION_API_BASE = 'https://frog-omega-rose.vercel.app';
 const COIN_PACKS = [
@@ -545,15 +553,15 @@ function loadProgress() {
         const raw = localStorage.getItem('frog_frenzy_save');
         if (raw) {
             const d = JSON.parse(raw);
-            highScore = d.highScore||0; levelsBeaten = d.levelsBeaten||0; totalCoinsSpent = d.totalCoinsSpent||d.totalAdsWatched||0; maxCombo = d.maxCombo||0; soundMuted = d.soundMuted||false;
-            coinBalance = Number(d.coinBalance||0); inventory = Object.assign(inventory,d.inventory||{});
+            highScore = d.highScore||0; levelsBeaten = d.levelsBeaten||0; totalCoinsSpent = d.totalCoinsSpent||0; totalRewardAds = d.totalRewardAds||d.totalAdsWatched||0; maxCombo = d.maxCombo||0; soundMuted = d.soundMuted||false;
+            coinBalance = Number(d.coinBalance||0); previewCoinBalance = Number(d.previewCoinBalance||0); inventory = Object.assign(inventory,d.inventory||{});
             levelStars = d.levelStars||{};
             totalStars = Object.keys(levelStars).length ? Object.values(levelStars).reduce(function(a,b){return a+(Number(b)||0);},0) : (d.totalStars||0);
         }
     } catch(e) {}
 }
 function getProgressPayload() {
-    return { highScore, totalStars, levelsBeaten, levelStars, totalCoinsSpent, maxCombo, soundMuted, coinBalance, inventory };
+    return { highScore, totalStars, levelsBeaten, levelStars, totalCoinsSpent, totalRewardAds, maxCombo, soundMuted, coinBalance, previewCoinBalance, inventory };
 }
 function applyProgressPayload(d) {
     if (!d) return;
@@ -561,6 +569,7 @@ function applyProgressPayload(d) {
     levelsBeaten = Math.max(levelsBeaten||0, d.levelsBeaten||0);
     totalCoinsSpent = Math.max(totalCoinsSpent||0, d.totalCoinsSpent||0);
     maxCombo = Math.max(maxCombo||0, d.maxCombo||0);
+    previewCoinBalance = Math.max(previewCoinBalance||0, Number(d.previewCoinBalance||0));
     var merged = Object.assign({}, d.levelStars||{}, levelStars||{});
     Object.keys(d.levelStars||{}).forEach(function(k){ merged[k]=Math.max(Number(merged[k]||0),Number(d.levelStars[k]||0)); });
     Object.keys(levelStars||{}).forEach(function(k){ merged[k]=Math.max(Number(merged[k]||0),Number(levelStars[k]||0)); });
@@ -590,10 +599,11 @@ function setWalletStatus(text) {
 }
 function updateWalletUI() {
     var ids=['coinBalanceMenu','coinBalanceShop'];
-    ids.forEach(function(id){ var e=document.getElementById(id); if(e)e.textContent=coinBalance; });
+    ids.forEach(function(id){ var e=document.getElementById(id); if(e)e.textContent=getAvailableCoins(); });
     var inv=document.getElementById('inventoryCountMenu');
     if(inv) inv.textContent=Object.values(inventory||{}).reduce(function(a,b){return a+(Number(b)||0);},0);
 }
+function getAvailableCoins() { return coinBalance+previewCoinBalance; }
 async function apiFetch(path, options) {
     var headers = Object.assign({ 'Content-Type':'application/json' }, (options&&options.headers)||{});
     if (playerToken) headers.Authorization='Bearer '+playerToken;
@@ -780,6 +790,17 @@ function getLevelStartPopup(lvl) {
     var tips = ['Read the rhythm','Trucks ahead','Watch the turtles','Use checkpoints','Rapid river','City sprint','Do not rush','Final challenge'];
     return tips[Math.min(lvl-1,tips.length-1)] || 'Ultimate challenge';
 }
+var LEVEL_PACING = [
+    { title:'Learn the beat', detail:'Wide gaps teach the safe rhythm. First clear should feel achievable.', goldenChance:0 },
+    { title:'Commit to a lane', detail:'Long trucks create readable wait-or-go decisions.', goldenChance:0 },
+    { title:'New danger: diving turtles', detail:'The river now changes under you; golden fireflies introduce optional detours.', goldenChance:.12 },
+    { title:'Pressure with checkpoints', detail:'Alternating road and river lanes reward calm route planning.', goldenChance:.16 },
+    { title:'Risk-for-reward river', detail:'Fast currents make bonus fireflies tempting, not mandatory.', goldenChance:.20 },
+    { title:'Fast pattern recognition', detail:'Traffic windows tighten; use earned tools only when the read is unclear.', goldenChance:.22 },
+    { title:'Mastery streak', detail:'A high combo is possible, but every shortcut is a deliberate gamble.', goldenChance:.25 },
+    { title:'Final skill check', detail:'The finale combines every lesson; a clean run earns the crown reward.', goldenChance:.28 }
+];
+function getLevelPacing(lvl) { return LEVEL_PACING[Math.min(lvl-1,LEVEL_PACING.length-1)] || LEVEL_PACING[LEVEL_PACING.length-1]; }
 function getRecommendedPowerup(type) {
     if (type==='water') return 'superJump';
     if (type==='time') return 'slowmo';
@@ -858,7 +879,7 @@ function initLevel(lvl) {
     lanes = levelConfig.lanes; homesNeeded = levelConfig.homesNeeded;
     timeTotal = getLevelTimeLimit(); timeLeft = timeTotal; levelTimer = 0; levelStartFrame = frame; scoreAtLevelStart = score;
     homes = []; homesFilled = 0; comboCount = 0; nearMissFlash = 0; trailParticles = []; exhaustParticles = [];
-    activeContract = getContractForLevel(lvl); contractCoinsEarned = 0;
+    activeContract = getContractForLevel(lvl); contractCoinsEarned = 0; rewardedAdsThisExpedition = 0;
     var hs = 800/5;
     for (var i=0;i<5;i++) homes.push({ x:hs*i+hs/2-20, y:20, filled:false, idx:i });
     frog.row = 14; frog.col = 9; frogMoving = false; frogSafe = true; frogLockTimer = 0; deathAnim = 0; frogInvincible = 0;
@@ -886,7 +907,7 @@ function rememberFail(type) {
 // Update
 function update() {
     if (state!==STATE.PLAYING) return; frame++;
-    if (frogLockTimer>0) frogLockTimer--; if (frogInvincible>0) frogInvincible--;
+    if (frogLockTimer>0) frogLockTimer--; if (frogInvincible>0) frogInvincible--; if (nearMissCooldown>0) nearMissCooldown--;
     levelTimer++;
     if (levelTimer%60===0) { timeLeft--; if (timeLeft<=0) { rememberFail('time'); gameOver('⏰ Time is up...'); return; } }
     if (powerups.slowmo>0) { powerups.slowmo--; if (powerups.slowmo===0) addPopup('⏱️ Slow Motion ended','#ffd700'); }
@@ -898,7 +919,7 @@ function update() {
             frog.row=frogTarget.row; frog.col=frogTarget.col; frogMoving=false; frogAnim=0;
             checkFrogPosition();
             var fr=Math.round(frog.row), fc=Math.round(frog.col);
-            for (var i=flies.length-1;i>=0;i--) { var f=flies[i]; if (fr===f.row&&fc===f.col) { score+=50; coinBalance+=5; progressContract('flies',1); addPopup('🪰 +50 · 🪙 +5!','#ffd700'); spawnParticle(f.col*CELL+20,f.row*CELL+20,'#ffd700',8); flies.splice(i,1); updateWalletUI(); saveProgress(); playSound('shield'); } }
+            for (var i=flies.length-1;i>=0;i--) { var f=flies[i]; if (fr===f.row&&fc===f.col) { var flyScore=f.golden?125:50, flyCoins=f.golden?12:5; score+=flyScore; coinBalance+=flyCoins; progressContract('flies',1); addPopup((f.golden?'✨ Golden firefly! ':'🪰 ')+'+'+flyScore+' · 🪙 +'+flyCoins+'!','#ffd700'); spawnParticle(f.col*CELL+20,f.row*CELL+20,'#ffd700',f.golden?15:8); flies.splice(i,1); updateWalletUI(); saveProgress(); playSound('shield'); } }
             for (var i=0;i<5;i++) spawnParticle(frog.col*CELL+20,frog.row*CELL+20,'#feca57',2);
         }
         return;
@@ -924,7 +945,7 @@ function update() {
         var safeRows = [2,3,6,8,11,14];
         var r = safeRows[Math.floor(Math.random()*safeRows.length)];
         var c = 2+Math.floor(Math.random()*16);
-        if (!flies.some(function(f){return Math.abs(f.row-r)<2&&Math.abs(f.col-c)<3;})) flies.push({row:r,col:c,life:300,glow:0});
+        if (!flies.some(function(f){return Math.abs(f.row-r)<2&&Math.abs(f.col-c)<3;})) flies.push({row:r,col:c,life:300,glow:0,golden:Math.random()<getLevelPacing(level).goldenChance});
         flySpawnTimer=(activeContract&&activeContract.type==='flies'?75:120)+Math.floor(Math.random()*90);
     }
     for (var i=flies.length-1;i>=0;i--) { flies[i].life--; if (flies[i].life<=0) flies.splice(i,1); }
@@ -981,7 +1002,7 @@ function checkNearMiss() {
             for (var o of laneObjects[li]) { var d = Math.abs(fx-(o.x+o.width/2)); if (d<closest) closest=d; if (fx+14>o.x&&fx-14<o.x+o.width) return; }
         }
     }
-    if (closest<30&&closest>0) { nearMissFlash=1; playSound('nearmiss'); }
+    if (closest<30&&closest>0&&nearMissCooldown<=0) { nearMissFlash=1; nearMissCooldown=45; score+=25; addPopup('⚡ Near miss +25!','#feca57'); playSound('nearmiss'); }
 }
 
 function checkFrogPosition() {
@@ -1068,23 +1089,98 @@ function addPopupAt(text,color,x,y) { popupTexts=popupTexts.filter(function(p){r
 
 const ITEM_PRICES = { shield:60, slowmo:80, superJump:70, extraLife:90, secondChance:120, revive:100 };
 function getItemPrice(type) { return ITEM_PRICES[type] || 100; }
+const PREVIEW_COIN_PACKS = [
+    { label:'Pond Pouch', coins:120, bonus:0, price:'$0.99' },
+    { label:'Hopper Bundle', coins:400, bonus:60, price:'$2.99' },
+    { label:'Frenzy Vault', coins:1000, bonus:250, price:'$5.99' }
+];
 function showCoinStore() {
     if (isNativeAndroid()) {
         showShop();
         setWalletStatus('Choose a coin pack. Google Play will handle checkout.');
         return;
     }
-    setWalletStatus('Web preview coin packs are for browser testing only.');
+    if (state===STATE.AD) { document.getElementById('adScreen').classList.remove('show'); state=_adReturnState; }
+    _coinStoreReturnState=state;
+    state=STATE.PURCHASE;
+    document.getElementById('shopScreen').classList.remove('show');
+    document.getElementById('coinStoreScreen').classList.add('show');
+    renderCoinStore();
+}
+function closeCoinStore() {
+    document.getElementById('coinStoreScreen').classList.remove('show');
+    if (state===STATE.PURCHASE) state=_coinStoreReturnState;
+    if (state===STATE.SHOP) { document.getElementById('shopScreen').classList.add('show'); renderShopContents(); }
+}
+function renderCoinStore() {
+    var grid=document.getElementById('coinPackGrid'); if (!grid) return;
+    grid.innerHTML='';
+    PREVIEW_COIN_PACKS.forEach(function(pack,idx){
+        var total=pack.coins+pack.bonus, card=document.createElement('div');
+        card.className='powerup-card'+(idx===1?' recommended':'');
+        card.onclick=function(){simulateCoinPurchase(pack);};
+        card.innerHTML='<div class="icon">🪙</div><div class="name">'+pack.label+'</div><div class="desc">'+pack.coins+' coins'+(pack.bonus?' + '+pack.bonus+' bonus':'')+'</div><div style="font-size:12px;color:#00d38f;margin-top:4px;">Preview '+pack.price+' · Get '+total+'</div>';
+        grid.appendChild(card);
+    });
+}
+function resetAdScreen() {
+    clearInterval(adInterval); adInterval=null; _adCallback=null;
+    document.getElementById('adTitle').textContent='🪙 Not Enough Coins';
+    document.getElementById('adMessage').textContent='The Google Play version will open coin purchases here.';
+    document.getElementById('adCountdown').textContent='🪙';
+    var action=document.getElementById('adActionBtn'), cancel=document.getElementById('adCancelBtn');
+    action.style.display='inline-flex'; action.textContent='Buy Coins'; cancel.textContent='Later';
+}
+function startMockAd(title,message,onComplete) {
+    clearInterval(adInterval);
+    _adReturnState=state; state=STATE.AD; _adCallback=onComplete;
+    document.getElementById('adTitle').textContent=title;
+    document.getElementById('adMessage').textContent=message;
+    document.getElementById('adActionBtn').style.display='none';
+    document.getElementById('adCancelBtn').textContent='Skip';
     document.getElementById('adScreen').classList.add('show');
-    document.getElementById('adMessage').textContent='This browser preview does not simulate real Google Play payments.';
+    var remaining=3, countdown=document.getElementById('adCountdown'); countdown.textContent=remaining;
+    adInterval=setInterval(function(){
+        remaining--; countdown.textContent=remaining>0?remaining:'✓';
+        if (remaining<=0) {
+            clearInterval(adInterval); adInterval=null;
+            document.getElementById('adScreen').classList.remove('show');
+            var callback=_adCallback; _adCallback=null; state=_adReturnState;
+            if (callback) callback();
+            resetAdScreen();
+        }
+    },1000);
 }
 function showNotEnoughCoins(cost) {
-    _adReturnState=state; state=STATE.AD; _adCallback=null;
+    resetAdScreen(); _adReturnState=state; state=STATE.AD;
     document.getElementById('adScreen').classList.add('show');
     document.getElementById('adMessage').textContent='You need '+cost+' more coins. The Google Play version will offer coin packs here.';
     document.getElementById('adCountdown').textContent='🪙';
 }
-function skipAd(){document.getElementById('adScreen').classList.remove('show'); if(state===STATE.AD) state=_adReturnState;}
+function skipAd(){ clearInterval(adInterval); adInterval=null; _adCallback=null; document.getElementById('adScreen').classList.remove('show'); if(state===STATE.AD) state=_adReturnState; resetAdScreen(); }
+function watchRewardAdForCoins() {
+    if (rewardedAdsThisExpedition>=3) { setWalletStatus('Reward break limit reached for this expedition. Clear the next level to refresh it.'); return; }
+    startMockAd('▶ Reward Break','Watch this 3-second preview to earn 25 coins.',function(){
+        rewardedAdsThisExpedition++; totalRewardAds++; previewCoinBalance+=25; updateWalletUI(); saveProgress();
+        setWalletStatus('Reward claimed: +25 coins. '+(3-rewardedAdsThisExpedition)+' reward breaks left this expedition.');
+        if (state===STATE.SHOP) renderShopContents();
+        addPopup('▶ Reward claimed · 🪙 +25','#00d38f'); playSound('win');
+    });
+}
+function watchRewardAdForRevive() {
+    startMockAd('▶ Last-Chance Reward','Watch this 3-second preview for one free revive and a temporary Shield.',function(){
+        var spot=findReviveSpot(); frog.row=spot.row; frog.col=spot.col; lives=Math.max(1,lives); powerups.shield=(powerups.shield||0)+1;
+        totalRewardAds++; saveProgress(); playSound('win');
+        continuePlayingAfterAd('Reward revive! Shield active — make this run count.');
+    });
+}
+function simulateCoinPurchase(pack) {
+    startMockAd('🪙 Preview Checkout','Simulating '+pack.price+' checkout. Your '+(pack.coins+pack.bonus)+' coins will arrive in 3 seconds.',function(){
+        previewCoinBalance+=pack.coins+pack.bonus; updateWalletUI(); saveProgress(); playSound('win');
+        setWalletStatus('Preview purchase complete: +'+(pack.coins+pack.bonus)+' coins. No real payment was taken.');
+        closeCoinStore();
+    });
+}
 
 function grantPowerup(type) {
     if (type==='shield') { powerups.shield=(powerups.shield||0)+1; addPopup('🛡️ Shield ready!','#00b894'); playSound('shield'); return true; }
@@ -1098,7 +1194,12 @@ function grantPowerup(type) {
 async function spendCoinsForItem(type,quantity) {
     quantity = quantity || 1;
     var cost = getItemPrice(type) * quantity;
-    if (coinBalance < cost) { showNotEnoughCoins(cost-coinBalance); return false; }
+    if (getAvailableCoins() < cost) { showNotEnoughCoins(cost-getAvailableCoins()); return false; }
+    if (previewCoinBalance>=cost) {
+        previewCoinBalance-=cost; totalCoinsSpent+=cost; updateWalletUI(); saveProgress();
+        setWalletStatus('Preview coins spent locally. Google Play wallet remains unchanged.');
+        return true;
+    }
     coinBalance -= cost; totalCoinsSpent += cost; updateWalletUI(); saveProgress();
     try {
         var data = await apiFetch('/api/wallet/spend',{ method:'POST', body:JSON.stringify({ itemId:type, quantity:quantity, levelId:level }) });
@@ -1141,7 +1242,7 @@ function reviveAfterAd() {
 }
 
 function buyPreviewCoins(amount) {
-    coinBalance += amount;
+    previewCoinBalance += amount;
     setWalletStatus('Web preview added '+amount+' coins. The release version will use Google Play purchases.');
     updateWalletUI(); saveProgress();
 }
@@ -1199,14 +1300,14 @@ function renderLevelSelect() {
 function openBriefing(lvl) {
     if (!isLevelUnlocked(lvl)) return;
     briefingLevel=lvl; selectedLoadout=null;
-    var cfg=getLevelConfig(lvl), contract=getContractForLevel(lvl);
+    var cfg=getLevelConfig(lvl), contract=getContractForLevel(lvl), pacing=getLevelPacing(lvl);
     document.getElementById('startScreen').classList.remove('show');
     document.getElementById('briefingScreen').classList.add('show');
     document.getElementById('briefingTitle').textContent='Level '+lvl+' · '+cfg.name;
-    document.getElementById('briefingLesson').textContent=getLevelStartPopup(lvl);
-    document.getElementById('briefingTip').textContent=getLevelTip(lvl);
+    document.getElementById('briefingLesson').textContent=pacing.title;
+    document.getElementById('briefingTip').textContent=pacing.detail+' '+getLevelTip(lvl);
     document.getElementById('briefingContract').textContent='📜 '+contract.title+' — '+contract.text;
-    document.getElementById('briefingReward').textContent='Contract reward: 🪙 '+contract.reward;
+    document.getElementById('briefingReward').textContent='Contract reward: 🪙 '+contract.reward+(pacing.goldenChance?' · Golden firefly chance: '+Math.round(pacing.goldenChance*100)+'%':'');
     renderLoadoutChoices();
 }
 function renderLoadoutChoices() {
@@ -1275,15 +1376,15 @@ function renderFailOffers() {
     document.getElementById('failInsight').textContent = getFailInsight();
     var c=document.getElementById('failPowerups'); c.innerHTML='';
     var items=[
-        {type:'revive',icon:'💫',name:'Continue Run',desc:'Revive nearby with Shield and keep filled homes'},
+        {type:'rewardRevive',icon:'▶️',name:'Free Reward Revive',desc:'Watch 3 seconds to revive nearby with a temporary Shield'},
         {type:recommended,icon:recommended==='shield'?'🛡️':(recommended==='slowmo'?'⏱️':'🦘'),name:recommended==='shield'?'Recommended: Shield':(recommended==='slowmo'?'Recommended: Slow Motion':'Recommended: Super Jump'),desc:recommended==='shield'?'Best for traffic. Blocks one lethal hit.':(recommended==='slowmo'?'Best for speed and timers. Slows the pattern.':'Best for river gaps and short logs.')},
         {type:'secondChance',icon:'💫',name:'Second Chance',desc:'Automatically revive nearby after one mistake'},
         {type:'extraLife',icon:'❤️',name:'Extra Life',desc:'Add one life for this run'}
     ];
     items.forEach(function(item,idx){
         var card=document.createElement('div'); card.className='powerup-card'+(idx<2?' recommended':'');
-        card.onclick=function(){if(item.type==='revive')reviveAfterAd(); else useAdPowerup(item.type,'continue');};
-        card.innerHTML='<div class="icon">'+item.icon+'</div><div class="name">'+item.name+'</div><div class="desc">'+item.desc+'</div><div style="font-size:11px;color:#ffd700;margin-top:3px;">🪙 '+getItemPrice(item.type)+' coins</div>';
+        card.onclick=function(){if(item.type==='rewardRevive')watchRewardAdForRevive(); else useAdPowerup(item.type,'continue');};
+        card.innerHTML='<div class="icon">'+item.icon+'</div><div class="name">'+item.name+'</div><div class="desc">'+item.desc+'</div><div style="font-size:11px;color:#ffd700;margin-top:3px;">'+(item.type==='rewardRevive'?'▶ 3 sec · free':'🪙 '+getItemPrice(item.type)+' coins')+'</div>';
         c.appendChild(card);
     });
 }
@@ -1319,10 +1420,11 @@ function renderShopContents() {
         });
     } else {
         var demo=document.createElement('div'); demo.className='powerup-card';
-        demo.onclick=function(){buyPreviewCoins(300);};
-        demo.innerHTML='<div class="icon">🪙</div><div class="name">Web Preview Coins</div><div class="desc">Browser testing only. Release builds use Google Play purchases.</div><div style="font-size:11px;color:#00d38f;margin-top:3px;">+300 preview coins</div>';
+        demo.onclick=function(){watchRewardAdForCoins();};
+        demo.innerHTML='<div class="icon">▶️</div><div class="name">Reward Break</div><div class="desc">Watch 3 seconds for a small coin top-up.</div><div style="font-size:11px;color:#00d38f;margin-top:3px;">🪙 +25 · '+Math.max(0,3-rewardedAdsThisExpedition)+'/3 left</div>';
         c.appendChild(demo);
     }
+    updateAdCount();
 }
 
 function closeShop() {
@@ -1417,8 +1519,8 @@ function retryLevel() {
 }
 function resumeGame() { state=STATE.PLAYING; document.getElementById('pauseScreen').classList.remove('show'); }
 function continueEndless() { document.getElementById('winScreen').classList.remove('show'); initLevel(levelsBeaten+1); state=STATE.PLAYING; }
-function backToMenu() { stopMusic(); state=STATE.MENU; document.getElementById('pauseBtn').style.display='none'; document.getElementById('exitBtn').style.display='none'; ['pauseScreen','gameOverScreen','levelCompleteScreen','winScreen','shopScreen','briefingScreen'].forEach(function(id){document.getElementById(id).classList.remove('show');}); document.getElementById('startScreen').classList.add('show'); document.getElementById('highScoreDisplay').textContent=highScore; document.getElementById('totalStarsMenu').textContent=totalStars; renderLevelSelect(); renderMenuContract(); document.getElementById('musicIndicator').classList.remove('show'); }
-function updateAdCount() { var e=document.getElementById('adCountDisplay'); if(e) e.textContent='Coins are earned from expeditions and saved locally; connected players can sync progress across devices.'; }
+function backToMenu() { stopMusic(); state=STATE.MENU; document.getElementById('pauseBtn').style.display='none'; document.getElementById('exitBtn').style.display='none'; ['pauseScreen','gameOverScreen','levelCompleteScreen','winScreen','shopScreen','briefingScreen','coinStoreScreen','adScreen'].forEach(function(id){document.getElementById(id).classList.remove('show');}); resetAdScreen(); document.getElementById('startScreen').classList.add('show'); document.getElementById('highScoreDisplay').textContent=highScore; document.getElementById('totalStarsMenu').textContent=totalStars; renderLevelSelect(); renderMenuContract(); document.getElementById('musicIndicator').classList.remove('show'); }
+function updateAdCount() { var e=document.getElementById('adCountDisplay'); if(e) e.textContent='Reward breaks: '+rewardedAdsThisExpedition+'/3 this expedition · '+totalRewardAds+' claimed overall. Ads are optional and never interrupt a crossing.'; }
 updateAdCount(); refreshMenuStats(); initPlayerSession();
 document.getElementById('soundToggleBtn').textContent='🔇'; var pb=document.getElementById('pauseSoundBtn'); if(pb) pb.textContent='🔇';
 
@@ -1651,14 +1753,16 @@ function drawFlies() {
     flies.forEach(function(f){
         var x=f.col*CELL+CELL/2, y=f.row*CELL+CELL/2;
         var pulse=.5+Math.sin(frame*.08+f.row+f.col)*.5, glow=Math.sin(frame*.1+f.row*2)*.3+.7;
-        ctx.fillStyle='rgba(255,215,0,'+(pulse*0.1)+')'; ctx.beginPath(); ctx.arc(x,y,12+glow*4,0,Math.PI*2); ctx.fill();
-        ctx.fillStyle='rgba(255,215,0,'+(pulse*0.25)+')'; ctx.beginPath(); ctx.arc(x,y,5+glow*2,0,Math.PI*2); ctx.fill();
+        var glowColor=f.golden?'255,140,0':'255,215,0';
+        ctx.fillStyle='rgba('+glowColor+','+(pulse*(f.golden ? .18 : .1))+')'; ctx.beginPath(); ctx.arc(x,y,12+glow*(f.golden ? 6 : 4),0,Math.PI*2); ctx.fill();
+        ctx.fillStyle='rgba('+glowColor+','+(pulse*(f.golden ? .38 : .25))+')'; ctx.beginPath(); ctx.arc(x,y,5+glow*2,0,Math.PI*2); ctx.fill();
         var wingFlap=Math.sin(frame*0.15)*3;
         ctx.fillStyle='rgba(200,230,255,0.3)'; ctx.beginPath(); ctx.ellipse(x-4-wingFlap,y-2,3,1.5,-0.3,0,Math.PI*2); ctx.fill();
         ctx.beginPath(); ctx.ellipse(x+4+wingFlap,y-2,3,1.5,0.3,0,Math.PI*2); ctx.fill();
         if (!drawAsset('fly',x-14,y-14,28,28,false)) {
             ctx.font='14px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('🪰',x,y);
         }
+        if (f.golden) { ctx.fillStyle='#ffd700'; ctx.font='bold 11px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='bottom'; ctx.fillText('✦ BONUS',x,y-15); }
         if (f.life<60) { var a=f.life/60; ctx.fillStyle='rgba(255,100,100,'+(a*0.5)+')'; ctx.font='10px sans-serif'; ctx.textBaseline='bottom'; ctx.fillText('Fading',x,y-14); }
     });
 }
