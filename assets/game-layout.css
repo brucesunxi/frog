@@ -117,7 +117,7 @@ button:focus-visible, [tabindex]:focus-visible { outline:3px solid #8ef2cc; outl
     .context-label, .control-hint { display:none; }
 }
 /* Landscape retains a complete board and a usable pad beside it. */
-@media (orientation:landscape) and (min-width:500px) {
+@media (orientation:landscape) and (min-width:400px) {
     .game-wrapper { width:min(100%,1120px); height:100%; --frame-pad:8px; grid-template-columns:minmax(0,1fr) 168px; grid-template-rows:auto minmax(0,1fr); gap:8px 14px; }
     .run-hud { grid-column:1; display:flex; align-items:center; gap:14px; padding:0; }
     .run-heading { margin:0; flex:1; flex-wrap:wrap; gap:2px 8px; }
@@ -147,6 +147,16 @@ button:focus-visible, [tabindex]:focus-visible { outline:3px solid #8ef2cc; outl
     .level-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
     .level-card { min-height:68px; }
     .overlay .btn { min-height:44px; }
+}
+@media (max-width:319px) {
+    .control-deck { padding-left:0; padding-right:0; column-gap:8px; }
+    .run-actions { width:88px; }
+    .deck-button { padding:8px; gap:6px; }
+    .run-stats > div { flex-direction:column; gap:2px; padding:6px 4px; }
+}
+@media (orientation:landscape) and (max-width:650px) {
+    .run-hud { display:block; }
+    .run-heading { margin-bottom:4px; }
 }
 @media (orientation:landscape) and (min-height:601px) {
     .game-wrapper { grid-template-columns:minmax(0,1fr) 210px; }
