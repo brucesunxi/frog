@@ -51,9 +51,9 @@ button:focus-visible, [tabindex]:focus-visible { outline:3px solid #8ef2cc; outl
 /* Fixed header and actions frame an independently scrollable menu. */
 .overlay { position:absolute; inset:0; border-radius:inherit; overflow:auto; overscroll-behavior:contain; justify-content:safe center; background:#0c1724f5; }
 .overlay > * { flex-shrink:0; }
-.overlay:not(#startScreen):not(.scroll-panel) { justify-content:flex-start; }
-.overlay:not(#startScreen):not(.scroll-panel) > :first-child { margin-top:auto; }
-.overlay:not(#startScreen):not(.scroll-panel) > :last-child { margin-bottom:auto; }
+.overlay:not(#startScreen):not(.scroll-panel):not(.store-panel) { justify-content:flex-start; }
+.overlay:not(#startScreen):not(.scroll-panel):not(.store-panel) > :first-child { margin-top:auto; }
+.overlay:not(#startScreen):not(.scroll-panel):not(.store-panel) > :last-child { margin-bottom:auto; }
 .scroll-panel { justify-content:flex-start; }
 #startScreen { display:none; padding:0; gap:0; overflow:hidden; background:linear-gradient(155deg,#132c36,#101a2c 55%,#0d1826); scrollbar-gutter:auto; }
 #startScreen.show { display:grid; grid-template-rows:auto minmax(0,1fr) auto; align-items:stretch; }
@@ -87,6 +87,32 @@ button:focus-visible, [tabindex]:focus-visible { outline:3px solid #8ef2cc; outl
 .menu-actions .btn-small { min-width:0; width:100%; background:#ffffff08; border:1px solid #ffffff14; color:#d1e6dd; }
 .menu-actions #soundToggleBtn { background:#ffffff08; }
 .purchase-toast { max-width:calc(100% - 24px); min-width:0; width:360px; }
+/* Store actions and feedback never share a hit area with scrolling cards. */
+#shopScreen.show, #coinStoreScreen.show {
+    display:grid; grid-template-rows:auto minmax(0,1fr) auto;
+    align-items:stretch; justify-content:stretch; padding:0; gap:0; overflow:hidden;
+}
+.store-header { padding:16px 18px 10px; display:flex; flex-direction:column; align-items:center; gap:6px; border-bottom:1px solid #ffffff12; }
+.store-header .shop-title { font-size:clamp(24px,4vw,34px); }
+.store-header .shop-subtitle { font-size:12px; margin:0; line-height:1.4; }
+.store-content { min-height:0; overflow-y:auto; overscroll-behavior:contain; touch-action:pan-y; padding:12px; scrollbar-width:thin; }
+.store-content .powerup-grid { width:100%; margin:0 auto; }
+.store-footer { padding:10px 14px; border-top:1px solid #ffffff12; background:#102330; }
+.store-footer .shop-actions { position:static; padding:0; background:none; gap:8px; flex-wrap:nowrap; }
+.store-footer .btn { min-width:0; flex:1; max-width:260px; margin:0; min-height:44px; font-size:14px; padding:10px 12px; }
+.store-footer .store-status { font-size:12px; color:#b9d9e6; line-height:1.4; margin:0 0 8px; }
+.store-status:empty { display:none; }
+.store-footer .store-status[data-kind="error"] { color:#ffabb0; }
+.store-footer .store-status[data-kind="success"] { color:#8bf0be; }
+button.powerup-card { width:100%; min-width:0; font:inherit; color:inherit; touch-action:manipulation; }
+button.powerup-card:disabled { opacity:.55; cursor:wait; transform:none; }
+.powerup-card .pack-action { font-size:12px; color:#78e7b7; margin-top:6px; }
+@media (max-height:500px) {
+    .store-header { padding:8px 12px; gap:3px; }
+    .store-header .shop-title { font-size:23px; }
+    .store-header .shop-subtitle { display:none; }
+    .store-footer { padding:8px 12px; }
+}
 @media (max-width:600px) {
     body { padding:max(6px,env(safe-area-inset-top)) max(6px,env(safe-area-inset-right)) max(6px,env(safe-area-inset-bottom)) max(6px,env(safe-area-inset-left)); }
     .game-wrapper { --frame-pad:10px; border-radius:20px; gap:8px; }

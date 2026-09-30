@@ -478,11 +478,17 @@ canvas {
         <button class="btn btn-powerup btn-small" id="adActionBtn" onclick="showCoinStore()">Buy Coins</button>
         <button class="btn btn-small" id="adCancelBtn" style="background:#636e72;color:white;font-size:13px;min-width:100px;" onclick="skipAd()">Later</button>
     </div>
-    <div class="overlay fade-in scroll-panel" id="coinStoreScreen">
+    <div class="overlay fade-in store-panel" id="coinStoreScreen">
+        <header class="store-header">
         <h1 class="shop-title">🪙 Coin Packs</h1>
-        <p class="shop-subtitle">Preview checkout only — no real money is charged in this build. Google Play Billing can replace this flow later.</p>
-        <div class="powerup-grid" id="coinPackGrid"></div>
-        <div class="shop-actions"><button class="btn btn-retry btn-small" onclick="closeCoinStore()">Back</button></div>
+        <p class="shop-subtitle" id="coinStoreDescription"></p>
+        <div class="wallet-pill">🪙 Balance <span id="coinBalanceStore">0</span></div>
+        </header>
+        <div class="store-content"><div class="powerup-grid" id="coinPackGrid"></div></div>
+        <footer class="store-footer">
+            <p class="store-status" id="coinStoreStatus" role="status" aria-live="polite"></p>
+            <div class="shop-actions"><button class="btn btn-retry btn-small" onclick="closeCoinStore()">Back</button></div>
+        </footer>
     </div>
     <div class="overlay fade-in" id="winScreen">
         <h1>🏆</h1>
@@ -494,16 +500,23 @@ canvas {
         <button class="btn btn-next" onclick="continueEndless()">🏆 Endless Run</button>
         <button class="btn btn-retry btn-small" onclick="backToMenu()">Menu</button>
     </div>
-    <div class="overlay fade-in scroll-panel" id="shopScreen">
+    <div class="overlay fade-in store-panel" id="shopScreen">
+        <header class="store-header">
         <h1 class="shop-title">🎁 Item Shop</h1>
         <p class="shop-subtitle">Earn coins by clearing expeditions, fulfilling contracts, and collecting fireflies. Store a tool, then choose it before a run.</p>
         <div class="wallet-pill" style="margin:5px 0;">🪙 Coins <span id="coinBalanceShop">0</span></div>
+        </header>
+        <div class="store-content">
         <div class="powerup-grid" id="shopPowerups"></div>
         <p style="font-size:12px;color:#636e72;" id="adCountDisplay"></p>
+        </div>
+        <footer class="store-footer">
+        <p class="store-status" id="shopStatus" role="status" aria-live="polite"></p>
         <div class="shop-actions">
             <button class="btn btn-powerup btn-small" onclick="showCoinStore()">Buy Coins</button>
             <button class="btn btn-retry btn-small" id="shopCloseBtn" onclick="closeShop()">Close</button>
         </div>
+        </footer>
     </div>
     <div class="overlay" id="pauseScreen">
         <h2>⏸️ Paused</h2>
@@ -1090,6 +1103,13 @@ function setWalletStatus(text) {
     var e=document.getElementById('walletStatus');
     if (e) e.textContent=text||'';
 }
+function setStoreStatus(text,kind) {
+    ['shopStatus','coinStoreStatus'].forEach(function(id){
+        var element=document.getElementById(id);
+        element.textContent=text||'';
+        element.dataset.kind=kind||'info';
+    });
+}
 let purchaseToastTimer = null;
 function showCoinPurchaseConfirmation(amount) {
     var toast=document.getElementById('purchaseToast');
@@ -1112,7 +1132,7 @@ function updateShopExitButton() {
     button.classList.toggle('btn-retry',!resumesRun);
 }
 function updateWalletUI() {
-    var ids=['coinBalanceMenu','coinBalanceShop'];
+    var ids=['coinBalanceMenu','coinBalanceShop','coinBalanceStore'];
     ids.forEach(function(id){ var e=document.getElementById(id); if(e)e.textContent=getAvailableCoins(); });
     var inv=document.getElementById('inventoryCountMenu');
     if(inv) inv.textContent=Object.values(inventory||{}).reduce(function(a,b){return a+(Number(b)||0);},0);
@@ -1683,17 +1703,18 @@ const PREVIEW_COIN_PACKS = [
     { label:'Hopper Bundle', coins:400, bonus:60, price:'$2.99' },
     { label:'Frenzy Vault', coins:1000, bonus:250, price:'$5.99' }
 ];
+let coinPurchaseInFlight = false;
+let itemPurchaseInFlight = false;
 function showCoinStore() {
-    if (isNativeAndroid()) {
-        showShop();
-        setWalletStatus('Choose a coin pack. Google Play will handle checkout.');
-        return;
-    }
-    if (state===STATE.AD) { document.getElementById('adScreen').classList.remove('show'); state=_adReturnState; }
+    if (state===STATE.PURCHASE) return;
+    if (state===STATE.AD) skipAd();
     _coinStoreReturnState=state;
     state=STATE.PURCHASE;
-    document.getElementById('shopScreen').classList.remove('show');
+    ['shopScreen','startScreen','pauseScreen','gameOverScreen','levelCompleteScreen'].forEach(function(id){document.getElementById(id).classList.remove('show');});
     document.getElementById('coinStoreScreen').classList.add('show');
+    document.getElementById('coinStoreScreen').querySelector('.store-content').scrollTop=0;
+    if (!coinPurchaseInFlight) setStoreStatus('Choose a pack to continue.');
+    updateWalletUI();
     renderCoinStore();
 }
 function closeCoinStore() {
@@ -1715,6 +1736,9 @@ function closeCoinStore() {
         // Coin packs can be opened while preparing a boost on the clear screen.
         // Keep that screen active instead of dropping into a completed level.
         state=STATE.LEVEL_COMPLETE;
+        document.getElementById('levelCompleteScreen').classList.add('show');
+    } else if (returnState===STATE.PAUSED) {
+        resumeGame();
     } else {
         // A pack screen can also be opened from an optional reward flow. Never
         // restore its hidden paused state: return the player to a usable run.
@@ -1725,11 +1749,15 @@ function closeCoinStore() {
 function renderCoinStore() {
     var grid=document.getElementById('coinPackGrid'); if (!grid) return;
     grid.innerHTML='';
-    PREVIEW_COIN_PACKS.forEach(function(pack,idx){
-        var total=pack.coins+pack.bonus, card=document.createElement('div');
+    var native=isNativeAndroid();
+    document.getElementById('coinStoreDescription').textContent=native?'Select a pack. Google Play will show the price and ask you to confirm.':'Preview checkout — no real money will be charged.';
+    (native?COIN_PACKS:PREVIEW_COIN_PACKS).forEach(function(pack,idx){
+        var total=pack.coins+pack.bonus, card=document.createElement('button');
+        card.type='button';
         card.className='powerup-card'+(idx===1?' recommended':'');
-        card.onclick=function(){simulateCoinPurchase(pack);};
-        card.innerHTML='<div class="icon">🪙</div><div class="name">'+pack.label+'</div><div class="desc">'+pack.coins+' coins'+(pack.bonus?' + '+pack.bonus+' bonus':'')+'</div><div style="font-size:12px;color:#00d38f;margin-top:4px;">Preview '+pack.price+' · Get '+total+'</div>';
+        card.disabled=coinPurchaseInFlight;
+        card.onclick=function(){if(native)buyCoinPack(pack.productId,total);else simulateCoinPurchase(pack);};
+        card.innerHTML='<span class="icon">🪙</span><span class="name">'+pack.label+'</span><span class="desc">'+pack.coins+' coins'+(pack.bonus?' + '+pack.bonus+' bonus':'')+'</span><span class="pack-action">'+(native?'Continue with Google Play':'Preview '+pack.price)+' · +'+total+'</span>';
         grid.appendChild(card);
     });
 }
@@ -1764,15 +1792,16 @@ function startMockAd(title,message,onComplete) {
 function showNotEnoughCoins(cost) {
     resetAdScreen(); _adReturnState=state; state=STATE.AD;
     document.getElementById('adScreen').classList.add('show');
-    document.getElementById('adMessage').textContent='You need '+cost+' more coins. The Google Play version will offer coin packs here.';
+    document.getElementById('adMessage').textContent='You need '+cost+' more coins. Choose Buy Coins to see available packs, or Later to return.';
     document.getElementById('adCountdown').textContent='🪙';
 }
 function skipAd(){ clearInterval(adInterval); adInterval=null; _adCallback=null; document.getElementById('adScreen').classList.remove('show'); if(state===STATE.AD) state=_adReturnState; resetAdScreen(); }
 function watchRewardAdForCoins() {
-    if (rewardedAdsThisExpedition>=3) { setWalletStatus('Reward break limit reached for this expedition. Clear the next level to refresh it.'); return; }
+    if (rewardedAdsThisExpedition>=3) { setStoreStatus('All 3 reward breaks are used. Start your next expedition to refresh them.'); return; }
     startMockAd('▶ Reward Break','Watch this 3-second preview to earn 25 coins.',function(){
         rewardedAdsThisExpedition++; totalRewardAds++; previewCoinBalance+=25; updateWalletUI(); saveProgress();
         setWalletStatus('Reward claimed: +25 coins. '+(3-rewardedAdsThisExpedition)+' reward breaks left this expedition.');
+        setStoreStatus('+25 coins added · Balance: '+getAvailableCoins()+' coins','success');
         if (state===STATE.SHOP) renderShopContents();
         addPopup('▶ Reward claimed · 🪙 +25','#00d38f'); playSound('coin');
     });
@@ -1785,12 +1814,14 @@ function watchRewardAdForRevive() {
     });
 }
 function simulateCoinPurchase(pack) {
+    if(state!==STATE.PURCHASE)return;
     startMockAd('🪙 Preview Checkout','Simulating '+pack.price+' checkout. Your '+(pack.coins+pack.bonus)+' coins will arrive in 3 seconds.',function(){
         var added=pack.coins+pack.bonus;
         previewCoinBalance+=added; updateWalletUI(); saveProgress(); playSound('purchase');
         setWalletStatus('Preview purchase complete: +'+added+' coins. No real payment was taken.');
         closeCoinStore();
         showCoinPurchaseConfirmation(added);
+        setStoreStatus('+'+added+' coins added · Balance: '+getAvailableCoins()+' coins','success');
     });
 }
 
@@ -1814,7 +1845,7 @@ async function spendCoinsForItem(type,quantity) {
     }
     coinBalance -= cost; totalCoinsSpent += cost; updateWalletUI(); saveProgress();
     try {
-        var data = await apiFetch('/api/wallet/spend',{ method:'POST', body:JSON.stringify({ itemId:type, quantity:quantity, levelId:level }) });
+        var data = await storeApiFetch('/api/wallet/spend',{ method:'POST', body:JSON.stringify({ itemId:type, quantity:quantity, levelId:level }) });
         applyPlayerState(data.state);
     } catch(e) {
         setWalletStatus('Offline spend recorded. You can keep playing locally.');
@@ -1832,12 +1863,24 @@ async function useCoinPowerup(type,mode) {
     }
 }
 async function buyInventoryItem(type) {
-    if (!(await spendCoinsForItem(type,1))) return;
-    inventory[type]=(inventory[type]||0)+1;
-    updateWalletUI(); saveProgress();
-    setWalletStatus('Stored '+type.replace('slowmo','Slow Motion').replace('superJump','Super Jump')+' for your next expedition.');
-    addPopup('🎒 Item stored!','#00d38f');
+    if(itemPurchaseInFlight)return;
+    var before=Number(inventory[type]||0);
+    itemPurchaseInFlight=true;
+    setStoreStatus('Adding item to your inventory…');
     renderShopContents();
+    try {
+        if (!(await spendCoinsForItem(type,1))) {setStoreStatus('Not enough coins. Choose a coin pack or return to the shop.');return;}
+        // The server response may already include the purchased item.
+        inventory[type]=Math.max(Number(inventory[type]||0),before+1);
+        updateWalletUI(); saveProgress();
+        setStoreStatus('Item stored for your next expedition · Balance: '+getAvailableCoins()+' coins','success');
+        playSound('powerup');
+    } catch(e) {
+        setStoreStatus('The item could not be added. Please try again.','error');
+    } finally {
+        itemPurchaseInFlight=false;
+        renderShopContents();
+    }
 }
 
 async function reviveWithCoins() {
@@ -1860,19 +1903,38 @@ function buyPreviewCoins(amount) {
     showCoinPurchaseConfirmation(amount);
 }
 
+async function storeApiFetch(path,options) {
+    var controller=new AbortController();
+    var timeout=setTimeout(function(){controller.abort();},20000);
+    try { return await apiFetch(path,Object.assign({},options,{signal:controller.signal})); }
+    finally { clearTimeout(timeout); }
+}
+
 async function buyCoinPack(productId, fallbackCoins) {
+    if (coinPurchaseInFlight) return;
     if (!isNativeAndroid()) {
         buyPreviewCoins(fallbackCoins || 300);
         return;
     }
+    coinPurchaseInFlight=true;
+    renderCoinStore();
+    var receivedPurchase=false;
+    var slowTimer=setTimeout(function(){setStoreStatus('Still waiting for Google Play. Complete or cancel its checkout. You can go Back while waiting.');},15000);
     try {
         var plugin = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.FrogBilling;
         if (!plugin) throw new Error('Billing plugin is unavailable');
-        setWalletStatus('Opening Google Play checkout...');
+        setStoreStatus('Opening Google Play checkout…');
         var purchase = await plugin.buyCoins({ productId:productId });
+        clearTimeout(slowTimer);
+        if (purchase && purchase.purchaseState===2) {
+            setStoreStatus('Payment is pending in Google Play. Coins will be available after payment is completed.');
+            return;
+        }
         if (!purchase || !purchase.purchaseToken) throw new Error('Missing purchase token');
-        setWalletStatus('Verifying purchase...');
-        var data = await apiFetch('/api/purchases/google-play/verify', {
+        receivedPurchase=true;
+        setStoreStatus('Confirming your payment and updating your balance…');
+        slowTimer=setTimeout(function(){setStoreStatus('Payment confirmation is taking longer than usual. Please do not buy again. Keep your Google Play receipt.');},15000);
+        var data = await storeApiFetch('/api/purchases/google-play/verify', {
             method:'POST',
             body:JSON.stringify({
                 productId:purchase.productId || productId,
@@ -1882,11 +1944,20 @@ async function buyCoinPack(productId, fallbackCoins) {
         });
         applyPlayerState(data.state);
         saveProgress();
-        setWalletStatus('Purchase verified. Coins added to your wallet.');
+        var added=Number(data.purchase&&(data.purchase.coinsGranted??data.purchase.coins_granted))||0;
+        setStoreStatus((data.duplicate?'Purchase already credited':('+'+added+' coins added'))+' · Balance: '+getAvailableCoins()+' coins','success');
         playSound('purchase');
-        showCoinPurchaseConfirmation(fallbackCoins || 0);
+        if(!data.duplicate)showCoinPurchaseConfirmation(added);
     } catch(e) {
-        setWalletStatus(e && e.message ? e.message : 'Purchase could not be completed.');
+        var message=e&&e.message?e.message:'Purchase could not be completed.';
+        if(receivedPurchase)message='We could not confirm your payment yet. Please do not buy again. Keep your Google Play receipt and contact support.';
+        else if(/cancel/i.test(message))message='Purchase cancelled. You can choose another pack or go Back.';
+        else if(/unavailable|not available|not supported/i.test(message))message='Google Play checkout is unavailable. Check your connection and that this app was installed from Google Play, then try again.';
+        setStoreStatus(message,'error');
+    } finally {
+        clearTimeout(slowTimer);
+        coinPurchaseInFlight=false;
+        renderCoinStore();
     }
 }
 
@@ -2024,29 +2095,22 @@ function showFailScreen() {
 function showShop() {
     if (state!==STATE.SHOP) _shopReturnState=state;
     state=STATE.SHOP;
-    ['startScreen','pauseScreen','gameOverScreen'].forEach(function(id){document.getElementById(id).classList.remove('show');});
+    ['startScreen','pauseScreen','gameOverScreen','levelCompleteScreen'].forEach(function(id){document.getElementById(id).classList.remove('show');});
     document.getElementById('shopScreen').classList.add('show');
+    if(!coinPurchaseInFlight&&!itemPurchaseInFlight)setStoreStatus('Choose an item to store for your next run, or open Coin Packs.');
     renderShopContents();
     updateShopExitButton();
 }
 function renderShopContents() {
     var c=document.getElementById('shopPowerups'); c.innerHTML='';
     [{type:'shield',icon:'🛡️',name:'Shield',desc:'Store it, then bring it to block one lethal hit.'},{type:'slowmo',icon:'⏱️',name:'Slow Motion',desc:'Store it, then bring it to slow hazards for 10 seconds.'},{type:'superJump',icon:'🦘',name:'Super Jump',desc:'Store it, then bring it for 3 two-tile jumps.'},{type:'secondChance',icon:'💫',name:'Second Chance',desc:'Store it for an automatic nearby revive.'}].forEach(function(item){
-        var card=document.createElement('div');card.className='powerup-card';
+        var card=document.createElement('button');card.type='button';card.className='powerup-card';card.disabled=itemPurchaseInFlight;
         card.onclick=function(){ buyInventoryItem(item.type);};
-        card.innerHTML='<div class="icon">'+item.icon+'</div><div class="name">'+item.name+' · '+(inventory[item.type]||0)+'</div><div class="desc">'+item.desc+'</div><div style="font-size:11px;color:#ffd700;margin-top:3px;">🪙 '+getItemPrice(item.type)+' coins</div>';
+        card.innerHTML='<span class="icon">'+item.icon+'</span><span class="name">'+item.name+' · '+(inventory[item.type]||0)+'</span><span class="desc">'+item.desc+'</span><span style="font-size:11px;color:#ffd700;margin-top:3px;">🪙 '+getItemPrice(item.type)+' coins</span>';
         c.appendChild(card);
     });
-    if (isNativeAndroid()) {
-        COIN_PACKS.forEach(function(pack){
-            var card=document.createElement('div'); card.className='powerup-card recommended';
-            card.onclick=function(){buyCoinPack(pack.productId, pack.coins+pack.bonus);};
-            var total = pack.coins + pack.bonus;
-            card.innerHTML='<div class="icon">🪙</div><div class="name">'+pack.label+'</div><div class="desc">Google Play Billing checkout</div><div style="font-size:11px;color:#00d38f;margin-top:3px;">+'+total+' coins</div>';
-            c.appendChild(card);
-        });
-    } else {
-        var demo=document.createElement('div'); demo.className='powerup-card';
+    if (!isNativeAndroid()) {
+        var demo=document.createElement('button'); demo.type='button'; demo.className='powerup-card';
         demo.onclick=function(){watchRewardAdForCoins();};
         demo.innerHTML='<div class="icon">▶️</div><div class="name">Reward Break</div><div class="desc">Watch 3 seconds for a small coin top-up.</div><div style="font-size:11px;color:#00d38f;margin-top:3px;">🪙 +25 · '+Math.max(0,3-rewardedAdsThisExpedition)+'/3 left</div>';
         c.appendChild(demo);
@@ -2059,7 +2123,8 @@ function closeShop() {
     if(state===STATE.SHOP){
         if(_shopReturnState===STATE.MENU){document.getElementById('startScreen').classList.add('show');state=STATE.MENU;}
         else if(_shopReturnState===STATE.GAME_OVER) { state=STATE.GAME_OVER; document.getElementById('gameOverScreen').classList.add('show'); }
-        else if(_shopReturnState===STATE.LEVEL_COMPLETE) { state=STATE.LEVEL_COMPLETE; }
+        else if(_shopReturnState===STATE.LEVEL_COMPLETE) { state=STATE.LEVEL_COMPLETE; document.getElementById('levelCompleteScreen').classList.add('show'); }
+        else if(_shopReturnState===STATE.PAUSED) { resumeGame(); }
         else { state=STATE.PLAYING; ['pauseScreen','adScreen','coinStoreScreen'].forEach(function(id){document.getElementById(id).classList.remove('show');}); }
     }
 }
