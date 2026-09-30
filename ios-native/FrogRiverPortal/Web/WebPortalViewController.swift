@@ -62,13 +62,12 @@ final class WebPortalViewController: UIViewController {
         webView.uiDelegate = self
         webView.scrollView.delegate = self
         webView.allowsBackForwardNavigationGestures = true
-        webView.scrollView.bounces = true
-        webView.scrollView.alwaysBounceVertical = true
         webView.scrollView.alwaysBounceHorizontal = false
-        webView.scrollView.contentInsetAdjustmentBehavior = .automatic
+        // The web view already sits inside the safe area; avoid applying it twice.
+        webView.scrollView.contentInsetAdjustmentBehavior = .never
 
         refreshControl.addTarget(self, action: #selector(refreshRequested), for: .valueChanged)
-        webView.scrollView.refreshControl = refreshControl
+        configurePageScrolling(for: initialURL)
 
         view.addSubview(webView)
 
@@ -98,6 +97,17 @@ final class WebPortalViewController: UIViewController {
             progressView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             progressView.heightAnchor.constraint(equalToConstant: 2)
         ])
+    }
+
+    private func configurePageScrolling(for url: URL?) {
+        let path = url?.path ?? "/"
+        let isGame = path == "/" || path.isEmpty || path == "/game.html"
+            || path.hasPrefix("/r/") || path.hasPrefix("/c/")
+        // Game menus own their scrolling. Pulling the outer view must not move
+        // the entire board or reload a run; other pages keep pull-to-refresh.
+        webView.scrollView.bounces = !isGame
+        webView.scrollView.alwaysBounceVertical = !isGame
+        webView.scrollView.refreshControl = isGame ? nil : refreshControl
     }
 
     private func setupErrorView() {
@@ -250,6 +260,7 @@ extension WebPortalViewController: WKNavigationDelegate {
     }
 
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        configurePageScrolling(for: webView.url)
         finishLoading()
     }
 

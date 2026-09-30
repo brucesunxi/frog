@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Frog Frenzy</title>
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; -webkit-tap-highlight-color: transparent; }
@@ -307,10 +307,21 @@ canvas {
     .menu-actions .btn-small { min-width:min(128px, 42vw); padding-left:16px; padding-right:16px; }
 }
 </style>
+<link rel="stylesheet" href="assets/game-layout.css">
 </head>
 <body>
 <div class="game-wrapper" id="gameWrapper">
+    <header class="run-hud" aria-label="Game status">
+        <div class="run-heading"><span id="runLevel">First Hop</span><span id="runLives" aria-label="Lives">♥ 5</span></div>
+        <div class="run-stats">
+            <div><span class="stat-label">HOME</span><strong id="runHomes">0 / 3</strong></div>
+            <div class="run-clock"><span class="stat-label">TIME</span><strong id="runTime">100s</strong></div>
+            <div><span class="stat-label">SCORE</span><strong id="runScore">0</strong></div>
+        </div>
+    </header>
+    <div class="game-stage" id="gameStage">
     <canvas id="gameCanvas" width="800" height="640"></canvas>
+    </div>
     <div class="music-indicator" id="musicIndicator">
         <div class="music-bar" style="animation-delay:0s;height:6px;"></div>
         <div class="music-bar" style="animation-delay:0.1s;height:10px;"></div>
@@ -323,9 +334,12 @@ canvas {
         <div class="detail" id="purchaseToastDetail"></div>
     </div>
     <div class="overlay show" id="startScreen">
-        <h1 class="brand-frog">🐸</h1>
+        <header class="menu-header">
+        <div class="brand-lockup"><span class="brand-frog" aria-hidden="true">🐸</span><div>
         <h1 class="brand-title">Frog Frenzy</h1>
-        <p class="brand-subtitle">Classic road-and-river arcade</p>
+        <p class="brand-subtitle">One little frog. A big adventure.</p>
+        </div></div>
+        <div class="menu-summary">
         <div class="menu-score">
             <span style="color:#ffd700;font-size:13px;">🏆 Best: <strong id="highScoreDisplay">0</strong></span>
             <span style="color:#636e72;margin:0 6px;">|</span>
@@ -335,9 +349,12 @@ canvas {
             <div class="wallet-pill">🪙 <span id="coinBalanceMenu">0</span></div>
             <div class="wallet-pill">🎒 Items <span id="inventoryCountMenu">0</span></div>
         </div>
+        </div>
+        </header>
+        <main class="menu-content" id="menuContent" tabindex="0" aria-label="Expeditions and levels">
         <div class="wallet-status" id="walletStatus">Google Play will sync your wallet with your player ID</div>
         <div class="menu-help">
-            <p>🎮 Arrow keys / WASD to move  |  ESC to pause</p>
+            <p>🎮 Use the direction pad or swipe to hop. Keyboard: arrows / WASD.</p>
             <p>🏠 Reach the homes at the top · Dodge traffic and cross rivers</p>
             <p style="color:#ffd700;">🔥 Chain safe deliveries for combo points!</p>
         </div>
@@ -350,12 +367,15 @@ canvas {
             <div class="level-progress" id="campaignProgress">Cleared 0/8</div>
             <div class="level-grid" id="levelGrid"></div>
         </div>
+        </main>
+        <footer class="menu-footer">
         <button class="btn btn-start menu-primary" onclick="startGame()" id="continueBtn">Start Run</button>
         <div class="menu-actions">
-            <button class="btn btn-small btn-share" onclick="openFriendChallenge()">🐸 Play with a Friend</button>
+            <button class="btn btn-small btn-share" onclick="openFriendChallenge()">🐸 With a friend</button>
             <button class="btn btn-small btn-powerup" onclick="showShop()">🎁 Shop</button>
-            <button class="btn btn-small" style="background:#636e72;color:white;min-width:50px;" onclick="toggleSound()" id="soundToggleBtn">🔇</button>
+            <button class="btn btn-small" onclick="toggleSound()" id="soundToggleBtn" aria-label="Enable sound" aria-pressed="false">🔇</button>
         </div>
+        </footer>
     </div>
     <div class="overlay fade-in" id="levelCompleteScreen">
         <h1>🎉</h1>
@@ -491,20 +511,23 @@ canvas {
         <button class="btn btn-retry btn-small" onclick="retryLevel();document.getElementById('pauseScreen').classList.remove('show');">🔄 Restart</button>
         <button class="btn btn-small btn-powerup" onclick="showShop()">🎁 Shop</button>
         <button class="btn btn-small" style="background:#636e72;color:white;min-width:60px;" onclick="toggleSound()" id="pauseSoundBtn">🔇</button>
-        <button class="btn btn-small" style="background:#636e72;color:white;" onclick="backToMenu()">Menu</button>
+        <button class="btn btn-small" style="background:#636e72;color:white;" onclick="backToMenu()" id="exitBtn">Back to menu</button>
     </div>
-    <div id="exitBtn" style="position:absolute;top:24px;right:68px;z-index:5;cursor:pointer;font-size:15px;width:32px;height:32px;border-radius:50%;background:rgba(0,0,0,0.45);border:1px solid rgba(255,255,255,0.18);color:white;display:none;align-items:center;justify-content:center;transition:all 0.2s;" onclick="backToMenu()" onmouseover="this.style.background='rgba(255,100,100,0.6)';" onmouseout="this.style.background='rgba(0,0,0,0.45)';">✕</div>
-    <div id="pauseBtn" style="position:absolute;top:24px;right:32px;z-index:5;cursor:pointer;font-size:18px;width:32px;height:32px;border-radius:50%;background:rgba(0,0,0,0.45);border:1px solid rgba(255,255,255,0.18);color:white;display:none;align-items:center;justify-content:center;transition:all 0.2s;" onclick="pauseGame()" onmouseover="this.style.background='rgba(0,0,0,0.6)';" onmouseout="this.style.background='rgba(0,0,0,0.45)';">⏸</div>
-    <div class="mobile-controls">
-        <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
-            <button data-dir="up">▲</button>
-            <div style="display:flex;gap:48px;">
-                <button data-dir="left">◀</button>
-                <button data-dir="right">▶</button>
-            </div>
-            <button data-dir="down">▼</button>
+    <section class="control-deck" aria-label="Game controls">
+        <div class="run-context"><span class="context-label">YOUR EXPEDITION</span><span id="runObjective">Bring every frog home</span><span id="runTools"></span></div>
+        <div class="mobile-controls" role="group" aria-label="Move the frog">
+            <button data-dir="up" aria-label="Hop up"><span>↑</span></button>
+            <button data-dir="left" aria-label="Hop left"><span>←</span></button>
+            <span class="pad-center" aria-hidden="true">●</span>
+            <button data-dir="right" aria-label="Hop right"><span>→</span></button>
+            <button data-dir="down" aria-label="Hop down"><span>↓</span></button>
         </div>
-    </div>
+        <div class="run-actions">
+            <button id="pauseBtn" class="deck-button pause-button" onclick="pauseGame()"><span aria-hidden="true">Ⅱ</span>Pause</button>
+            <button id="runSoundBtn" class="deck-button" onclick="toggleSound()" aria-label="Enable sound" aria-pressed="false"><span id="runSoundIcon" aria-hidden="true">🔇</span>Sound</button>
+        </div>
+        <p class="control-hint">Tap a direction or swipe the board · Arrows / WASD</p>
+    </section>
 </div>
 <script>
 // FROG FRENZY - arcade road-and-river crossing
@@ -1267,6 +1290,12 @@ function toggleSound() {
     var em = soundMuted ? '🔇' : '🔊';
     document.getElementById('soundToggleBtn').textContent = em;
     var pb = document.getElementById('pauseSoundBtn'); if (pb) pb.textContent = em;
+    document.getElementById('runSoundIcon').textContent = em;
+    ['soundToggleBtn','runSoundBtn','pauseSoundBtn'].forEach(function(id){
+        var button=document.getElementById(id);
+        button.setAttribute('aria-label',soundMuted?'Enable sound':'Mute sound');
+        button.setAttribute('aria-pressed',String(!soundMuted));
+    });
     saveProgress();
     if (soundMuted) stopMusic();
     else { initAudio(); preloadRealSfx(); if (!bgMusic.playing) startMusic(); }
@@ -2459,24 +2488,26 @@ function drawParticles() { particles.forEach(function(p){ ctx.globalAlpha=p.life
 
 function drawHUD() {
     if (!levelConfig) return;
-    var th=getTheme(level);
-    ctx.fillStyle='rgba(3,8,20,0.82)'; ctx.fillRect(0,0,W,34);
-    ctx.fillStyle='rgba(255,255,255,0.08)'; ctx.fillRect(0,33,W,1);
-    ctx.textBaseline='middle';
-    ctx.textAlign='left';
-    ctx.fillStyle='#ffd700'; ctx.font='bold 14px sans-serif'; ctx.fillText(challengeActive?('🐸 '+challengeRescues):('🏠 '+homesFilled+'/'+homesNeeded),10,17);
-    var lifeCap=challengeActive?3:maxLives, ls=''; for(var i=0;i<lives;i++)ls+='❤️'; for(var i=lives;i<lifeCap;i++)ls+='🖤';
-    ctx.fillStyle='#ff6b6b'; ctx.font='13px sans-serif'; ctx.fillText(ls+' ×'+lives,82,17);
-    ctx.fillStyle=th.accent; ctx.font='bold 15px sans-serif'; ctx.textAlign='center'; ctx.fillText(challengeActive?'Friend Challenge':('Level '+level+' · '+levelConfig.name),360,17);
-    drawTimerPanel();
-    ctx.textAlign='right'; ctx.fillStyle='#ffd700'; ctx.font='bold 14px sans-serif'; ctx.fillText(challengeActive?('Rescues: '+challengeRescues):('Score: '+score),712,17);
-    var y=86; ctx.textAlign='left'; ctx.font='12px sans-serif'; ctx.textBaseline='alphabetic';
-    if(powerups.shield>0){ctx.fillStyle='#00b894';ctx.fillText('🛡️ '+powerups.shield,10,y);y+=15;}
-    if(powerups.slowmo>0){ctx.fillStyle='#fdcb6e';ctx.fillText('⏱️ '+Math.ceil(powerups.slowmo/60)+'s',10,y);y+=15;}
-    if(powerups.superJump>0){ctx.fillStyle='#a29bfe';ctx.fillText('🦘 '+powerups.superJump,10,y);y+=15;}
-    if(powerups.secondChance>0){ctx.fillStyle='#a29bfe';ctx.fillText('💫 '+powerups.secondChance,10,y);y+=15;}
-    renderContractHUD();
+    setHUDText('runLevel',challengeActive?'Friend Challenge':'Level '+level+' · '+levelConfig.name);
+    setHUDText('runLives','♥ '+lives);
+    setHUDText('runHomes',challengeActive?String(challengeRescues):homesFilled+' / '+homesNeeded);
+    setHUDText('runScore',String(score));
+    setHUDText('runTime',Math.ceil(timeLeft)+'s');
+    document.querySelector('.run-clock').classList.toggle('urgent',timeLeft<=10);
+    var objective=challengeActive?'Rescue as many frogs as you can':activeContract?(activeContract.complete?'✓ Contract complete':activeContract.title+' · '+getContractProgressLabel(activeContract)):'Bring every frog home';
+    setHUDText('runObjective',objective);
+    var tools=[];
+    if(powerups.shield>0)tools.push('🛡 '+powerups.shield);
+    if(powerups.slowmo>0)tools.push('⏱ '+Math.ceil(powerups.slowmo/60)+'s');
+    if(powerups.superJump>0)tools.push('🦘 '+powerups.superJump);
+    if(powerups.secondChance>0)tools.push('💫 '+powerups.secondChance);
+    setHUDText('runTools',tools.join(' · '));
     if (timeLeft<=10) { var f=Math.sin(frame*.15)>0; if(f){ctx.fillStyle='rgba(255,0,0,0.12)';ctx.fillRect(0,0,W,H); ctx.fillStyle='#ff6b6b';ctx.font='bold 20px sans-serif';ctx.textAlign='center'; ctx.fillText('⚠️ Time is running out!',400,120);} }
+}
+
+function setHUDText(id,value) {
+    var element=document.getElementById(id);
+    if(element.textContent!==value)element.textContent=value;
 }
 
 function drawTimerPanel() {
@@ -2512,7 +2543,7 @@ function drawPopups() {
 // Input
 document.addEventListener('click',function(e){
     var target=e.target&&e.target.closest&&e.target.closest('button,.powerup-card,.level-card,.loadout-option');
-    if (!target || soundMuted) return;
+    if (!target || target.matches('[data-dir]') || soundMuted) return;
     initAudio();
     playSound('ui');
 });
@@ -2546,10 +2577,40 @@ canvas.addEventListener('pointerup',function(e){
     if (Math.max(Math.abs(dx),Math.abs(dy))<12) return;
     if (Math.abs(dx)>Math.abs(dy)) moveFrog(0,dx>0?1:-1); else moveFrog(dy>0?1:-1,0);
 });
-document.querySelectorAll('.mobile-controls button').forEach(function(btn){btn.addEventListener('touchstart',function(e){e.preventDefault();var d=btn.dataset.dir;if(d==='up')moveFrog(-1,0);else if(d==='down')moveFrog(1,0);else if(d==='left')moveFrog(0,-1);else if(d==='right')moveFrog(0,1);});});
+document.querySelectorAll('.mobile-controls button').forEach(function(btn){
+    function hop(){
+        if(state!==STATE.PLAYING)return;
+        var d=btn.dataset.dir;
+        if(d==='up')moveFrog(-1,0);else if(d==='down')moveFrog(1,0);else if(d==='left')moveFrog(0,-1);else if(d==='right')moveFrog(0,1);
+    }
+    btn.addEventListener('pointerdown',function(e){if(e.button!==0)return;e.preventDefault();hop();});
+    btn.addEventListener('click',function(e){if(e.detail===0)hop();});
+    btn.addEventListener('contextmenu',function(e){e.preventDefault();});
+});
 document.addEventListener('visibilitychange',function(){if(document.hidden&&state===STATE.PLAYING)pauseGame();});
 
 // Boot
+// Fit the entire board to its available space, including after rotation/browser-bar changes.
+var gameStage=document.getElementById('gameStage');
+function fitGameBoard(){
+    var bounds=gameStage.getBoundingClientRect();
+    var width=Math.min(bounds.width,bounds.height*W/H);
+    canvas.style.setProperty('--board-width',Math.max(0,width)+'px');
+}
+new ResizeObserver(fitGameBoard).observe(gameStage);
+window.addEventListener('resize',fitGameBoard);
+if(window.visualViewport)window.visualViewport.addEventListener('resize',fitGameBoard);
+fitGameBoard();
+function syncPanelAccessibility(){
+    var panelOpen=!!document.querySelector('.overlay.show');
+    if(state===STATE.MENU)document.getElementById('gameWrapper').dataset.layout='menu';
+    else if(state===STATE.PLAYING||state===STATE.PAUSED||state===STATE.DYING)document.getElementById('gameWrapper').dataset.layout='game';
+    document.querySelectorAll('.run-hud,.game-stage,.control-deck').forEach(function(element){element.inert=panelOpen;});
+}
+new MutationObserver(function(changes){
+    if(changes.some(function(change){return change.target.classList.contains('overlay');}))syncPanelAccessibility();
+}).observe(document.getElementById('gameWrapper'),{attributes:true,attributeFilter:['class'],subtree:true});
+syncPanelAccessibility();
 window._gameLoopRunning=false;
 try{update();draw();}catch(e){console.warn('Init:',e);}
 console.log('🐸 Frog Frenzy - polished arcade build with music, animated vehicles, dynamic scenes, and particles');
