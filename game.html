@@ -23,6 +23,7 @@ body {
 canvas {
     display: block; border-radius: 12px; background: #1a1a2e;
     width: 100%; max-width: 800px; height: auto; aspect-ratio: 5 / 4;
+    touch-action: none;
 }
 .overlay {
     position: absolute; inset: var(--frame-pad);
@@ -2520,10 +2521,24 @@ document.addEventListener('keydown',function(e){
     if(state===STATE.PLAYING){switch(e.key){case'ArrowUp':case'w':case'W':e.preventDefault();moveFrog(-1,0);break;case'ArrowDown':case's':case'S':e.preventDefault();moveFrog(1,0);break;case'ArrowLeft':case'a':case'A':e.preventDefault();moveFrog(0,-1);break;case'ArrowRight':case'd':case'D':e.preventDefault();moveFrog(0,1);break;}}
     if(e.key==='r'&&state===STATE.GAME_OVER)retryLevel();
 });
-var tx=0,ty=0;
-document.addEventListener('touchstart',function(e){var r=canvas.getBoundingClientRect(),t=e.touches[0];tx=t.clientX-r.left;ty=t.clientY-r.top;},{passive:true});
-document.addEventListener('touchmove',function(e){e.preventDefault();},{passive:false});
-document.addEventListener('touchend',function(e){if(state!==STATE.PLAYING)return;var r=canvas.getBoundingClientRect(),t=e.changedTouches[0];var dx=t.clientX-r.left-tx,dy=t.clientY-r.top-ty;if(Math.max(Math.abs(dx),Math.abs(dy))<20)return;if(Math.abs(dy)>Math.abs(dx))moveFrog(dy>0?1:-1,0);else moveFrog(0,dx>0?1:-1);},{passive:true});
+var tx=0,ty=0,touchGestureActive=false;
+canvas.addEventListener('touchstart',function(e){
+    if(state!==STATE.PLAYING)return;
+    e.preventDefault();
+    var r=canvas.getBoundingClientRect(),t=e.touches[0];
+    tx=t.clientX-r.left;ty=t.clientY-r.top;touchGestureActive=true;
+},{passive:false});
+canvas.addEventListener('touchmove',function(e){if(touchGestureActive)e.preventDefault();},{passive:false});
+canvas.addEventListener('touchend',function(e){
+    if(!touchGestureActive)return;
+    e.preventDefault();touchGestureActive=false;
+    if(state!==STATE.PLAYING)return;
+    var r=canvas.getBoundingClientRect(),t=e.changedTouches[0];
+    var dx=t.clientX-r.left-tx,dy=t.clientY-r.top-ty;
+    if(Math.max(Math.abs(dx),Math.abs(dy))<20)return;
+    if(Math.abs(dy)>Math.abs(dx))moveFrog(dy>0?1:-1,0);else moveFrog(0,dx>0?1:-1);
+},{passive:false});
+canvas.addEventListener('touchcancel',function(){touchGestureActive=false;},{passive:true});
 canvas.addEventListener('pointerup',function(e){
     if ((e.pointerType!=='mouse'&&e.pointerType!=='pen')||state!==STATE.PLAYING) return;
     var r=canvas.getBoundingClientRect(), px=(e.clientX-r.left)*W/r.width, py=(e.clientY-r.top)*H/r.height;
