@@ -6,14 +6,14 @@ import vm from 'node:vm';
 const html = fs.readFileSync(new URL('../game.html', import.meta.url), 'utf8');
 const source = html.slice(html.indexOf('async function watchRewardAdForRevive()'), html.indexOf('function simulateCoinPurchase('));
 
-function harness({ plugin, native = true, timeLeft = 60 } = {}) {
+function harness({ plugin, native = true, ios = false, timeLeft = 60 } = {}) {
   const status = { textContent: '' };
   const buttons = [{ disabled: false }, { disabled: true }, { disabled: false }];
   const c = vm.createContext({
     STATE: { GAME_OVER: 4, AD: 6, PLAYING: 1 }, state: 4, challengeActive: false,
     rewardReviveInFlight: false, timeLeft, levelTimer: 59,
     frog: { row: 14, col: 9 }, lives: 0, powerups: { shield: 0 }, totalRewardAds: 0,
-    soundMuted: true, isNativeAndroid: () => native, getFrogAdsPlugin: () => plugin,
+    soundMuted: true, isNativeAndroid: () => native, isNativeIOS: () => ios, getFrogAdsPlugin: () => plugin,
     document: { getElementById: () => status, querySelectorAll: () => buttons },
     findReviveSpot: () => ({ row: 8, col: 4 }),
     saveProgress() { c.saves = (c.saves || 0) + 1; }, playSound() {}, startMusic() {},
@@ -108,4 +108,12 @@ test('web preview keeps its separate simulated flow', async () => {
   assert.equal(c.totalRewardAds, 0);
   c.preview.callback();
   assert.equal(c.revives, 1);
+});
+
+test('iOS premium edition never opens a rewarded ad or preview', async () => {
+  const { c } = harness({ native: false, ios: true });
+  await c.watchRewardAdForRevive();
+  assert.equal(c.preview, undefined);
+  assert.equal(c.totalRewardAds, 0);
+  assert.equal(c.state, 4);
 });

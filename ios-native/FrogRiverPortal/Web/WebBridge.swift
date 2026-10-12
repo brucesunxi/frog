@@ -12,6 +12,12 @@ final class WebBridge: NSObject, WKScriptMessageHandler {
 
     static let messageNames = ["nativeShare", "nativeNotify", "nativeHaptic"]
 
+    static let platformJavaScript = """
+    window.NativeApp = window.NativeApp || {};
+    window.NativeApp.platform = 'ios';
+    window.NativeApp.capabilities = { ads: false, purchases: false };
+    """
+
     static let injectedJavaScript = """
     (function() {
       var style = document.createElement('style');
@@ -24,13 +30,12 @@ final class WebBridge: NSObject, WKScriptMessageHandler {
         document.head.appendChild(viewport);
       }
       viewport.setAttribute('content', 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover');
-      if (window.NativeApp) return;
-      window.NativeApp = {
-        share: function(payload) { window.webkit.messageHandlers.nativeShare.postMessage(payload || {}); },
-        notify: function(payload) { window.webkit.messageHandlers.nativeNotify.postMessage(payload || {}); },
-        haptic: function(type) { window.webkit.messageHandlers.nativeHaptic.postMessage(type || 'impact'); },
-        fillReviewAccount: function() { return 'native-review-button'; }
-      };
+      window.NativeApp = window.NativeApp || {};
+      window.NativeApp.platform = 'ios';
+      window.NativeApp.capabilities = { ads: false, purchases: false };
+      window.NativeApp.share = function(payload) { window.webkit.messageHandlers.nativeShare.postMessage(payload || {}); };
+      window.NativeApp.notify = function(payload) { window.webkit.messageHandlers.nativeNotify.postMessage(payload || {}); };
+      window.NativeApp.haptic = function(type) { window.webkit.messageHandlers.nativeHaptic.postMessage(type || 'impact'); };
       document.addEventListener('click', function(event) {
         var target = event.target && event.target.closest ? event.target.closest('button, a, input, [role="button"]') : null;
         if (target) window.webkit.messageHandlers.nativeHaptic.postMessage('impact');

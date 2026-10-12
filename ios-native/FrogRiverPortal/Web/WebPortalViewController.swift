@@ -4,7 +4,6 @@ import WebKit
 
 final class WebPortalViewController: UIViewController {
     private let initialURL: URL
-    private let showsReviewLogin: Bool
     private let bridge = WebBridge()
     private let uploadCoordinator = FileUploadCoordinator()
     private let progressView = UIProgressView(progressViewStyle: .bar)
@@ -15,9 +14,8 @@ final class WebPortalViewController: UIViewController {
     private var loadingTimeoutWorkItem: DispatchWorkItem?
     private var estimatedProgressObservation: NSKeyValueObservation?
 
-    init(initialURL: URL, showsReviewLogin: Bool) {
+    init(initialURL: URL) {
         self.initialURL = initialURL
-        self.showsReviewLogin = showsReviewLogin
         super.init(nibName: nil, bundle: nil)
     }
 
@@ -32,7 +30,6 @@ final class WebPortalViewController: UIViewController {
         setupProgressView()
         setupErrorView()
         setupLaunchOverlay()
-        setupReviewLoginButtonIfNeeded()
         setupNavigationItems()
         load(initialURL)
     }
@@ -47,6 +44,7 @@ final class WebPortalViewController: UIViewController {
 
         let contentController = WKUserContentController()
         WebBridge.messageNames.forEach { contentController.add(bridge, name: $0) }
+        contentController.addUserScript(WKUserScript(source: WebBridge.platformJavaScript, injectionTime: .atDocumentStart, forMainFrameOnly: false))
         contentController.addUserScript(WKUserScript(source: WebBridge.injectedJavaScript, injectionTime: .atDocumentEnd, forMainFrameOnly: false))
 
         let configuration = WKWebViewConfiguration()
@@ -159,28 +157,6 @@ final class WebPortalViewController: UIViewController {
         ])
     }
 
-    private func setupReviewLoginButtonIfNeeded() {
-        guard showsReviewLogin else { return }
-
-        let button = UIButton(type: .system)
-        button.setTitle("Review Account Login", for: .normal)
-        button.setImage(UIImage(systemName: "person.badge.key.fill"), for: .normal)
-        button.configuration = .filled()
-        button.translatesAutoresizingMaskIntoConstraints = false
-        button.addTarget(self, action: #selector(reviewLoginTapped), for: .touchUpInside)
-        view.addSubview(button)
-
-        NSLayoutConstraint.activate([
-            button.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 16),
-            button.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -16),
-            button.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -12),
-            button.heightAnchor.constraint(equalToConstant: 44)
-        ])
-
-        webView.scrollView.contentInset.bottom = 68
-        webView.scrollView.verticalScrollIndicatorInsets.bottom = 68
-    }
-
     private func setupNavigationItems() {
         navigationItem.leftBarButtonItem = UIBarButtonItem(
             image: UIImage(systemName: "chevron.backward"),
@@ -240,16 +216,6 @@ final class WebPortalViewController: UIViewController {
         webView.reload()
     }
 
-    @objc private func reviewLoginTapped() {
-        Haptics.impact()
-        webView.evaluateJavaScript(AppConfig.reviewLoginScript) { [weak self] _, error in
-            if let error = error {
-                self?.showError(title: "Review Login Failed", message: "Check the login form selectors or JS bridge setup: \(error.localizedDescription)")
-            } else {
-                Haptics.success()
-            }
-        }
-    }
 }
 
 extension WebPortalViewController: WKNavigationDelegate {

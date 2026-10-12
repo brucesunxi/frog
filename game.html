@@ -352,7 +352,7 @@ canvas {
         </div>
         </header>
         <main class="menu-content" id="menuContent" tabindex="0" aria-label="Expeditions and levels">
-        <div class="wallet-status" id="walletStatus">Google Play will sync your wallet with your player ID</div>
+        <div class="wallet-status" id="walletStatus">Progress is saved automatically</div>
         <button class="ad-privacy-button" id="adPrivacyButton" hidden onclick="showAdPrivacyOptions()">Ad privacy settings</button>
         <details class="menu-help"><summary>How to play</summary>
             <p>🎮 Tap the direction pad or swipe to hop.</p>
@@ -556,7 +556,7 @@ canvas {
         <footer class="store-footer">
         <p class="store-status" id="shopStatus" role="status" aria-live="polite"></p>
         <div class="shop-actions">
-            <button class="btn btn-powerup btn-small" onclick="showCoinStore()">Buy Coins</button>
+            <button class="btn btn-powerup btn-small" id="shopBuyCoinsBtn" onclick="showCoinStore()">Buy Coins</button>
             <button class="btn btn-retry btn-small" id="shopCloseBtn" onclick="closeShop()">Close</button>
         </div>
         </footer>
@@ -632,11 +632,16 @@ function isNativeAndroid() {
     if (typeof cap.isNativePlatform === 'function') return cap.isNativePlatform();
     return false;
 }
+function isNativeIOS() {
+    return !!(window.NativeApp && window.NativeApp.platform === 'ios');
+}
 function getApiUrl(path) {
     return isNativeAndroid() ? PRODUCTION_API_BASE + path : path;
 }
 function getAppPlatform() {
-    return isNativeAndroid() ? 'android' : 'web';
+    if (isNativeAndroid()) return 'android';
+    if (isNativeIOS()) return 'ios';
+    return 'web';
 }
 function getFrogSharePlugin() {
     return window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.FrogShare;
@@ -1256,7 +1261,7 @@ async function syncProgressNow() {
     try {
         var data = await apiFetch('/api/progress',{ method:'PUT', body:JSON.stringify({ progress:getProgressPayload() }) });
         applyPlayerState(data.state || { progress:data.progress });
-        setWalletStatus('Wallet and level progress synced');
+        setWalletStatus('Progress synced');
     } catch(e) {
         setWalletStatus('Cloud sync is unavailable. Local progress is saved.');
     }
@@ -1277,13 +1282,13 @@ async function initPlayerSession() {
         var data = await apiFetch('/api/play/session',{
             method:'POST',
             headers:{'Content-Type':'application/json'},
-            body:JSON.stringify({ installId:installId, platform:getAppPlatform(), appVersion:isNativeAndroid()?'android-1.0.10':'web-preview', referralToken:pending.token||null, referralSource:pending.source||'web' })
+            body:JSON.stringify({ installId:installId, platform:getAppPlatform(), appVersion:isNativeAndroid()?'android-1.0.10':(isNativeIOS()?'ios-1.0.0':'web-preview'), referralToken:pending.token||null, referralSource:pending.source||'web' })
         });
         if (!data) throw new Error('session_failed');
         playerToken=data.token; localStorage.setItem('frog_player_token',playerToken);
         applyPlayerState(data.state);
         await syncProgressNow();
-        setWalletStatus('Wallet connected · Progress synced');
+        setWalletStatus(isNativeAndroid()?'Progress synced with Google Play':'Progress synced securely');
     } catch(e) {
         setWalletStatus('Offline mode: coins, items, and progress are saved locally.');
         updateWalletUI();
@@ -1808,6 +1813,10 @@ let coinPurchaseInFlight = false;
 let itemPurchaseInFlight = false;
 function showCoinStore() {
     if (state===STATE.PURCHASE) return;
+    if (isNativeIOS()) {
+        setStoreStatus('Coin packs are not included in the iOS premium edition. Earn coins by completing expeditions and contracts.');
+        return;
+    }
     if (state===STATE.AD) skipAd();
     _coinStoreReturnState=state;
     state=STATE.PURCHASE;
@@ -1850,25 +1859,25 @@ function closeCoinStore() {
 function renderCoinStore() {
     var grid=document.getElementById('coinPackGrid'); if (!grid) return;
     grid.innerHTML='';
-    var native=isNativeAndroid();
-    document.getElementById('coinStoreDescription').textContent=native?'Select a pack. Google Play will show the price and ask you to confirm.':'Preview checkout — no real money will be charged.';
-    (native?COIN_PACKS:PREVIEW_COIN_PACKS).forEach(function(pack,idx){
+    var android=isNativeAndroid();
+    document.getElementById('coinStoreDescription').textContent=android?'Select a pack. Google Play will show the price and ask you to confirm.':'Web preview checkout — no real money will be charged.';
+    (android?COIN_PACKS:PREVIEW_COIN_PACKS).forEach(function(pack,idx){
         var total=pack.coins+pack.bonus, card=document.createElement('button');
         card.type='button';
         card.className='powerup-card'+(idx===1?' recommended':'');
         card.disabled=coinPurchaseInFlight;
-        card.onclick=function(){if(native)buyCoinPack(pack.productId,total);else simulateCoinPurchase(pack);};
-        card.innerHTML='<span class="icon">🪙</span><span class="name">'+pack.label+'</span><span class="desc">'+pack.coins+' coins'+(pack.bonus?' + '+pack.bonus+' bonus':'')+'</span><span class="pack-action">'+(native?'Google Play →':'Preview '+pack.price)+'</span>';
+        card.onclick=function(){if(android)buyCoinPack(pack.productId,total);else simulateCoinPurchase(pack);};
+        card.innerHTML='<span class="icon">🪙</span><span class="name">'+pack.label+'</span><span class="desc">'+pack.coins+' coins'+(pack.bonus?' + '+pack.bonus+' bonus':'')+'</span><span class="pack-action">'+(android?'Google Play →':'Preview '+pack.price)+'</span>';
         grid.appendChild(card);
     });
 }
 function resetAdScreen() {
     clearInterval(adInterval); adInterval=null; _adCallback=null;
     document.getElementById('adTitle').textContent='🪙 Not Enough Coins';
-    document.getElementById('adMessage').textContent='The Google Play version will open coin purchases here.';
+    document.getElementById('adMessage').textContent=isNativeIOS()?'Earn more coins by completing expeditions and contracts.':'The Google Play version will open coin purchases here.';
     document.getElementById('adCountdown').textContent='🪙';
     var action=document.getElementById('adActionBtn'), cancel=document.getElementById('adCancelBtn');
-    action.style.display='inline-flex'; action.textContent='Buy Coins'; cancel.textContent='Later';
+    action.style.display=isNativeIOS()?'none':'inline-flex'; action.textContent='Buy Coins'; cancel.textContent='Later';
 }
 function startMockAd(title,message,onComplete) {
     clearInterval(adInterval);
@@ -1893,7 +1902,7 @@ function startMockAd(title,message,onComplete) {
 function showNotEnoughCoins(cost) {
     resetAdScreen(); _adReturnState=state; state=STATE.AD;
     document.getElementById('adScreen').classList.add('show');
-    document.getElementById('adMessage').textContent='You need '+cost+' more coins. Choose Buy Coins to see available packs, or Later to return.';
+    document.getElementById('adMessage').textContent=isNativeIOS()?('You need '+cost+' more coins. Complete expeditions and contracts to earn them.'):('You need '+cost+' more coins. Choose Buy Coins to see available packs, or Later to return.');
     document.getElementById('adCountdown').textContent='🪙';
 }
 function skipAd(){ clearInterval(adInterval); adInterval=null; _adCallback=null; document.getElementById('adScreen').classList.remove('show'); if(state===STATE.AD) state=_adReturnState; resetAdScreen(); }
@@ -1909,6 +1918,7 @@ function watchRewardAdForCoins() {
 }
 async function watchRewardAdForRevive() {
     if (rewardReviveInFlight || state!==STATE.GAME_OVER || challengeActive) return;
+    if (isNativeIOS()) return;
     if (isNativeAndroid()) {
         var status=document.getElementById('rewardAdStatus'), plugin=getFrogAdsPlugin();
         if (!plugin || typeof plugin.showRewarded!=='function') {
@@ -1979,7 +1989,7 @@ async function spendCoinsForItem(type,quantity) {
     if (getAvailableCoins() < cost) { showNotEnoughCoins(cost-getAvailableCoins()); return false; }
     if (previewCoinBalance>=cost) {
         previewCoinBalance-=cost; totalCoinsSpent+=cost; updateWalletUI(); saveProgress();
-        setWalletStatus('Preview coins spent locally. Google Play wallet remains unchanged.');
+        setWalletStatus('Preview coins spent locally.');
         return true;
     }
     coinBalance -= cost; totalCoinsSpent += cost; updateWalletUI(); saveProgress();
@@ -2213,11 +2223,13 @@ function renderFailOffers() {
     document.getElementById('rewardAdStatus').textContent='';
     var c=document.getElementById('failPowerups'); c.innerHTML='';
     var items=[
-        {type:'rewardRevive',icon:'▶️',name:'Free Reward Revive',desc:isNativeAndroid()?'Watch an ad for one nearby revive with a Shield.'+(timeLeft<=0?' Includes 30 more seconds.':''):'Watch a 3-second preview to revive nearby with a Shield'},
         {type:recommended,icon:recommended==='shield'?'🛡️':(recommended==='slowmo'?'⏱️':'🦘'),name:recommended==='shield'?'Recommended: Shield':(recommended==='slowmo'?'Recommended: Slow Motion':'Recommended: Super Jump'),desc:recommended==='shield'?'Best for traffic. Blocks one lethal hit.':(recommended==='slowmo'?'Best for speed and timers. Slows the pattern.':'Best for river gaps and short logs.')},
         {type:'secondChance',icon:'💫',name:'Second Chance',desc:'Automatically revive nearby after one mistake'},
         {type:'extraLife',icon:'❤️',name:'Extra Life',desc:'Add one life for this run'}
     ];
+    if (!isNativeIOS()) {
+        items.unshift({type:'rewardRevive',icon:'▶️',name:'Free Reward Revive',desc:isNativeAndroid()?'Watch an ad for one nearby revive with a Shield.'+(timeLeft<=0?' Includes 30 more seconds.':''):'Watch a 3-second preview to revive nearby with a Shield'});
+    }
     items.forEach(function(item,idx){
         var card=document.createElement('button'); card.type='button'; card.className='powerup-card'+(idx<2?' recommended':'');
         card.disabled=rewardReviveInFlight;
@@ -2250,7 +2262,7 @@ function renderShopContents() {
         card.innerHTML='<span class="icon">'+item.icon+'</span><span class="name">'+item.name+' · '+(inventory[item.type]||0)+'</span><span class="desc">'+item.desc+'</span><span style="font-size:11px;color:#ffd700;margin-top:3px;">🪙 '+getItemPrice(item.type)+' coins</span>';
         c.appendChild(card);
     });
-    if (!isNativeAndroid()) {
+    if (!isNativeAndroid() && !isNativeIOS()) {
         var demo=document.createElement('button'); demo.type='button'; demo.className='powerup-card';
         demo.onclick=function(){watchRewardAdForCoins();};
         demo.innerHTML='<div class="icon">▶️</div><div class="name">Reward Break</div><div class="desc">Watch 3 seconds for a small coin top-up.</div><div style="font-size:11px;color:#00d38f;margin-top:3px;">🪙 +25 · '+Math.max(0,3-rewardedAdsThisExpedition)+'/3 left</div>';
@@ -2381,8 +2393,19 @@ function backToMenu() {
     resetAdScreen(); document.getElementById('startScreen').classList.add('show'); document.getElementById('highScoreDisplay').textContent=highScore; document.getElementById('totalStarsMenu').textContent=totalStars; renderLevelSelect(); renderMenuContract(); document.getElementById('musicIndicator').classList.remove('show');
     if(pendingChallengeToken){var token=pendingChallengeToken,kind=pendingChallengeKind;pendingChallengeToken='';pendingChallengeKind='challenge';setTimeout(function(){openPendingInvite({token:token,kind:kind,source:'app_link'});},0);}
 }
-function updateAdCount() { var e=document.getElementById('adCountDisplay'); if(e) e.textContent=isNativeAndroid()?'Optional reward ads offer a revive after a failed run.':'Reward breaks: '+rewardedAdsThisExpedition+'/3 this expedition · '+totalRewardAds+' claimed overall. Ads are optional and never interrupt a crossing.'; }
-updateAdCount(); refreshMenuStats(); initPlayerSession();
+function updateAdCount() {
+    var e=document.getElementById('adCountDisplay');
+    if (!e) return;
+    if (isNativeAndroid()) e.textContent='Optional reward ads offer a revive after a failed run.';
+    else if (isNativeIOS()) e.textContent='Premium edition: no ads or additional purchases. Earn coins through play.';
+    else e.textContent='Reward breaks: '+rewardedAdsThisExpedition+'/3 this expedition · '+totalRewardAds+' claimed overall. Ads are optional and never interrupt a crossing.';
+}
+function applyPlatformPresentation() {
+    var buyButton=document.getElementById('shopBuyCoinsBtn');
+    if (buyButton) buyButton.hidden=isNativeIOS();
+    if (isNativeIOS()) setWalletStatus('Premium edition · No ads or additional purchases');
+}
+applyPlatformPresentation(); updateAdCount(); refreshMenuStats(); initPlayerSession();
 document.getElementById('soundToggleBtn').textContent='🔇'; var pb=document.getElementById('pauseSoundBtn'); if(pb) pb.textContent='🔇 Sound off';
 
 // ---- DRAW ----

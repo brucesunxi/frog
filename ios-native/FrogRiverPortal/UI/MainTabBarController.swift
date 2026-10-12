@@ -7,14 +7,12 @@ final class MainTabBarController: UITabBarController {
         tabBar.backgroundColor = .systemBackground
 
         viewControllers = [
-            makeTab(title: "Home", systemImage: "house.fill", path: AppConfig.homePath, showsReviewLogin: false),
-            makeTab(title: "Discover", systemImage: "safari.fill", path: AppConfig.discoverPath, showsReviewLogin: false),
-            makeTab(title: "Profile", systemImage: "person.crop.circle.fill", path: AppConfig.profilePath, showsReviewLogin: true)
+            makeTab(title: "Play", systemImage: "gamecontroller.fill", path: AppConfig.homePath)
         ]
     }
 
-    private func makeTab(title: String, systemImage: String, path: String, showsReviewLogin: Bool) -> UIViewController {
-        let viewController = WebPortalViewController(initialURL: AppConfig.url(for: path), showsReviewLogin: showsReviewLogin)
+    private func makeTab(title: String, systemImage: String, path: String) -> UIViewController {
+        let viewController = WebPortalViewController(initialURL: AppConfig.url(for: path))
         let navigationController = PortalNavigationController(rootViewController: viewController)
         navigationController.tabBarItem = UITabBarItem(title: title, image: UIImage(systemName: systemImage), selectedImage: nil)
         viewController.title = title

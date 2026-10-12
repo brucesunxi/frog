@@ -179,10 +179,10 @@
 			};
 			buildConfigurationList = 000000000000000000000700 /* Build configuration list for PBXProject "FrogRiverPortal" */;
 			compatibilityVersion = "Xcode 14.0";
-			developmentRegion = zh-Hans;
+			developmentRegion = "zh-Hans";
 			hasScannedForEncodings = 0;
 			knownRegions = (
-				zh-Hans,
+				"zh-Hans",
 				en,
 				Base,
 			);
@@ -351,8 +351,8 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
-				DEVELOPMENT_TEAM = "";
+				CURRENT_PROJECT_VERSION = 3;
+				DEVELOPMENT_TEAM = KLS4TVFJTM;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = FrogRiverPortal/Resources/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
@@ -374,8 +374,8 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
-				DEVELOPMENT_TEAM = "";
+				CURRENT_PROJECT_VERSION = 3;
+				DEVELOPMENT_TEAM = KLS4TVFJTM;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = FrogRiverPortal/Resources/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;

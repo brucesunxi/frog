@@ -12,7 +12,7 @@ function productionFunction(name) {
   if (firstLine.endsWith('}')) return firstLine;
   return html.slice(start, html.indexOf('\n}', start) + 2);
 }
-function harness({ native = true, buyCoins, api } = {}) {
+function harness({ native = true, ios = false, buyCoins, api } = {}) {
   const elements = new Map();
   function element() {
     const classes = new Set();
@@ -40,7 +40,7 @@ function harness({ native = true, buyCoins, api } = {}) {
     clearTimeout: id => timers.delete(id),
     setInterval: (fn, ms) => { timers.set(++timerId, { fn, ms }); return timerId; },
     clearInterval: id => timers.delete(id),
-    isNativeAndroid: () => native,
+    isNativeAndroid: () => native, isNativeIOS: () => ios,
     state: 0, _shopReturnState: 0, _coinStoreReturnState: 0, _adReturnState: 0,
     adInterval: null, _adCallback: null, inventory: {},
     coinBalance: 5, previewCoinBalance: 0, totalCoinsSpent: 0, level: 1,
@@ -126,6 +126,16 @@ test('web preview credits its exact amount and can return to gameplay', () => {
   assert.match(get('shopStatus').textContent, /\+120.*125/);
   c.closeShop();
   assert.equal(c.state, 1);
+});
+
+test('iOS premium edition has no coin checkout or reward break', () => {
+  const { c, get } = harness({ native: false, ios: true });
+  c.showShop();
+  assert.equal(get('shopPowerups').children.length, 4);
+  c.showCoinStore();
+  assert.equal(c.state, 7);
+  assert.equal(get('coinStoreScreen').classList.contains('show'), false);
+  assert.match(get('shopStatus').textContent, /not included in the iOS premium edition/);
 });
 
 test('missing billing, cancellation and checkout errors remain visible and unlock cards', async () => {

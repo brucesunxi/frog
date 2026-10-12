@@ -11,7 +11,7 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         guard let windowScene = scene as? UIWindowScene else { return }
 
         let window = UIWindow(windowScene: windowScene)
-        window.rootViewController = MainTabBarController()
+        window.rootViewController = WebPortalViewController(initialURL: AppConfig.url(for: AppConfig.homePath))
         window.tintColor = UIColor(named: "AccentColor") ?? .systemGreen
         self.window = window
         window.makeKeyAndVisible()
