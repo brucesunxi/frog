@@ -8,6 +8,7 @@ public class MainActivity extends BridgeActivity {
     public void onCreate(Bundle savedInstanceState) {
         registerPlugin(FrogBillingPlugin.class);
         registerPlugin(FrogSharePlugin.class);
+        registerPlugin(FrogAdsPlugin.class);
         super.onCreate(savedInstanceState);
     }
 }

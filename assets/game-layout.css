@@ -7,6 +7,13 @@ body {
     background:radial-gradient(ellipse at 50% 0,#173640 0,#0a1420 45%,#080d17 100%);
 }
 button { font-family:inherit; }
+#rewardAdStatus { color:#d1e6dd; font-size:12px; line-height:1.4; }
+#rewardAdStatus:empty { display:none; }
+#failPowerups button { color:inherit; font-family:inherit; }
+#gameOverScreen button:disabled { opacity:.55; cursor:wait; }
+.ad-privacy-button { min-height:44px; padding:8px 14px; border:1px solid #ffffff24; border-radius:10px; background:#ffffff08; color:#d1e6dd; font-size:12px; cursor:pointer; touch-action:manipulation; }
+.ad-privacy-button[hidden] { display:none; }
+.ad-privacy-button:disabled { opacity:.55; cursor:wait; }
 button:focus-visible, [tabindex]:focus-visible { outline:3px solid #8ef2cc; outline-offset:3px; }
 .game-wrapper {
     --frame-pad:12px;
@@ -51,9 +58,9 @@ button:focus-visible, [tabindex]:focus-visible { outline:3px solid #8ef2cc; outl
 /* Fixed header and actions frame an independently scrollable menu. */
 .overlay { position:absolute; inset:0; border-radius:inherit; overflow:auto; overscroll-behavior:contain; justify-content:safe center; background:#0c1724f5; }
 .overlay > * { flex-shrink:0; }
-.overlay:not(#startScreen):not(.scroll-panel):not(.store-panel) { justify-content:flex-start; }
-.overlay:not(#startScreen):not(.scroll-panel):not(.store-panel) > :first-child { margin-top:auto; }
-.overlay:not(#startScreen):not(.scroll-panel):not(.store-panel) > :last-child { margin-bottom:auto; }
+.overlay:not(#startScreen):not(.scroll-panel):not(.store-panel):not(.panel-screen) { justify-content:flex-start; }
+.overlay:not(#startScreen):not(.scroll-panel):not(.store-panel):not(.panel-screen) > :first-child { margin-top:auto; }
+.overlay:not(#startScreen):not(.scroll-panel):not(.store-panel):not(.panel-screen) > :last-child { margin-bottom:auto; }
 .scroll-panel { justify-content:flex-start; }
 #startScreen { display:none; padding:0; gap:0; overflow:hidden; background:linear-gradient(155deg,#132c36,#101a2c 55%,#0d1826); scrollbar-gutter:auto; }
 #startScreen.show { display:grid; grid-template-rows:auto minmax(0,1fr) auto; align-items:stretch; }
@@ -71,6 +78,8 @@ button:focus-visible, [tabindex]:focus-visible { outline:3px solid #8ef2cc; outl
 .menu-content .wallet-status { font-size:11px; color:#8da6b0; }
 .menu-help { display:block; width:min(640px,100%); max-width:640px; padding:12px 14px; margin:0; font-size:12px; }
 .menu-help p { font-size:12px; line-height:1.5; }
+.menu-help summary { min-height:24px; cursor:pointer; color:#b6e4d1; font-weight:700; }
+.menu-help[open] summary { margin-bottom:8px; }
 .contract-panel { width:min(640px,100%); padding:13px 14px; border-color:#69bd9c30; }
 .contract-panel .eyebrow { font-size:10px; color:#94dfbf; }
 .level-select { width:min(640px,100%); margin:0; }
@@ -201,3 +210,65 @@ button.powerup-card:disabled { opacity:.55; cursor:wait; transform:none; }
 @media (prefers-reduced-motion:reduce) {
     *, *::before, *::after { animation:none !important; transition:none !important; }
 }
+/* Consistent app panels keep their main actions visible above the native banner. */
+:is(#levelCompleteScreen,#briefingScreen,#gameOverScreen,#challengeInviteScreen,#challengeLobbyScreen,#challengeResultScreen,#winScreen).panel-screen {
+    padding:0; gap:0; overflow:hidden; align-items:stretch; justify-content:stretch;
+}
+.overlay.panel-screen.show { display:grid; grid-template-rows:auto minmax(0,1fr) auto; }
+.panel-header { padding:18px 18px 12px; border-bottom:1px solid #ffffff12; background:#102531; }
+.panel-screen .panel-header h1, .panel-screen .panel-header h2 { font-size:24px; line-height:1.2; margin:0; }
+.panel-screen .panel-header h1 + h2, .panel-screen .panel-header p { font-size:13px; margin:6px 0 0; color:#a8c8c4; }
+.panel-content { min-width:0; min-height:0; overflow-y:auto; touch-action:pan-y; overscroll-behavior:contain; padding:16px; scrollbar-width:thin; }
+.panel-content > * { max-width:640px; margin-left:auto; margin-right:auto; }
+.panel-content .powerup-grid, .panel-content .loadout-grid { width:100%; }
+.panel-content p { font-size:14px; line-height:1.5; }
+.panel-footer { display:flex; flex-wrap:wrap; justify-content:center; gap:8px; padding:12px; border-top:1px solid #ffffff18; background:#102330; box-shadow:0 -6px 20px #08121c40; }
+.panel-footer .complete-actions, #gameOverScreen .panel-footer > div { width:100%; display:grid !important; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px !important; margin:0; }
+.panel-screen .panel-footer .btn { min-width:0; max-width:none; min-height:46px !important; margin:0 !important; padding:10px 8px; font-size:13px; border-radius:12px; box-shadow:none; flex:1; justify-content:center; }
+.panel-footer .panel-primary { order:-1; }
+.panel-secondary { background:#ffffff0d; color:#d1e6dd; border:1px solid #ffffff24; }
+.panel-screen .briefing-card { width:100%; padding:14px; margin-bottom:14px; }
+.panel-screen .briefing-card h3 { font-size:17px; }
+.panel-screen .loadout-option { min-height:92px; }
+.panel-screen .challenge-card { width:100%; }
+.panel-screen .challenge-status { font-size:13px; margin-top:16px; overflow-wrap:anywhere; }
+.challenge-status[data-kind="error"] { color:#ffabb5; }
+.room-players[hidden] { display:none; }
+#challengeResultEmoji { display:none; }
+#levelCompleteScreen .panel-content { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; align-content:start; }
+#levelCompleteScreen .panel-content > p { width:100%; padding:12px 6px; margin:0; border:1px solid #ffffff12; border-radius:12px; background:#ffffff05; font-size:12px; }
+#levelCompleteScreen .panel-content > p .highlight { display:block; margin-top:5px; font-size:20px; }
+#levelCompleteScreen .panel-content > :not(p) { grid-column:1 / -1; }
+.panel-screen .stars { font-size:30px; margin:0 0 4px; }
+.panel-screen .complete-tip, .panel-screen .fail-insight { display:block; font-size:13px; line-height:1.5; }
+#coinPackGrid { grid-template-columns:1fr; max-width:640px; gap:10px; }
+#coinPackGrid .powerup-card { display:grid; grid-template-columns:36px minmax(0,1fr) auto; gap:3px 10px; align-items:center; text-align:left; min-height:84px; padding:12px; }
+#coinPackGrid .icon { grid-column:1; grid-row:1 / 3; font-size:26px; margin:0; }
+#coinPackGrid .name { grid-column:2; font-size:14px; }
+#coinPackGrid .desc { grid-column:2; display:block; font-size:12px; }
+#coinPackGrid .pack-action { grid-column:3; grid-row:1 / 3; font-size:12px; margin:0; max-width:72px; text-align:right; }
+#pauseScreen { gap:10px; }
+#pauseScreen .btn { min-height:46px; margin:0; width:min(300px,100%); }
+#pauseScreen h2 { margin-bottom:14px; }
+#adScreen .btn { min-height:44px; }
+@media (max-height:500px) {
+    .panel-header { padding:8px 12px; }
+    .panel-screen .panel-header h1, .panel-screen .panel-header h2 { font-size:20px; }
+    .panel-screen .panel-header h1 + h2, .panel-screen .panel-header p { margin-top:3px; font-size:12px; }
+    .panel-content { padding:10px 14px; }
+    .panel-footer { padding:8px 12px; }
+    .panel-footer .complete-actions, #gameOverScreen .panel-footer > div { display:flex !important; }
+    .panel-footer .complete-actions .btn, #gameOverScreen .panel-footer .btn { flex:1; }
+    .panel-screen .panel-footer .btn { padding:8px 6px; font-size:12px; }
+    .panel-screen .room-players { margin:4px auto; }
+    .panel-screen .room-player { padding:10px; }
+    #pauseScreen { display:none; padding:12px; }
+    #pauseScreen.show { display:grid; grid-template-columns:repeat(2,minmax(0,230px)); align-content:center; justify-content:center; }
+    #pauseScreen h2 { grid-column:1 / -1; margin:0 0 4px; }
+    #pauseScreen .btn { width:100%; min-width:0; }
+}
+#levelCompleteScreen .stars { color:#ffd980; }
+#levelCompleteScreen .panel-content > p .highlight { display:inline-block; width:100%; }
+#gameOverScreen .panel-footer .panel-primary { grid-column:1 / -1; }
+#coinPackGrid .pack-action { max-width:none; white-space:nowrap; }
+@media (max-width:359px) { #coinPackGrid .pack-action { white-space:normal; max-width:56px; } }

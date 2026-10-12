@@ -5,6 +5,7 @@ import jwt from 'jsonwebtoken';
 import { google } from 'googleapis';
 import { neon } from '@neondatabase/serverless';
 import { fileURLToPath } from 'node:url';
+import { nativeCors } from './lib/native-cors.js';
 import {
   CHALLENGE_RULES_VERSION,
   buildPlayStoreUrl,
@@ -55,6 +56,7 @@ const ITEM_CATALOG = {
   revive: { id: 'revive', name: 'Continue Run', cost: 100, description: 'Revives nearby with Shield' }
 };
 
+app.use('/api', nativeCors);
 app.use(express.json({ limit: '128kb' }));
 app.use(express.static(rootDir, { extensions: ['html'] }));
 app.set('trust proxy', 1);

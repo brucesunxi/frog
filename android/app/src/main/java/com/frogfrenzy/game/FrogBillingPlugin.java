@@ -8,10 +8,12 @@ import com.android.billingclient.api.BillingClient;
 import com.android.billingclient.api.BillingClientStateListener;
 import com.android.billingclient.api.BillingFlowParams;
 import com.android.billingclient.api.BillingResult;
+import com.android.billingclient.api.PendingPurchasesParams;
 import com.android.billingclient.api.ProductDetails;
 import com.android.billingclient.api.Purchase;
 import com.android.billingclient.api.PurchasesUpdatedListener;
 import com.android.billingclient.api.QueryProductDetailsParams;
+import com.android.billingclient.api.QueryProductDetailsResult;
 import com.getcapacitor.JSArray;
 import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
@@ -31,7 +33,10 @@ public class FrogBillingPlugin extends Plugin implements PurchasesUpdatedListene
     @Override
     public void load() {
         billingClient = BillingClient.newBuilder(getContext())
-            .enablePendingPurchases()
+            .enablePendingPurchases(PendingPurchasesParams.newBuilder()
+                .enableOneTimeProducts()
+                .build())
+            .enableAutoServiceReconnection()
             .setListener(this)
             .build();
     }
@@ -100,21 +105,22 @@ public class FrogBillingPlugin extends Plugin implements PurchasesUpdatedListene
         QueryProductDetailsParams params = QueryProductDetailsParams.newBuilder()
             .setProductList(products)
             .build();
-        billingClient.queryProductDetailsAsync(params, (billingResult, productDetailsList) -> {
+        billingClient.queryProductDetailsAsync(params, (billingResult, queryProductDetailsResult) -> {
             if (billingResult.getResponseCode() != BillingClient.BillingResponseCode.OK) {
                 call.reject("Product query failed: " + billingResult.getDebugMessage());
                 return;
             }
             JSArray result = new JSArray();
-            for (ProductDetails details : productDetailsList) {
+            for (ProductDetails details : queryProductDetailsResult.getProductDetailsList()) {
                 JSObject item = new JSObject();
                 item.put("productId", details.getProductId());
                 item.put("title", details.getTitle());
                 item.put("description", details.getDescription());
-                if (details.getOneTimePurchaseOfferDetails() != null) {
-                    item.put("price", details.getOneTimePurchaseOfferDetails().getFormattedPrice());
-                    item.put("priceMicros", details.getOneTimePurchaseOfferDetails().getPriceAmountMicros());
-                    item.put("currencyCode", details.getOneTimePurchaseOfferDetails().getPriceCurrencyCode());
+                ProductDetails.OneTimePurchaseOfferDetails offer = getFirstOneTimeOffer(details);
+                if (offer != null) {
+                    item.put("price", offer.getFormattedPrice());
+                    item.put("priceMicros", offer.getPriceAmountMicros());
+                    item.put("currencyCode", offer.getPriceCurrencyCode());
                 }
                 result.put(item);
             }
@@ -133,16 +139,20 @@ public class FrogBillingPlugin extends Plugin implements PurchasesUpdatedListene
                     .build()
             ))
             .build();
-        billingClient.queryProductDetailsAsync(params, (billingResult, productDetailsList) -> {
-            if (billingResult.getResponseCode() != BillingClient.BillingResponseCode.OK || productDetailsList.isEmpty()) {
+        billingClient.queryProductDetailsAsync(params, (billingResult, queryProductDetailsResult) -> {
+            if (billingResult.getResponseCode() != BillingClient.BillingResponseCode.OK || queryProductDetailsResult.getProductDetailsList().isEmpty()) {
                 clearActive(call);
                 call.reject("Product unavailable: " + billingResult.getDebugMessage());
                 return;
             }
-            ProductDetails details = productDetailsList.get(0);
-            BillingFlowParams.ProductDetailsParams productDetailsParams = BillingFlowParams.ProductDetailsParams.newBuilder()
-                .setProductDetails(details)
-                .build();
+            ProductDetails details = queryProductDetailsResult.getProductDetailsList().get(0);
+            ProductDetails.OneTimePurchaseOfferDetails offer = getFirstOneTimeOffer(details);
+            BillingFlowParams.ProductDetailsParams.Builder productDetailsParamsBuilder = BillingFlowParams.ProductDetailsParams.newBuilder()
+                .setProductDetails(details);
+            if (offer != null) {
+                productDetailsParamsBuilder.setOfferToken(offer.getOfferToken());
+            }
+            BillingFlowParams.ProductDetailsParams productDetailsParams = productDetailsParamsBuilder.build();
             BillingFlowParams flowParams = BillingFlowParams.newBuilder()
                 .setProductDetailsParamsList(Collections.singletonList(productDetailsParams))
                 .build();
@@ -185,5 +195,13 @@ public class FrogBillingPlugin extends Plugin implements PurchasesUpdatedListene
         if (activePurchaseCall == call) {
             activePurchaseCall = null;
         }
+    }
+
+    private ProductDetails.OneTimePurchaseOfferDetails getFirstOneTimeOffer(ProductDetails details) {
+        List<ProductDetails.OneTimePurchaseOfferDetails> offers = details.getOneTimePurchaseOfferDetailsList();
+        if (offers != null && !offers.isEmpty()) {
+            return offers.get(0);
+        }
+        return details.getOneTimePurchaseOfferDetails();
     }
 }

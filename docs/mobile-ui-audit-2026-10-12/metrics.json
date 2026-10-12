@@ -1,0 +1,752 @@
+[
+  {
+    "orientation": "portrait",
+    "name": "01-menu",
+    "screen": "startScreen",
+    "viewport": [
+      384,
+      707
+    ],
+    "footerOverflow": false,
+    "buttons": [
+      {
+        "text": "Start Run",
+        "width": 328,
+        "height": 48,
+        "visible": true,
+        "hit": true
+      },
+      {
+        "text": "🐸 With a friend",
+        "width": 139.2888946533203,
+        "height": 48,
+        "visible": true,
+        "hit": true
+      },
+      {
+        "text": "🎁 Shop",
+        "width": 139.2888946533203,
+        "height": 48,
+        "visible": true,
+        "hit": true
+      },
+      {
+        "text": "🔇",
+        "width": 48,
+        "height": 48,
+        "visible": true,
+        "hit": true
+      }
+    ]
+  },
+  {
+    "orientation": "portrait",
+    "name": "02-shop",
+    "screen": "shopScreen",
+    "viewport": [
+      384,
+      707
+    ],
+    "footerOverflow": false,
+    "buttons": [
+      {
+        "text": "Buy Coins",
+        "width": 167.2888946533203,
+        "height": 44,
+        "visible": true,
+        "hit": true
+      },
+      {
+        "text": "Close",
+        "width": 167.2888946533203,
+        "height": 44,
+        "visible": true,
+        "hit": true
+      }
+    ]
+  },
+  {
+    "orientation": "portrait",
+    "name": "03-coins",
+    "screen": "coinStoreScreen",
+    "viewport": [
+      384,
+      707
+    ],
+    "footerOverflow": false,
+    "buttons": [
+      {
+        "text": "Back",
+        "width": 260,
+        "height": 44,
+        "visible": true,
+        "hit": true
+      }
+    ]
+  },
+  {
+    "orientation": "portrait",
+    "name": "04-briefing",
+    "screen": "briefingScreen",
+    "viewport": [
+      384,
+      707
+    ],
+    "footerOverflow": false,
+    "buttons": [
+      {
+        "text": "Start Expedition",
+        "width": 163.60000610351562,
+        "height": 46,
+        "visible": true,
+        "hit": true
+      },
+      {
+        "text": "Back",
+        "width": 163.60000610351562,
+        "height": 46,
+        "visible": true,
+        "hit": true
+      }
+    ]
+  },
+  {
+    "orientation": "portrait",
+    "name": "06-pause",
+    "screen": "pauseScreen",
+    "viewport": [
+      384,
+      707
+    ],
+    "footerOverflow": false,
+    "buttons": [
+      {
+        "text": "Resume",
+        "width": 300,
+        "height": 46,
+        "visible": true,
+        "hit": true
+      },
+      {
+        "text": "🔄 Restart",
+        "width": 300,
+        "height": 46,
+        "visible": true,
+        "hit": true
+      },
+      {
+        "text": "🎁 Shop",
+        "width": 300,
+        "height": 46,
+        "visible": true,
+        "hit": true
+      },
+      {
+        "text": "🔇 Sound off",
+        "width": 300,
+        "height": 46,
+        "visible": true,
+        "hit": true
+      },
+      {
+        "text": "Back to menu",
+        "width": 300,
+        "height": 46,
+        "visible": true,
+        "hit": true
+      }
+    ]
+  },
+  {
+    "orientation": "portrait",
+    "name": "07-complete",
+    "screen": "levelCompleteScreen",
+    "viewport": [
+      384,
+      707
+    ],
+    "footerOverflow": false,
+    "buttons": [
+      {
+        "text": "🐸 Play with a friend",
+        "width": 169.2888946533203,
+        "height": 46,
+        "visible": true,
+        "hit": true
+      },
+      {
+        "text": "🪙 Prep Boost for Level 2",
+        "width": 169.2888946533203,
+        "height": 46,
+        "visible": true,
+        "hit": true
+      },
+      {
+        "text": "Next Level →",
+        "width": 169.2888946533203,
+        "height": 46,
+        "visible": true,
+        "hit": true
+      },
+      {
+        "text": "Menu",
+        "width": 169.2888946533203,
+        "height": 46,
+        "visible": true,
+        "hit": true
+      }
+    ]
+  },
+  {
+    "orientation": "portrait",
+    "name": "08-failure",
+    "screen": "gameOverScreen",
+    "viewport": [
+      384,
+      707
+    ],
+    "footerOverflow": false,
+    "buttons": [
+      {
+        "text": "🔄 Retry",
+        "width": 346.5777893066406,
+        "height": 46,
+        "visible": true,
+        "hit": true
+      },
+      {
+        "text": "🐸 Play with a friend",
+        "width": 169.2888946533203,
+        "height": 46,
+        "visible": true,
+        "hit": true
+      },
+      {
+        "text": "Menu",
+        "width": 169.2888946533203,
+        "height": 46,
+        "visible": true,
+        "hit": true
+      }
+    ]
+  },
+  {
+    "orientation": "portrait",
+    "name": "09-invite",
+    "screen": "challengeInviteScreen",
+    "viewport": [
+      384,
+      707
+    ],
+    "footerOverflow": false,
+    "buttons": [
+      {
+        "text": "Accept Challenge",
+        "width": 169.2888946533203,
+        "height": 46,
+        "visible": true,
+        "hit": true
+      },
+      {
+        "text": "Back",
+        "width": 169.2888946533203,
+        "height": 46,
+        "visible": true,
+        "hit": true
+      }
+    ]
+  },
+  {
+    "orientation": "portrait",
+    "name": "10-result",
+    "screen": "challengeResultScreen",
+    "viewport": [
+      384,
+      707
+    ],
+    "footerOverflow": false,
+    "buttons": [
+      {
+        "text": "Share Challenge",
+        "width": 169.2888946533203,
+        "height": 46,
+        "visible": true,
+        "hit": true
+      },
+      {
+        "text": "Copy Link",
+        "width": 169.2888946533203,
+        "height": 46,
+        "visible": true,
+        "hit": true
+      },
+      {
+        "text": "Try Again",
+        "width": 169.2888946533203,
+        "height": 46,
+        "visible": true,
+        "hit": true
+      },
+      {
+        "text": "Menu",
+        "width": 169.2888946533203,
+        "height": 46,
+        "visible": true,
+        "hit": true
+      }
+    ]
+  },
+  {
+    "orientation": "portrait",
+    "name": "11-win",
+    "screen": "winScreen",
+    "viewport": [
+      384,
+      707
+    ],
+    "footerOverflow": false,
+    "buttons": [
+      {
+        "text": "🏆 Endless Run",
+        "width": 169.2888946533203,
+        "height": 46,
+        "visible": true,
+        "hit": true
+      },
+      {
+        "text": "Menu",
+        "width": 169.2888946533203,
+        "height": 46,
+        "visible": true,
+        "hit": true
+      }
+    ]
+  },
+  {
+    "orientation": "portrait",
+    "name": "12-insufficient",
+    "screen": "adScreen",
+    "viewport": [
+      384,
+      707
+    ],
+    "footerOverflow": false,
+    "buttons": [
+      {
+        "text": "Buy Coins",
+        "width": 136,
+        "height": 44,
+        "visible": true,
+        "hit": true
+      },
+      {
+        "text": "Later",
+        "width": 100,
+        "height": 44,
+        "visible": true,
+        "hit": true
+      }
+    ]
+  },
+  {
+    "orientation": "portrait",
+    "name": "13-friend-error",
+    "screen": "challengeLobbyScreen",
+    "viewport": [
+      384,
+      707
+    ],
+    "footerOverflow": false,
+    "buttons": [
+      {
+        "text": "Retry connection",
+        "width": 169.2888946533203,
+        "height": 46,
+        "visible": true,
+        "hit": true
+      },
+      {
+        "text": "Back",
+        "width": 169.2888946533203,
+        "height": 46,
+        "visible": true,
+        "hit": true
+      }
+    ]
+  },
+  {
+    "orientation": "landscape",
+    "name": "01-menu",
+    "screen": "startScreen",
+    "viewport": [
+      779,
+      289
+    ],
+    "footerOverflow": false,
+    "buttons": [
+      {
+        "text": "Continue Level 2",
+        "width": 290.3777770996094,
+        "height": 44,
+        "visible": true,
+        "hit": true
+      },
+      {
+        "text": "🐸 With a friend",
+        "width": 234.73333740234375,
+        "height": 44,
+        "visible": true,
+        "hit": true
+      },
+      {
+        "text": "🎁 Shop",
+        "width": 140.84445190429688,
+        "height": 44,
+        "visible": true,
+        "hit": true
+      },
+      {
+        "text": "🔇",
+        "width": 44,
+        "height": 44,
+        "visible": true,
+        "hit": true
+      }
+    ]
+  },
+  {
+    "orientation": "landscape",
+    "name": "02-shop",
+    "screen": "shopScreen",
+    "viewport": [
+      779,
+      289
+    ],
+    "footerOverflow": false,
+    "buttons": [
+      {
+        "text": "Buy Coins",
+        "width": 260,
+        "height": 44,
+        "visible": true,
+        "hit": true
+      },
+      {
+        "text": "Close",
+        "width": 260,
+        "height": 44,
+        "visible": true,
+        "hit": true
+      }
+    ]
+  },
+  {
+    "orientation": "landscape",
+    "name": "03-coins",
+    "screen": "coinStoreScreen",
+    "viewport": [
+      779,
+      289
+    ],
+    "footerOverflow": false,
+    "buttons": [
+      {
+        "text": "Back",
+        "width": 260,
+        "height": 44,
+        "visible": true,
+        "hit": true
+      }
+    ]
+  },
+  {
+    "orientation": "landscape",
+    "name": "04-briefing",
+    "screen": "briefingScreen",
+    "viewport": [
+      779,
+      289
+    ],
+    "footerOverflow": false,
+    "buttons": [
+      {
+        "text": "Start Expedition",
+        "width": 359.2889099121094,
+        "height": 46,
+        "visible": true,
+        "hit": true
+      },
+      {
+        "text": "Back",
+        "width": 359.2889099121094,
+        "height": 46,
+        "visible": true,
+        "hit": true
+      }
+    ]
+  },
+  {
+    "orientation": "landscape",
+    "name": "06-pause",
+    "screen": "pauseScreen",
+    "viewport": [
+      779,
+      289
+    ],
+    "footerOverflow": false,
+    "buttons": [
+      {
+        "text": "Resume",
+        "width": 230,
+        "height": 46,
+        "visible": true,
+        "hit": true
+      },
+      {
+        "text": "🔄 Restart",
+        "width": 230,
+        "height": 46,
+        "visible": true,
+        "hit": true
+      },
+      {
+        "text": "🎁 Shop",
+        "width": 230,
+        "height": 46,
+        "visible": true,
+        "hit": true
+      },
+      {
+        "text": "🔇 Sound off",
+        "width": 230,
+        "height": 46,
+        "visible": true,
+        "hit": true
+      },
+      {
+        "text": "Back to menu",
+        "width": 230,
+        "height": 46,
+        "visible": true,
+        "hit": true
+      }
+    ]
+  },
+  {
+    "orientation": "landscape",
+    "name": "07-complete",
+    "screen": "levelCompleteScreen",
+    "viewport": [
+      779,
+      289
+    ],
+    "footerOverflow": false,
+    "buttons": [
+      {
+        "text": "🐸 Play with a friend",
+        "width": 178.13333129882812,
+        "height": 46,
+        "visible": true,
+        "hit": true
+      },
+      {
+        "text": "🪙 Prep Boost for Level 2",
+        "width": 178.13333129882812,
+        "height": 46,
+        "visible": true,
+        "hit": true
+      },
+      {
+        "text": "Next Level →",
+        "width": 178.13333129882812,
+        "height": 46,
+        "visible": true,
+        "hit": true
+      },
+      {
+        "text": "Menu",
+        "width": 179.55555725097656,
+        "height": 46,
+        "visible": true,
+        "hit": true
+      }
+    ]
+  },
+  {
+    "orientation": "landscape",
+    "name": "08-failure",
+    "screen": "gameOverScreen",
+    "viewport": [
+      779,
+      289
+    ],
+    "footerOverflow": false,
+    "buttons": [
+      {
+        "text": "🔄 Retry",
+        "width": 240.65000915527344,
+        "height": 46,
+        "visible": true,
+        "hit": true
+      },
+      {
+        "text": "🐸 Play with a friend",
+        "width": 240.6555633544922,
+        "height": 46,
+        "visible": true,
+        "hit": true
+      },
+      {
+        "text": "Menu",
+        "width": 240.65000915527344,
+        "height": 46,
+        "visible": true,
+        "hit": true
+      }
+    ]
+  },
+  {
+    "orientation": "landscape",
+    "name": "09-invite",
+    "screen": "challengeInviteScreen",
+    "viewport": [
+      779,
+      289
+    ],
+    "footerOverflow": false,
+    "buttons": [
+      {
+        "text": "Accept Challenge",
+        "width": 364.977783203125,
+        "height": 46,
+        "visible": true,
+        "hit": true
+      },
+      {
+        "text": "Back",
+        "width": 364.977783203125,
+        "height": 46,
+        "visible": true,
+        "hit": true
+      }
+    ]
+  },
+  {
+    "orientation": "landscape",
+    "name": "10-result",
+    "screen": "challengeResultScreen",
+    "viewport": [
+      779,
+      289
+    ],
+    "footerOverflow": false,
+    "buttons": [
+      {
+        "text": "Share Challenge",
+        "width": 178.4888916015625,
+        "height": 46,
+        "visible": true,
+        "hit": true
+      },
+      {
+        "text": "Copy Link",
+        "width": 178.4888916015625,
+        "height": 46,
+        "visible": true,
+        "hit": true
+      },
+      {
+        "text": "Try Again",
+        "width": 178.4888916015625,
+        "height": 46,
+        "visible": true,
+        "hit": true
+      },
+      {
+        "text": "Menu",
+        "width": 178.4888916015625,
+        "height": 46,
+        "visible": true,
+        "hit": true
+      }
+    ]
+  },
+  {
+    "orientation": "landscape",
+    "name": "11-win",
+    "screen": "winScreen",
+    "viewport": [
+      779,
+      289
+    ],
+    "footerOverflow": false,
+    "buttons": [
+      {
+        "text": "🏆 Endless Run",
+        "width": 364.977783203125,
+        "height": 46,
+        "visible": true,
+        "hit": true
+      },
+      {
+        "text": "Menu",
+        "width": 364.977783203125,
+        "height": 46,
+        "visible": true,
+        "hit": true
+      }
+    ]
+  },
+  {
+    "orientation": "landscape",
+    "name": "12-insufficient",
+    "screen": "adScreen",
+    "viewport": [
+      779,
+      289
+    ],
+    "footerOverflow": false,
+    "buttons": [
+      {
+        "text": "Buy Coins",
+        "width": 100,
+        "height": 44,
+        "visible": true,
+        "hit": true
+      },
+      {
+        "text": "Later",
+        "width": 100,
+        "height": 44,
+        "visible": true,
+        "hit": true
+      }
+    ]
+  },
+  {
+    "orientation": "landscape",
+    "name": "13-friend-error",
+    "screen": "challengeLobbyScreen",
+    "viewport": [
+      779,
+      289
+    ],
+    "footerOverflow": false,
+    "buttons": [
+      {
+        "text": "Retry connection",
+        "width": 364.977783203125,
+        "height": 46,
+        "visible": true,
+        "hit": true
+      },
+      {
+        "text": "Back",
+        "width": 364.977783203125,
+        "height": 46,
+        "visible": true,
+        "hit": true
+      }
+    ]
+  }
+]

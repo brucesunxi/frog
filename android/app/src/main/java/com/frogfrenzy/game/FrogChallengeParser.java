@@ -1,5 +1,6 @@
 package com.frogfrenzy.game;
 
+import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.regex.Matcher;
@@ -25,16 +26,25 @@ public final class FrogChallengeParser {
 
     public static String tokenFromReferrer(String raw) {
         if (raw == null) return "";
-        String decoded = URLDecoder.decode(raw, StandardCharsets.UTF_8);
+        String decoded = decodeReferrer(raw);
         Matcher matcher = INVITE_REFERRER.matcher(decoded);
         return matcher.find() ? matcher.group(2) : "";
     }
 
     public static String kindFromReferrer(String raw) {
         if (raw == null) return "";
-        String decoded = URLDecoder.decode(raw, StandardCharsets.UTF_8);
+        String decoded = decodeReferrer(raw);
         Matcher matcher = INVITE_REFERRER.matcher(decoded);
         if (!matcher.find()) return "";
         return "room_token".equals(matcher.group(1)) ? "room" : "challenge";
+    }
+
+    private static String decodeReferrer(String raw) {
+        try {
+            // The Charset overload requires Android 13; the name overload works on minSdk 23.
+            return URLDecoder.decode(raw, StandardCharsets.UTF_8.name());
+        } catch (UnsupportedEncodingException impossible) {
+            throw new AssertionError("UTF-8 must be available", impossible);
+        }
     }
 }

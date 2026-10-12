@@ -1,5 +1,23 @@
 apply plugin: 'com.android.application'
 
+// Optional, paired debug-only overrides for investigating a broken demo creative.
+// A publisher ad unit must never be tested without explicitly registering the device.
+def adsTestProperties = new Properties()
+def adsTestConfig = rootProject.file('ads-test.properties')
+if (adsTestConfig.exists()) {
+    adsTestConfig.withInputStream { adsTestProperties.load(it) }
+}
+def adsTestDevice = providers.gradleProperty('frogAdsTestDeviceId')
+    .getOrElse(adsTestProperties.getProperty('frogAdsTestDeviceId', ''))
+def rewardedTestUnit = providers.gradleProperty('frogRewardedTestUnitId')
+    .getOrElse(adsTestProperties.getProperty('frogRewardedTestUnitId', ''))
+if (adsTestDevice || rewardedTestUnit) {
+    if (!(adsTestDevice ==~ /[A-Fa-f0-9]{32}/) ||
+        !(rewardedTestUnit ==~ /ca-app-pub-[0-9]{16}\/[0-9]{10}/)) {
+        throw new GradleException('Rewarded diagnostics require both a valid test device hash and ad unit ID.')
+    }
+}
+
 android {
     namespace "com.frogfrenzy.game"
     compileSdk rootProject.ext.compileSdkVersion
@@ -7,8 +25,12 @@ android {
         applicationId "com.frogfrenzy.game"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 6
-        versionName "1.0.5"
+        versionCode 12
+        versionName "1.0.11"
+        resValue "string", "admob_app_id", "ca-app-pub-9711589934416529~1311124306"
+        resValue "string", "admob_banner_id", "ca-app-pub-9711589934416529/3925834886"
+        resValue "string", "admob_rewarded_id", "ca-app-pub-9711589934416529/9365863824"
+        resValue "string", "admob_test_device_id", ""
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -28,6 +50,12 @@ android {
         }
     }
     buildTypes {
+        debug {
+            resValue "string", "admob_app_id", rewardedTestUnit ? "ca-app-pub-9711589934416529~1311124306" : "ca-app-pub-3940256099942544~3347511713"
+            resValue "string", "admob_banner_id", "ca-app-pub-3940256099942544/9214589741"
+            resValue "string", "admob_rewarded_id", rewardedTestUnit ?: "ca-app-pub-3940256099942544/5224354917"
+            resValue "string", "admob_test_device_id", adsTestDevice
+        }
         release {
             minifyEnabled false
             if (System.getenv("ANDROID_KEYSTORE_PATH")) {
@@ -49,8 +77,11 @@ dependencies {
     implementation "androidx.appcompat:appcompat:$androidxAppCompatVersion"
     implementation "androidx.coordinatorlayout:coordinatorlayout:$androidxCoordinatorLayoutVersion"
     implementation "androidx.core:core-splashscreen:$coreSplashScreenVersion"
-    implementation "com.android.billingclient:billing:7.1.1"
+    implementation "com.android.billingclient:billing:8.2.1"
     implementation "com.android.installreferrer:installreferrer:2.2"
+    // 25.4 retains Android 6 support (25.5 raises minSdk to 24).
+    implementation "com.google.android.gms:play-services-ads:25.4.0"
+    implementation "com.google.android.ump:user-messaging-platform:4.0.0"
     implementation project(':capacitor-android')
     testImplementation "junit:junit:$junitVersion"
     androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
