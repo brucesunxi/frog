@@ -25,8 +25,8 @@ android {
         applicationId "com.frogfrenzy.game"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 12
-        versionName "1.0.11"
+        versionCode 13
+        versionName "1.0.12"
         resValue "string", "admob_app_id", "ca-app-pub-9711589934416529~1311124306"
         resValue "string", "admob_banner_id", "ca-app-pub-9711589934416529/3925834886"
         resValue "string", "admob_rewarded_id", "ca-app-pub-9711589934416529/9365863824"
@@ -79,7 +79,7 @@ dependencies {
     implementation "androidx.core:core-splashscreen:$coreSplashScreenVersion"
     implementation "com.android.billingclient:billing:8.2.1"
     implementation "com.android.installreferrer:installreferrer:2.2"
-    // 25.4 retains Android 6 support (25.5 raises minSdk to 24).
+    // Keep the SDK version verified on the physical test device.
     implementation "com.google.android.gms:play-services-ads:25.4.0"
     implementation "com.google.android.ump:user-messaging-platform:4.0.0"
     implementation project(':capacitor-android')

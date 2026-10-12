@@ -140,3 +140,11 @@ android/app/build/outputs/bundle/release/app-release.aab
 - Rewarded playback and revive delivery were verified with registered-device test ads. Revenue-generating fill and applicable AdMob consent messages require separate verification.
 - Signed AAB: `android/app/build/outputs/bundle/release/frog-frenzy-1.0.11.aab` (17.00 MiB). SHA-256: `9da4c1667b5ece908cac2af0d4f58001311c4c8df5f6c5a91392eda933e258f6`.
 - Release signature, version fields, bundled HTML/CSS and production advertising resources were checked; all 30 JavaScript tests passed for this package.
+
+## Release 1.0.12 / versionCode 13
+
+- Raises `minSdkVersion` from 23 to 24 to satisfy the enabled [Google Play automatic protection upload requirement](https://support.google.com/googleplay/android-developer/answer/10183279?hl=en). Android 7.0 or newer is now required; Android 6.0 devices are no longer supported by this release. Target/compile SDK remain 36.
+- Uses the existing release signing key and production advertising IDs. The Mobile Ads SDK stays at the version already verified on the physical device.
+- This supersedes the rejected 1.0.11 AAB. Upload `frog-frenzy-1.0.12.aab` instead.
+- The manifest extracted from the actual AAB and decoded with AAPT2 reports minSdk 24, targetSdk 36, versionName 1.0.12 and versionCode 13. JAR signature verification passed; bundled web assets and production ad IDs match the source, with no demo publisher ID or local test-device hash.
+- AAB SHA-256: `3435264a45be8e7c0ce49ff48eeefc19039e2632595a66d0b05959bcff57482a`.
