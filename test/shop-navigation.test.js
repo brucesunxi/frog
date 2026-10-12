@@ -138,6 +138,14 @@ test('iOS premium edition has no coin checkout or reward break', () => {
   assert.match(get('shopStatus').textContent, /not included in the iOS premium edition/);
 });
 
+test('hidden purchase buttons stay hidden despite the shared button layout', () => {
+  assert.match(html, /\.btn\[hidden\]\s*\{\s*display:\s*none\s*!important;?\s*\}/);
+  const { c, get } = harness({ native: false, ios: true });
+  vm.runInContext(productionFunction('applyPlatformPresentation'), c);
+  c.applyPlatformPresentation();
+  assert.equal(get('shopBuyCoinsBtn').hidden, true);
+});
+
 test('missing billing, cancellation and checkout errors remain visible and unlock cards', async () => {
   for (const message of [null, 'Purchase cancelled', 'Google Play unavailable', 'Connection failed']) {
     const { c, get, timers } = harness({ buyCoins: message ? async () => { throw new Error(message); } : undefined });
