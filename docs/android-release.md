@@ -129,14 +129,14 @@ android/app/build/outputs/bundle/release/app-release.aab
 ## Rewarded video investigation follow-up (October 12, 2026)
 
 - The failing fixed Google demo creative returned video/audio responses without the required CORS header. A publisher-unit request with explicit SDK test-device registration loaded and played successfully on the same phone/network.
-- Local `android/ads-test.properties` can configure a paired `frogAdsTestDeviceId` and `frogRewardedTestUnitId` for Debug. The file is ignored; incomplete overrides fail the build, and the SDK's test-device check must pass before requesting the override. Release resources always retain the real IDs and no test device.
+- Local `android/ads-test.properties` can configure a paired `frogAdsTestDeviceId` and `frogRewardedTestUnitId` for Debug and R8-enabled QA. The file is ignored; incomplete overrides fail the build, and the SDK's test-device check must pass before requesting the override. Release resources always retain the real IDs and no test device.
 - Three real SDK sessions earned and dismissed with one revive each. A timed-out run recovered 1 life, 1 Shield and 30 seconds; real direction-pad movement worked afterward. The failed-run fixtures did not save progress. Early unearned dismissal was not available with this creative and is covered by automated tests rather than claimed as physically verified.
 - Thirty JavaScript tests, three Android unit tests, Debug assembly, Lint, Release resource isolation and the invalid-configuration guard passed. Full evidence and reproduction steps: [rewarded device verification](rewarded-device-verification-2026-10-12.md).
 
 ## Release 1.0.11 / versionCode 12
 
 - Packages the native banner and rewarded revive integration, physical-device page improvements, wallet API CORS fix and friend-room retry recovery described above.
-- Release uses the publisher app, banner and rewarded IDs. Local test-device settings are restricted to Debug and excluded from Git and web deployment.
+- Release uses the publisher app, banner and rewarded IDs. Local test-device settings are restricted to Debug/QA and excluded from Git and web deployment.
 - Rewarded playback and revive delivery were verified with registered-device test ads. Revenue-generating fill and applicable AdMob consent messages require separate verification.
 - Signed AAB: `android/app/build/outputs/bundle/release/frog-frenzy-1.0.11.aab` (17.00 MiB). SHA-256: `9da4c1667b5ece908cac2af0d4f58001311c4c8df5f6c5a91392eda933e258f6`.
 - Release signature, version fields, bundled HTML/CSS and production advertising resources were checked; all 30 JavaScript tests passed for this package.
@@ -148,3 +148,13 @@ android/app/build/outputs/bundle/release/app-release.aab
 - This supersedes the rejected 1.0.11 AAB. Upload `frog-frenzy-1.0.12.aab` instead.
 - The manifest extracted from the actual AAB and decoded with AAPT2 reports minSdk 24, targetSdk 36, versionName 1.0.12 and versionCode 13. JAR signature verification passed; bundled web assets and production ad IDs match the source, with no demo publisher ID or local test-device hash.
 - AAB SHA-256: `3435264a45be8e7c0ce49ff48eeefc19039e2632595a66d0b05959bcff57482a`.
+
+
+## Release 1.0.13 / versionCode 14
+
+- Centralizes edge-to-edge initialization and system-bar/cutout/keyboard insets in MainActivity before native plugins start; AndroidX Core is now 1.17.0. The native banner remains in its own protected row.
+- Enables R8 code optimization and resource shrinking, preserving Capacitor's reflective plugin/JavaScript bridge entry points. The signed AAB shrank from 16.96 to 15.54 MiB; uncompressed DEX shrank 68.2%. Crash mapping is included in the AAB.
+- Thirty JavaScript tests, three Android unit tests, final Release Lint and signed bundle checks passed. A non-debuggable QA APK with the same R8 settings passed 24 overlay/orientation checks, touch navigation, share-chooser opening/cancellation, banner loading and real rewarded-test playback/revive delivery on Samsung Android 13.
+- Retains minSdk 24, target/compile SDK 36, existing upload signing and production ad IDs. Regional consent, real purchases, Android 15/16 device behavior and Play's remaining static warnings require their own validation; no claim is made that all three Console recommendations have disappeared.
+- Signed AAB: `android/app/build/outputs/bundle/release/frog-frenzy-1.0.13.aab`. SHA-256: `021b796765004e73b1c90ba5e8862f0b084549ecd1fa75839177a9a36dbc0198`.
+- Detailed measurements, scope and physical-device evidence: [Android optimization verification](android-optimization-2026-10-12.md).

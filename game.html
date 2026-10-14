@@ -366,7 +366,10 @@ canvas {
             <div class="contract-reward">Complete it for bonus coins.</div>
         </div>
         <div class="level-select">
-            <div class="level-progress" id="campaignProgress">Cleared 0/8</div>
+            <div class="chapter-banner"><canvas id="chapterScene" width="800" height="180" aria-hidden="true"></canvas><div class="chapter-heading"><span id="chapterEyebrow">CHAPTER 01 / 10</span><h2 id="chapterName">Dewdrop Meadow</h2><p id="chapterSubtitle">The first brave hops</p></div></div>
+            <nav class="chapter-navigation" aria-label="Chapters"><button class="chapter-arrow" onclick="changeChapter(-1)" title="Previous chapter" aria-label="Previous chapter">&#8592;</button><div id="chapterTabs" class="chapter-tabs"></div><button class="chapter-arrow" onclick="changeChapter(1)" title="Next chapter" aria-label="Next chapter">&#8594;</button></nav>
+            <div class="level-progress" id="campaignProgress">Cleared 0/100</div>
+            <div class="campaign-meter"><span id="campaignMeter"></span></div>
             <div class="level-grid" id="levelGrid"></div>
         </div>
         </main>
@@ -400,7 +403,7 @@ canvas {
         <div class="complete-actions">
             <button class="btn btn-share btn-small" onclick="openFriendChallenge()">🐸 Play with a friend</button>
             <button class="btn btn-powerup btn-small" id="prepNextBtn" onclick="prepareNextLevelBoost()">🪙 Prep next level</button>
-            <button class="btn btn-next btn-small panel-primary" onclick="nextLevel()">Next Level →</button>
+            <button class="btn btn-next btn-small panel-primary" id="nextLevelBtn" onclick="nextLevel()">Next Level →</button>
             <button class="btn btn-small panel-secondary" onclick="backToMenu()">Menu</button>
         </div>
         </footer>
@@ -534,13 +537,13 @@ canvas {
         <h1 style="color:#ffd700;">🏆 Campaign Complete!</h1>
         </header>
         <div class="panel-content">
-        <p style="font-size:22px;color:#ffd700;margin:6px 0;">All levels cleared!</p>
+        <p style="font-size:22px;color:#ffd700;margin:6px 0;">100 crossings. One extraordinary journey.</p>
         <p>Total score: <span class="highlight" id="finalScore">0</span></p>
         <p>Best combo: <span class="highlight" id="finalCombo">0</span>x</p>
         <p>Total stars: <span class="highlight" id="finalStars">0</span></p>
         </div>
         <footer class="panel-footer">
-        <button class="btn btn-next" onclick="continueEndless()">🏆 Endless Run</button>
+        <button class="btn btn-next" onclick="replayCampaign()">Replay the Journey</button>
         <button class="btn btn-retry btn-small" onclick="backToMenu()">Menu</button>
         </footer>
     </div>
@@ -586,6 +589,8 @@ canvas {
         <p class="control-hint">Tap a direction or swipe the board · Arrows / WASD</p>
     </section>
 </div>
+<script src="assets/campaign.js"></script>
+<script src="assets/chapter-art.js"></script>
 <script>
 // FROG FRENZY - arcade road-and-river crossing
 const canvas = document.getElementById('gameCanvas');
@@ -597,11 +602,17 @@ let frog = { row:14, col:9 }, frogTarget = { row:14, col:9 };
 let frogMoving = false, frogDir = { dr:0, dc:0 }, frogAnim = 0, frogSafe = true, frogLockTimer = 0, frogInvincible = 0;
 let powerups = { shield:0, slowmo:0, superJump:0, secondChance:0 };
 let inventory = { shield:0, slowmo:0, superJump:0, extraLife:0, secondChance:0 };
-let coinBalance = 0, previewCoinBalance = 0, playerToken = null, syncTimer = null, installId = null;
+let coinBalance = isNativeIOS()?300:0, previewCoinBalance = 0, playerToken = null, syncTimer = null, installId = null;
 let levelConfig = null, lanes = [], homes = [], homesFilled = 0, homesNeeded = 5;
 let timeLeft = 60, timeTotal = 60, levelTimer = 0, laneObjects = [];
 const DEFAULT_CROSSING_TIME_LIMIT = 100;
-const CAMPAIGN_LEVELS = 8;
+const CAMPAIGN_LEVELS = FrogCampaign.COUNT;
+let campaignChapter = null, campaignFinished = false;
+let levelElapsedFrames = 0, levelDeaths = 0;
+let levelRunId = '', levelNormalFlies = 0, levelGoldenFlies = 0, levelMaximumCombo = 0;
+let runActionInFlight = false, levelStartInFlight = false;
+let pendingRewardClaims = [], pendingWalletOperations = {}, rewardSyncPromise = null, walletActionInFlight = false;
+let lastFinancialRevision = -1;
 let particles = [], popupTexts = [], screenShake = 0, flashOverlay = 0, flashColor = '#fff';
 let nearMissFlash = 0, nearMissCooldown = 0, trailParticles = [], comboCount = 0, maxCombo = 0, comboFlash = 0;
 let justSavedByShield = false, levelStartFrame = 0, totalStars = 0, bestCombo = 0, scoreAtLevelStart = 0;
@@ -1080,24 +1091,24 @@ function retryFriendChallenge() {
 }
 
 const ASSET_SOURCES = {
-    frog: 'assets/frog.svg',
-    car1: 'assets/car-red.svg',
-    car2: 'assets/car-blue.svg',
-    truck: 'assets/truck-purple.svg',
-    log: 'assets/log.svg',
-    turtle: 'assets/turtle.svg',
-    turtleSubmerged: 'assets/turtle-submerged.svg',
-    lilyHome: 'assets/lily-home.svg',
-    fly: 'assets/fly.svg',
-    grassTile: 'assets/grass-tile.svg',
-    roadTile: 'assets/road-tile.svg',
-    riverTile: 'assets/river-tile.svg'
+    frog: 'assets/rendered/frog.png',
+    car1: 'assets/rendered/car-red.png',
+    car2: 'assets/rendered/car-blue.png',
+    truck: 'assets/rendered/truck-purple.png',
+    log: 'assets/rendered/log.png',
+    turtle: 'assets/rendered/turtle.png',
+    turtleSubmerged: 'assets/rendered/turtle-submerged.png',
+    lilyHome: 'assets/rendered/lily-home.png',
+    fly: 'assets/rendered/fly.png',
+    grassTile: 'assets/rendered/grass-tile.png',
+    roadTile: 'assets/rendered/road-tile.png',
+    riverTile: 'assets/rendered/river-tile.png'
 };
 const GameAssets = { images: {}, loaded: 0, total: Object.keys(ASSET_SOURCES).length, patterns: {} };
 window.GameAssets = GameAssets;
 Object.keys(ASSET_SOURCES).forEach(function(key){
     var img = new Image();
-    img.onload = function(){ GameAssets.loaded++; GameAssets.patterns = {}; };
+    img.onload = function(){ GameAssets.loaded++; GameAssets.patterns = {}; renderChapterScene(); };
     img.onerror = function(){ GameAssets.loaded++; console.warn('Asset failed:', ASSET_SOURCES[key]); };
     img.src = ASSET_SOURCES[key];
     GameAssets.images[key] = img;
@@ -1163,14 +1174,16 @@ function loadProgress() {
         if (raw) {
             const d = JSON.parse(raw);
             highScore = d.highScore||0; levelsBeaten = d.levelsBeaten||0; totalCoinsSpent = d.totalCoinsSpent||0; totalRewardAds = d.totalRewardAds||d.totalAdsWatched||0; maxCombo = d.maxCombo||0; soundMuted = d.soundMuted||false;
-            coinBalance = Number(d.coinBalance||0); previewCoinBalance = Number(d.previewCoinBalance||0); inventory = Object.assign(inventory,d.inventory||{});
+            coinBalance = Number(d.coinBalance||0); previewCoinBalance = isNativeAndroid()?0:Number(d.previewCoinBalance||0); inventory = Object.assign(inventory,d.inventory||{});
+            pendingRewardClaims = Array.isArray(d.pendingRewardClaims)?d.pendingRewardClaims:[];
+            pendingWalletOperations = d.pendingWalletOperations && typeof d.pendingWalletOperations==='object'?d.pendingWalletOperations:{};
             levelStars = d.levelStars||{};
             totalStars = Object.keys(levelStars).length ? Object.values(levelStars).reduce(function(a,b){return a+(Number(b)||0);},0) : (d.totalStars||0);
         }
     } catch(e) {}
 }
 function getProgressPayload() {
-    return { highScore, totalStars, levelsBeaten, levelStars, totalCoinsSpent, totalRewardAds, maxCombo, soundMuted, coinBalance, previewCoinBalance, inventory };
+    return { highScore, totalStars, levelsBeaten, levelStars, totalCoinsSpent, totalRewardAds, maxCombo, soundMuted, coinBalance, previewCoinBalance, inventory, pendingRewardClaims, pendingWalletOperations };
 }
 function applyProgressPayload(d) {
     if (!d) return;
@@ -1189,8 +1202,14 @@ function applyProgressPayload(d) {
 }
 function applyPlayerState(stateData) {
     if (!stateData) return;
-    if (stateData.wallet) coinBalance = Number(stateData.wallet.coin_balance || stateData.wallet.coinBalance || coinBalance || 0);
-    if (stateData.inventory) inventory = Object.assign(inventory, stateData.inventory);
+    var revision=stateData.wallet&&stateData.wallet.financial_revision;
+    var versioned=revision!==undefined&&Number.isSafeInteger(Number(revision))&&Number(revision)>=0;
+    var acceptFinancial=versioned?Number(revision)>=lastFinancialRevision:lastFinancialRevision<0;
+    if (isNativeAndroid()&&acceptFinancial) {
+        if (stateData.wallet) coinBalance = Number(stateData.wallet.coin_balance ?? stateData.wallet.coinBalance ?? coinBalance ?? 0);
+        if (stateData.inventory) inventory = Object.assign({shield:0,slowmo:0,superJump:0,extraLife:0,secondChance:0},stateData.inventory);
+        if (versioned) lastFinancialRevision=Number(revision);
+    }
     if (stateData.progress) applyProgressPayload(stateData.progress);
     updateWalletUI();
 }
@@ -1240,15 +1259,51 @@ function updateWalletUI() {
     var inv=document.getElementById('inventoryCountMenu');
     if(inv) inv.textContent=Object.values(inventory||{}).reduce(function(a,b){return a+(Number(b)||0);},0);
 }
-function getAvailableCoins() { return coinBalance+previewCoinBalance; }
+function getAvailableCoins() { return coinBalance+previewCoinBalance+(isNativeAndroid()?pendingRewardClaims.reduce(function(sum,c){return sum+(c.estimatedCoins||0);},0):0); }
+
+function queueGameplayReward(result,normalFlies,goldenFlies,estimatedCoins,requestId) {
+    if (!isNativeAndroid()) { coinBalance+=estimatedCoins;return; }
+    pendingRewardClaims.push({requestId:requestId,levelId:level,result:result,durationMs:Math.round(levelElapsedFrames*1000/60),deaths:levelDeaths,
+        normalFlies:normalFlies,goldenFlies:goldenFlies,contractFlies:levelNormalFlies+levelGoldenFlies,lives:lives,combo:levelMaximumCombo,estimatedCoins:estimatedCoins});
+    saveProgress();syncRewardClaims();
+}
+function syncRewardClaims() {
+    if (!isNativeAndroid()||!playerToken) return Promise.resolve(false);
+    if (rewardSyncPromise) return rewardSyncPromise;
+    rewardSyncPromise=(async function(){
+        while (pendingRewardClaims.length) {
+            var claim=pendingRewardClaims[0];
+            try {
+                var data=await storeApiFetch('/api/campaign/rewards',{method:'POST',body:JSON.stringify(claim)});
+                pendingRewardClaims=pendingRewardClaims.filter(function(c){return c.requestId!==claim.requestId;});
+                applyPlayerState(data.state);
+                localStorage.setItem('frog_frenzy_save',JSON.stringify(getProgressPayload()));
+            } catch(error) {
+                if(error.status===400) {
+                    pendingRewardClaims=pendingRewardClaims.filter(function(c){return c.requestId!==claim.requestId;});
+                    localStorage.setItem('frog_frenzy_save',JSON.stringify(getProgressPayload()));
+                    updateWalletUI();continue;
+                }
+                setWalletStatus('Earned coins are saved locally and will be confirmed when you reconnect.');return false;
+            }
+        }
+        return true;
+    })().finally(function(){rewardSyncPromise=null;});
+    return rewardSyncPromise;
+}
 async function apiFetch(path, options) {
     var headers = Object.assign({ 'Content-Type':'application/json' }, (options&&options.headers)||{});
     if (playerToken) headers.Authorization='Bearer '+playerToken;
     var controller=new AbortController();
     var timeout=setTimeout(function(){controller.abort();},15000);
     try {
+        if(isNativeIOS()&&typeof window.NativeApp.request==='function') {
+            var reply=await window.NativeApp.request({path:path,method:(options&&options.method)||'GET',headers:headers,body:options&&options.body});
+            if(reply.status<200||reply.status>=300){var nativeError=new Error('Service unavailable ('+reply.status+')');nativeError.status=reply.status;throw nativeError;}
+            return reply.data;
+        }
         var res = await fetch(getApiUrl(path), Object.assign({signal:controller.signal}, options||{}, { headers }));
-        if (!res.ok) throw new Error(path+' '+res.status);
+        if (!res.ok) { var error=new Error(path+' '+res.status);error.status=res.status;throw error; }
         return await res.json();
     } finally { clearTimeout(timeout); }
 }
@@ -1283,12 +1338,14 @@ async function initPlayerSession() {
         var data = await apiFetch('/api/play/session',{
             method:'POST',
             headers:{'Content-Type':'application/json'},
-            body:JSON.stringify({ installId:installId, platform:getAppPlatform(), appVersion:isNativeAndroid()?'android-1.0.10':(isNativeIOS()?'ios-1.0.0':'web-preview'), referralToken:pending.token||null, referralSource:pending.source||'web' })
+            body:JSON.stringify({ installId:installId, platform:getAppPlatform(), appVersion:isNativeAndroid()?'android-1.0.15':(isNativeIOS()?'ios-1.0.0':'web-preview'), referralToken:pending.token||null, referralSource:pending.source||'web' })
         });
         if (!data) throw new Error('session_failed');
         playerToken=data.token; localStorage.setItem('frog_player_token',playerToken);
         applyPlayerState(data.state);
+        await syncRewardClaims();
         await syncProgressNow();
+        await recoverGooglePurchases();
         setWalletStatus(isNativeAndroid()?'Progress synced with Google Play':'Progress synced securely');
     } catch(e) {
         setWalletStatus('Offline mode: coins, items, and progress are saved locally.');
@@ -1470,46 +1527,14 @@ function initAmbient() {
 initAmbient();
 
 // Level Config
-var LEVEL_THEMES = [
-    { road1:"#555", road2:"#666", river1:"#1a5276", river2:"#1a6b8a", grass:"#2d5016", accent:"#ffd700", name:"🌿 Morning Meadow" },
-    { road1:"#5a6a4a", road2:"#6a7a5a", river1:"#1a5a6a", river2:"#1a7a8a", grass:"#3a6a2a", accent:"#ffd700", name:"🌾 Country Lane" },
-    { road1:"#555", road2:"#666", river1:"#1a5276", river2:"#1a6b8a", grass:"#2d5016", accent:"#feca57", name:"🏡 Suburban Dawn" },
-    { road1:"#444", road2:"#555", river1:"#1a3a5c", river2:"#1a4a6c", grass:"#3a5a1a", accent:"#ff6b6b", name:"🚗 Rush Hour" },
-    { road1:"#3a3040", road2:"#4a3850", river1:"#0d3050", river2:"#0d4060", grass:"#2a4a15", accent:"#a29bfe", name:"🌊 Rapid River" },
-    { road1:"#2a3a4a", road2:"#3a4a5a", river1:"#0a2a3a", river2:"#0a3a4a", grass:"#2a3a15", accent:"#74b9ff", name:"🏙️ City Sprint" },
-    { road1:"#4a2020", road2:"#5a2828", river1:"#1a1a3a", river2:"#1a1a4a", grass:"#3a2a10", accent:"#ff7675", name:"🔥 High Stakes" },
-    { road1:"#2a2a3a", road2:"#3a3a4a", river1:"#0a1a2a", river2:"#0a2a3a", grass:"#1a3a0a", accent:"#ffd700", name:"👑 Final Crossing" }
-];
-function getTheme(lvl) { return LEVEL_THEMES[Math.min(lvl-1, LEVEL_THEMES.length-1)]; }
+function getTheme(lvl) {
+    var world=FrogCampaign.getWorld(lvl);
+    return { road1:world.road[0],road2:world.road[1],river1:world.river[0],river2:world.river[1],grass:world.grass,accent:world.accent,name:world.name,world:world };
+}
 function getLevelTimeLimit() { return (levelConfig&&levelConfig.timeLimit) ? levelConfig.timeLimit : DEFAULT_CROSSING_TIME_LIMIT; }
-function getLevelTip(lvl) {
-    var tips = [
-        'Watch for a gap in traffic, then hop to the homes at the top.',
-        'Trucks are longer. Wait an extra beat before crossing.',
-        'Turtles dive. Do not linger on the river.',
-        'Split the route into safe checkpoints.',
-        'Road and river speeds rise together. Super Jump helps.',
-        'City traffic is fast. Slow Motion makes patterns readable.',
-        'High stakes. Save Shield for the final risky crossings.',
-        'Final crossing. Revive can preserve a strong run.'
-    ];
-    return tips[Math.min(lvl-1,tips.length-1)] || 'Ultimate challenge: speeds keep climbing. Focus on every opening.';
-}
-function getLevelStartPopup(lvl) {
-    var tips = ['Read the rhythm','Trucks ahead','Watch the turtles','Use checkpoints','Rapid river','City sprint','Do not rush','Final challenge'];
-    return tips[Math.min(lvl-1,tips.length-1)] || 'Ultimate challenge';
-}
-var LEVEL_PACING = [
-    { title:'Learn the beat', detail:'Wait on the grass and cross one lane at a time.', goldenChance:0 },
-    { title:'Commit to a lane', detail:'Long trucks create readable wait-or-go decisions.', goldenChance:0 },
-    { title:'New danger: diving turtles', detail:'The river now changes under you; golden fireflies introduce optional detours.', goldenChance:.12 },
-    { title:'Pressure with checkpoints', detail:'Alternating road and river lanes reward calm route planning.', goldenChance:.16 },
-    { title:'Risk-for-reward river', detail:'Fast currents make bonus fireflies tempting, not mandatory.', goldenChance:.20 },
-    { title:'Fast pattern recognition', detail:'Traffic windows tighten; use earned tools only when the read is unclear.', goldenChance:.22 },
-    { title:'Mastery streak', detail:'A high combo is possible, but every shortcut is a deliberate gamble.', goldenChance:.25 },
-    { title:'Final skill check', detail:'The finale combines every lesson; a clean run earns the crown reward.', goldenChance:.28 }
-];
-function getLevelPacing(lvl) { return LEVEL_PACING[Math.min(lvl-1,LEVEL_PACING.length-1)] || LEVEL_PACING[LEVEL_PACING.length-1]; }
+function getLevelTip(lvl) { return 'Level '+lvl+' of '+CAMPAIGN_LEVELS+' · Tools are optional; every route can be crossed without them.'; }
+function getLevelStartPopup(lvl) { return FrogCampaign.getLevel(lvl).shortName; }
+function getLevelPacing(lvl) { return FrogCampaign.getPacing(lvl); }
 function getRecommendedPowerup(type) {
     if (type==='water') return 'superJump';
     if (type==='time') return 'slowmo';
@@ -1517,24 +1542,11 @@ function getRecommendedPowerup(type) {
     if (type==='swept') return 'slowmo';
     return level>=6 ? 'slowmo' : 'shield';
 }
-function getContractForLevel(lvl) {
-    var contracts = [
-        { type:'combo', target:2, reward:18, title:'Warm-up Rhythm', text:'Deliver 2 frogs in one combo streak.' },
-        { type:'flies', target:1, reward:22, title:'Firefly Scout', text:'Collect 1 glowing firefly on the route.' },
-        { type:'safe', target:3, reward:26, title:'Careful Crossing', text:'Finish with at least 3 lives remaining.' },
-        { type:'combo', target:3, reward:30, title:'Rush Hour Relay', text:'Build a 3x delivery combo.' },
-        { type:'flies', target:2, reward:34, title:'River Forager', text:'Collect 2 glowing fireflies.' },
-        { type:'safe', target:3, reward:38, title:'City Discipline', text:'Finish with at least 3 lives remaining.' },
-        { type:'combo', target:4, reward:42, title:'High-Stakes Streak', text:'Build a 4x delivery combo.' },
-        { type:'perfect', target:1, reward:50, title:'Crown Crossing', text:'Complete the level without losing a life.' }
-    ];
-    var base = contracts[Math.min(lvl - 1, contracts.length - 1)];
-    return Object.assign({ progress:0, complete:false, startingLives:maxLives }, base);
-}
+function getContractForLevel(lvl) { return FrogCampaign.getContract(lvl,maxLives); }
 function getContractProgressLabel(contract) {
     if (!contract) return '';
     if (contract.type==='safe') return Math.max(0,lives)+'/'+contract.target+' lives';
-    if (contract.type==='perfect') return lives===contract.startingLives ? 'Perfect run' : 'Life lost';
+    if (contract.type==='perfect') return levelDeaths===0 ? 'Perfect run' : 'Life lost';
     return Math.min(contract.progress,contract.target)+'/'+contract.target;
 }
 function renderMenuContract() {
@@ -1561,30 +1573,37 @@ function progressContract(type, amount) {
 function settleContract() {
     if (!activeContract) return 0;
     if (activeContract.type==='safe' && lives>=activeContract.target) activeContract.complete=true;
-    if (activeContract.type==='perfect' && lives===activeContract.startingLives) activeContract.complete=true;
+    if (activeContract.type==='perfect' && levelDeaths===0) activeContract.complete=true;
     if (!activeContract.complete) return 0;
     contractCoinsEarned=activeContract.reward;
     return contractCoinsEarned;
 }
 
-function getLevelConfig(lvl) {
-    var C = [
-        { name:"🌿 First Hop", homesNeeded:3, timeLimit:120, lanes:[{row:13,type:"road",dir:1,speed:.5,objType:"car1",gap:300,width:40},{row:12,type:"road",dir:-1,speed:.6,objType:"car2",gap:280,width:40},{row:11,type:"grass"},{row:10,type:"road",dir:1,speed:.7,objType:"car1",gap:260,width:40},{row:9,type:"road",dir:-1,speed:.8,objType:"car2",gap:240,width:40},{row:7,type:"river",dir:1,speed:.4,objType:"log1",gap:280,width:95},{row:6,type:"grass"},{row:5,type:"river",dir:-1,speed:.5,objType:"log1",gap:260,width:85},{row:4,type:"river",dir:1,speed:.6,objType:"log2",gap:300,width:105},{row:3,type:"grass"}]},
-        { name:"🌾 Country Road", homesNeeded:3, timeLimit:110, lanes:[{row:13,type:"road",dir:1,speed:.7,objType:"car1",gap:270,width:40},{row:12,type:"road",dir:-1,speed:.8,objType:"car2",gap:260,width:40},{row:11,type:"grass"},{row:10,type:"road",dir:1,speed:.9,objType:"car1",gap:240,width:40},{row:9,type:"road",dir:-1,speed:1.0,objType:"truck",gap:290,width:40},{row:8,type:"grass"},{row:7,type:"river",dir:1,speed:.5,objType:"log1",gap:270,width:90},{row:6,type:"grass"},{row:5,type:"river",dir:-1,speed:.6,objType:"log2",gap:280,width:100},{row:4,type:"grass"},{row:3,type:"grass"}]},
-        { name:"🏡 Suburban Dawn", homesNeeded:4, timeLimit:95, lanes:[{row:13,type:"road",dir:1,speed:1.2,objType:"car1",gap:220,width:40},{row:12,type:"road",dir:-1,speed:1.5,objType:"car2",gap:200,width:40},{row:11,type:"grass"},{row:10,type:"road",dir:1,speed:1.4,objType:"truck",gap:260,width:40},{row:9,type:"road",dir:-1,speed:1.8,objType:"car2",gap:180,width:40},{row:8,type:"grass"},{row:7,type:"river",dir:1,speed:1.0,objType:"log1",gap:200,width:75},{row:6,type:"grass"},{row:5,type:"river",dir:-1,speed:1.2,objType:"turtle",gap:220,width:65},{row:4,type:"river",dir:1,speed:1.5,objType:"log2",gap:230,width:85},{row:3,type:"grass"}]},
-        { name:"🚗 Rush Hour", homesNeeded:4, timeLimit:80, lanes:[{row:14,type:"road",dir:1,speed:1.2,objType:"car1",gap:210,width:40},{row:13,type:"grass"},{row:12,type:"road",dir:-1,speed:1.5,objType:"car2",gap:190,width:40},{row:11,type:"road",dir:1,speed:1.0,objType:"truck",gap:280,width:40},{row:10,type:"grass"},{row:9,type:"road",dir:-1,speed:1.4,objType:"car1",gap:200,width:40},{row:8,type:"river",dir:1,speed:0.9,objType:"log1",gap:210,width:65},{row:7,type:"river",dir:-1,speed:1.1,objType:"turtle",gap:200,width:60},{row:6,type:"grass"},{row:5,type:"river",dir:1,speed:1.3,objType:"log2",gap:190,width:70},{row:4,type:"river",dir:-1,speed:1.0,objType:"log1",gap:185,width:55},{row:3,type:"road",dir:1,speed:1.3,objType:"car2",gap:220,width:40}]},
-        { name:"🌊 Rapid River", homesNeeded:5, timeLimit:65, lanes:[{row:13,type:"road",dir:-1,speed:2.5,objType:"car2",gap:145,width:40},{row:12,type:"road",dir:1,speed:3.0,objType:"truck",gap:215,width:40},{row:11,type:"road",dir:-1,speed:2.2,objType:"car1",gap:165,width:40},{row:10,type:"road",dir:1,speed:3.2,objType:"car2",gap:130,width:40},{row:9,type:"road",dir:-1,speed:2.8,objType:"truck",gap:195,width:40},{row:8,type:"grass"},{row:7,type:"river",dir:1,speed:2.0,objType:"log1",gap:165,width:55},{row:6,type:"river",dir:-1,speed:2.2,objType:"turtle",gap:195,width:60},{row:5,type:"river",dir:1,speed:1.6,objType:"log2",gap:205,width:75},{row:4,type:"river",dir:-1,speed:2.5,objType:"log1",gap:155,width:50},{row:3,type:"river",dir:1,speed:1.8,objType:"turtle",gap:185,width:65}]},
-        { name:"🏙️ City Sprint", homesNeeded:5, timeLimit:55, lanes:[{row:13,type:"road",dir:1,speed:3.0,objType:"car2",gap:125,width:40},{row:12,type:"road",dir:-1,speed:3.5,objType:"truck",gap:185,width:40},{row:11,type:"road",dir:1,speed:2.8,objType:"car1",gap:140,width:40},{row:10,type:"road",dir:-1,speed:3.5,objType:"car2",gap:120,width:40},{row:9,type:"road",dir:1,speed:3.2,objType:"truck",gap:170,width:40},{row:8,type:"grass"},{row:7,type:"river",dir:-1,speed:2.5,objType:"log2",gap:155,width:55},{row:6,type:"river",dir:1,speed:2.8,objType:"turtle",gap:165,width:50},{row:5,type:"river",dir:-1,speed:3.0,objType:"log1",gap:145,width:48},{row:4,type:"river",dir:1,speed:2.2,objType:"log2",gap:170,width:65},{row:3,type:"grass"}]},
-        { name:"🔥 High Stakes", homesNeeded:5, timeLimit:48, lanes:[{row:13,type:"road",dir:1,speed:3.5,objType:"car2",gap:115,width:40},{row:12,type:"road",dir:-1,speed:4.0,objType:"truck",gap:175,width:40},{row:11,type:"road",dir:1,speed:2.8,objType:"car1",gap:135,width:40},{row:10,type:"road",dir:-1,speed:3.5,objType:"car2",gap:125,width:40},{row:9,type:"road",dir:1,speed:4.5,objType:"truck",gap:195,width:40},{row:8,type:"grass"},{row:7,type:"river",dir:-1,speed:2.8,objType:"log1",gap:155,width:48},{row:6,type:"river",dir:1,speed:3.0,objType:"turtle",gap:175,width:55},{row:5,type:"river",dir:-1,speed:3.2,objType:"log2",gap:185,width:68},{row:4,type:"river",dir:1,speed:2.5,objType:"log1",gap:145,width:42},{row:3,type:"river",dir:-1,speed:3.6,objType:"turtle",gap:165,width:50}]},
-        { name:"👑 Final Crossing", homesNeeded:5, timeLimit:42, lanes:[{row:13,type:"road",dir:-1,speed:4.2,objType:"truck",gap:155,width:40},{row:12,type:"road",dir:1,speed:4.8,objType:"car2",gap:105,width:40},{row:11,type:"road",dir:-1,speed:3.6,objType:"car1",gap:125,width:40},{row:10,type:"road",dir:1,speed:5.2,objType:"truck",gap:170,width:40},{row:9,type:"road",dir:-1,speed:4.0,objType:"car2",gap:115,width:40},{row:8,type:"grass"},{row:7,type:"river",dir:1,speed:3.2,objType:"log1",gap:135,width:42},{row:6,type:"river",dir:-1,speed:3.8,objType:"turtle",gap:155,width:48},{row:5,type:"river",dir:1,speed:3.0,objType:"log2",gap:165,width:62},{row:4,type:"river",dir:-1,speed:4.2,objType:"log1",gap:125,width:38},{row:3,type:"river",dir:1,speed:3.5,objType:"turtle",gap:145,width:42}]}
-    ];
-    if (lvl > C.length) { var b = C[C.length-1], m = 1+(lvl-C.length)*.25; return { name:"⚡ Ultimate Lv."+lvl, homesNeeded:5, timeLimit:Math.max(20,40-(lvl-8)*3), lanes:b.lanes.map(function(l){ return { ...l, speed:l.speed*m, gap:Math.max(80,l.gap/m)}; }) }; }
-    return C[lvl-1];
+function getLevelConfig(lvl) { return FrogCampaign.getLevel(lvl); }
+
+// Friend challenges retain their existing map while the campaign evolves.
+function getChallengeLevelConfig() {
+    return {name:'🐸 Friend Challenge',homesNeeded:999,timeLimit:60,lanes:[
+        {row:13,type:'road',dir:1,speed:.5,objType:'car1',gap:300,width:40},
+        {row:12,type:'road',dir:-1,speed:.6,objType:'car2',gap:280,width:40},
+        {row:11,type:'grass'},
+        {row:10,type:'road',dir:1,speed:.7,objType:'car1',gap:260,width:40},
+        {row:9,type:'road',dir:-1,speed:.8,objType:'car2',gap:240,width:40},
+        {row:7,type:'river',dir:1,speed:.4,objType:'log1',gap:280,width:95},
+        {row:6,type:'grass'},
+        {row:5,type:'river',dir:-1,speed:.5,objType:'log1',gap:260,width:85},
+        {row:4,type:'river',dir:1,speed:.6,objType:'log2',gap:300,width:105},
+        {row:3,type:'grass'}
+    ]};
 }
 
 // Init Level
 function initLevel(lvl) {
-    level = lvl; levelConfig = challengeActive ? Object.assign({},getLevelConfig(1),{name:'🐸 Friend Challenge',homesNeeded:999,timeLimit:60}) : getLevelConfig(lvl);
+    campaignFinished = false;
+    levelElapsedFrames=0; levelDeaths=0;
+    levelRunId=clientEventId();levelNormalFlies=0;levelGoldenFlies=0;levelMaximumCombo=0;
+    if (!challengeActive) lives=maxLives;
+    level = lvl; levelConfig = challengeActive ? getChallengeLevelConfig() : getLevelConfig(lvl);
     lanes = levelConfig.lanes; homesNeeded = levelConfig.homesNeeded;
     timeTotal = getLevelTimeLimit(); timeLeft = timeTotal; levelTimer = 0; levelStartFrame = frame; scoreAtLevelStart = score;
     homes = []; homesFilled = 0; comboCount = 0; nearMissFlash = 0; trailParticles = []; exhaustParticles = [];
@@ -1596,8 +1615,9 @@ function initLevel(lvl) {
     laneObjects = [];
     lanes.forEach(function(l){
         if (l.type==='grass') { laneObjects.push([]); return; }
-        var cnt = Math.ceil(800/l.gap)+2, objs = [];
-        for (var i=0;i<cnt;i++) objs.push({ x:i*l.gap+(l.dir>0?0:800), width:l.width||40, visible:true });
+        var cnt = Math.ceil(W/l.gap)+2, objs = [];
+        l.period = cnt*l.gap;
+        for (var i=0;i<cnt;i++) objs.push({ x:challengeActive?i*l.gap+(l.dir>0?0:W):i*l.gap+(l.phase||0)-l.gap, width:l.width||40, visible:true });
         laneObjects.push(objs);
     });
     flies = []; flySpawnTimer = challengeActive ? 999999 : (activeContract&&activeContract.type==='flies' ? 25 : 60);
@@ -1616,6 +1636,7 @@ function rememberFail(type) {
 // Update
 function update() {
     if (state!==STATE.PLAYING) return; frame++;
+    levelElapsedFrames++;
     if (frogLockTimer>0) frogLockTimer--; if (frogInvincible>0) frogInvincible--; if (nearMissCooldown>0) nearMissCooldown--;
     levelTimer++;
     if (levelTimer%60===0) { timeLeft--; if (timeLeft<=0) { rememberFail('time'); if(challengeActive) finishChallenge('time'); else gameOver('⏰ Time is up...'); return; } }
@@ -1628,7 +1649,7 @@ function update() {
             frog.row=frogTarget.row; frog.col=frogTarget.col; frogMoving=false; frogAnim=0;
             checkFrogPosition();
             var fr=Math.round(frog.row), fc=Math.round(frog.col);
-            for (var i=flies.length-1;i>=0;i--) { var f=flies[i]; if (fr===f.row&&fc===f.col) { var flyScore=f.golden?125:50, flyCoins=f.golden?12:5; score+=flyScore; coinBalance+=flyCoins; progressContract('flies',1); addPopup((f.golden?'✨ Golden firefly! ':'🪰 ')+'+'+flyScore+' · 🪙 +'+flyCoins+'!','#ffd700'); spawnParticle(f.col*CELL+20,f.row*CELL+20,'#ffd700',f.golden?15:8); flies.splice(i,1); updateWalletUI(); saveProgress(); playSound(f.golden?'win':'coin'); } }
+            for (var i=flies.length-1;i>=0;i--) { var f=flies[i]; if (fr===f.row&&fc===f.col) { var flyScore=f.golden?125:50, flyCoins=f.golden?12:5; score+=flyScore; if(f.golden)levelGoldenFlies++;else levelNormalFlies++;queueGameplayReward('fail',f.golden?0:1,f.golden?1:0,flyCoins,levelRunId+'_fly_'+(levelNormalFlies+levelGoldenFlies)); progressContract('flies',1); addPopup((f.golden?'✨ Golden firefly! ':'🪰 ')+'+'+flyScore+' · 🪙 +'+flyCoins+'!','#ffd700'); spawnParticle(f.col*CELL+20,f.row*CELL+20,'#ffd700',f.golden?15:8); flies.splice(i,1); updateWalletUI(); saveProgress(); playSound(f.golden?'win':'coin'); } }
             for (var i=0;i<5;i++) spawnParticle(frog.col*CELL+20,frog.row*CELL+20,'#feca57',2);
         }
         return;
@@ -1639,8 +1660,8 @@ function update() {
         var l2 = lanes.find(function(l){return l.row===frog.row;});
         if (l2&&l2.type==='river') {
             var o2 = getObjectUnderFrog();
-            if (o2) { frog.col += getEffectiveSpeed(l2)*l2.dir*.02; if (frog.col<0||frog.col>=COLS) { rememberFail('swept'); if(challengeActive)frogHit('swept');else gameOver('🌊 Swept away...'); return; } if (frame%3===0) spawnParticle(frog.col*CELL+20,frog.row*CELL+24,'rgba(100,200,255,0.3)',2); }
-            else if (frogSafe&&!isTurtleUnderFrog()) { rememberFail('water'); if(challengeActive)frogHit('water');else gameOver('💦 Fell in the water...'); return; }
+            if (o2) { frog.col += getEffectiveSpeed(l2)*l2.dir*(challengeActive ? .02 : 1/CELL); if (frog.col<0||frog.col>=COLS) { frogHit('swept'); return; } if (frame%3===0) spawnParticle(frog.col*CELL+20,frog.row*CELL+24,'rgba(100,200,255,0.3)',2); }
+            else if (frogSafe&&!isTurtleUnderFrog()) { frogHit('water'); return; }
         }
     }
     particles = particles.filter(function(p){ p.x+=p.vx; p.y+=p.vy; p.life--; p.vx*=.98; return p.life>0; });
@@ -1651,7 +1672,7 @@ function update() {
     stars.forEach(function(s){ s.twinkle+=s.speed; });
     flySpawnTimer--;
     if (flySpawnTimer<=0&&flies.length<3) {
-        var safeRows = [2,3,6,8,11,14];
+        var safeRows = [2,14].concat(lanes.filter(function(l){return l.type==='grass';}).map(function(l){return l.row;}));
         var r = safeRows[Math.floor(gameplayRandom()*safeRows.length)];
         var c = 2+Math.floor(gameplayRandom()*16);
         if (!flies.some(function(f){return Math.abs(f.row-r)<2&&Math.abs(f.col-c)<3;})) flies.push({row:r,col:c,life:300,glow:0,golden:gameplayRandom()<getLevelPacing(level).goldenChance});
@@ -1666,9 +1687,11 @@ function updateLaneObjects() {
         if (!objs||!objs.length) return;
         var spd = getEffectiveSpeed(l);
         objs.forEach(function(o){
-            o.x+=spd*l.dir;
-            if (l.dir>0&&o.x>900) o.x=-o.width;
-            if (l.dir<0&&o.x<-100-o.width) o.x=900;
+            if (challengeActive) {
+                o.x+=spd*l.dir;
+                if (l.dir>0&&o.x>900) o.x=-o.width;
+                if (l.dir<0&&o.x<-100-o.width) o.x=900;
+            } else o.x=((o.x+spd*l.dir+l.gap)%l.period+l.period)%l.period-l.gap;
         });
         if (l.type==='road'&&objs.length>0) {
             objs.forEach(function(o){
@@ -1684,23 +1707,14 @@ function updateLaneObjects() {
 function getObjectUnderFrog() {
     var fx=frog.col*CELL+CELL/2, fy=frog.row*CELL+CELL/2;
     for (var li=0;li<lanes.length;li++) {
-        var l=lanes[li]; if (l.type!=='river') continue;
+        var l=lanes[li]; if (l.type!=='river'||FrogCampaign.turtleState(l,frame)==='submerged') continue;
         if (fy>=l.row*CELL&&fy<l.row*CELL+CELL) { for (var o of laneObjects[li]) if (fx>=o.x&&fx<=o.x+o.width) return o; return null; }
     }
     return null;
 }
 
 function isTurtleUnderFrog() {
-    var fx=frog.col*CELL+CELL/2, fy=frog.row*CELL+CELL/2;
-    for (var li=0;li<lanes.length;li++) {
-        var l=lanes[li]; if (l.type!=='river') continue;
-        if (fy>=l.row*CELL&&fy<l.row*CELL+CELL) {
-            if (l.objType==='turtle'&&Math.sin(frame*.03+li*.5)<-.3) return false;
-            for (var o of laneObjects[li]) if (fx>=o.x&&fx<=o.x+o.width) return true;
-            return false;
-        }
-    }
-    return true;
+    return !!getObjectUnderFrog();
 }
 
 function checkNearMiss() {
@@ -1722,6 +1736,7 @@ function checkFrogPosition() {
         if (h&&!h.filled) {
             h.filled=true; homesFilled++;
             comboCount++; if (comboCount>maxCombo) maxCombo=comboCount; progressContract('combo',1);
+            levelMaximumCombo=Math.max(levelMaximumCombo,comboCount);
             var comboBonus = Math.min(comboCount,10), base = 100+Math.max(0,timeLeft)*2, bonus = base*comboBonus;
             score += bonus;
             playSound('home');
@@ -1776,6 +1791,7 @@ function frogHit(type) { if (frogInvincible>0) return;
     if (powerups.shield>0) { powerups.shield--; flashOverlay=1; flashColor='#00b894'; playSound('shield'); addPopup('🛡️ Shield blocked it!','#00b894'); spawnParticle(frog.col*CELL+20,frog.row*CELL+20,'#00b894',15); frog.row=Math.min(14,frog.row+1); frog.col=Math.max(0,Math.min(COLS-1,frog.col)); justSavedByShield=true; return; }
     deathAnim=30; screenShake=8; flashOverlay=1; flashColor='#ff6b6b'; comboCount=0;
     if (challengeActive) challengeDeaths++;
+    else levelDeaths++;
     playSound('die');
     spawnParticle(frog.col*CELL+20,frog.row*CELL+20,'#ff6b6b',25); spawnParticle(frog.col*CELL+20,frog.row*CELL+20,'#ffd700',15); spawnParticle(frog.col*CELL+20,frog.row*CELL+20,'#ff9ff3',10);
     state=STATE.DYING;
@@ -1812,6 +1828,26 @@ const PREVIEW_COIN_PACKS = [
 ];
 let coinPurchaseInFlight = false;
 let itemPurchaseInFlight = false;
+let purchaseRecoveryInFlight = false;
+let playProductPrices = {}, playPricesInFlight = null;
+function loadPlayProductPrices() {
+    if (!isNativeAndroid()) return Promise.resolve();
+    if (playPricesInFlight) return playPricesInFlight;
+    var plugin=window.Capacitor&&window.Capacitor.Plugins&&window.Capacitor.Plugins.FrogBilling;
+    if (!plugin||typeof plugin.getCoinProducts!=='function') return Promise.resolve();
+    playPricesInFlight=Promise.resolve().then(function(){
+        return plugin.getCoinProducts({productIds:COIN_PACKS.map(function(pack){return pack.productId;})});
+    }).then(function(result){
+        playProductPrices={};
+        (result.products||[]).forEach(function(product){
+            if(COIN_PACKS.some(function(pack){return pack.productId===product.productId;})&&typeof product.price==='string')playProductPrices[product.productId]=product.price;
+        });
+        if(state===STATE.PURCHASE)renderCoinStore();
+    }).catch(function(){
+        if(state===STATE.PURCHASE)setStoreStatus('Google Play prices are unavailable. Check your connection and reopen Coin Packs.','error');
+    }).finally(function(){playPricesInFlight=null;});
+    return playPricesInFlight;
+}
 function showCoinStore() {
     if (state===STATE.PURCHASE) return;
     if (isNativeIOS()) {
@@ -1827,6 +1863,7 @@ function showCoinStore() {
     if (!coinPurchaseInFlight) setStoreStatus('Choose a pack to continue.');
     updateWalletUI();
     renderCoinStore();
+    loadPlayProductPrices();
 }
 function closeCoinStore() {
     document.getElementById('coinStoreScreen').classList.remove('show');
@@ -1868,7 +1905,8 @@ function renderCoinStore() {
         card.className='powerup-card'+(idx===1?' recommended':'');
         card.disabled=coinPurchaseInFlight;
         card.onclick=function(){if(android)buyCoinPack(pack.productId,total);else simulateCoinPurchase(pack);};
-        card.innerHTML='<span class="icon">🪙</span><span class="name">'+pack.label+'</span><span class="desc">'+pack.coins+' coins'+(pack.bonus?' + '+pack.bonus+' bonus':'')+'</span><span class="pack-action">'+(android?'Google Play →':'Preview '+pack.price)+'</span>';
+        card.innerHTML='<span class="icon">🪙</span><span class="name">'+pack.label+'</span><span class="desc">'+pack.coins+' coins'+(pack.bonus?' + '+pack.bonus+' bonus':'')+'</span><span class="pack-action"></span>';
+        card.querySelector('.pack-action').textContent=android?(playProductPrices[pack.productId]||'Check price in Google Play'):'Preview '+pack.price;
         grid.appendChild(card);
     });
 }
@@ -1985,32 +2023,68 @@ function grantPowerup(type) {
 }
 
 async function spendCoinsForItem(type,quantity) {
+    if (walletActionInFlight) return false;
     quantity = quantity || 1;
     var cost = getItemPrice(type) * quantity;
-    if (getAvailableCoins() < cost) { showNotEnoughCoins(cost-getAvailableCoins()); return false; }
-    if (previewCoinBalance>=cost) {
-        previewCoinBalance-=cost; totalCoinsSpent+=cost; updateWalletUI(); saveProgress();
-        setWalletStatus('Preview coins spent locally.');
+    var key='buy_'+type+'_'+quantity;
+    var retry=isNativeAndroid()&&pendingWalletOperations[key];
+    if (!retry && getAvailableCoins() < cost) { showNotEnoughCoins(cost-getAvailableCoins()); return false; }
+    if (!isNativeAndroid()) {
+        var previewSpent=Math.min(previewCoinBalance,cost);
+        previewCoinBalance-=previewSpent;coinBalance-=cost-previewSpent;
+        totalCoinsSpent+=cost;updateWalletUI();saveProgress();
         return true;
     }
-    coinBalance -= cost; totalCoinsSpent += cost; updateWalletUI(); saveProgress();
+    walletActionInFlight=true;
     try {
-        var data = await storeApiFetch('/api/wallet/spend',{ method:'POST', body:JSON.stringify({ itemId:type, quantity:quantity, levelId:level }) });
+        await syncRewardClaims();
+        if (!retry && coinBalance<cost) {setStoreStatus('Reconnect to confirm earned coins before spending them.','error');return false;}
+        var requestId=pendingWalletOperations[key] || (pendingWalletOperations[key]=clientEventId());saveProgress();
+        var data = await storeApiFetch('/api/wallet/spend',{ method:'POST', body:JSON.stringify({ itemId:type, quantity:quantity, levelId:level,requestId:requestId }) });
         applyPlayerState(data.state);
+        delete pendingWalletOperations[key];totalCoinsSpent+=cost;saveProgress();
+        return true;
     } catch(e) {
-        setWalletStatus('Offline spend recorded. You can keep playing locally.');
-    }
-    return true;
+        if(e.status===400||e.status===409)delete pendingWalletOperations[key];
+        setStoreStatus('Item not confirmed. Reconnect and retry; the same request will not charge twice.','error');saveProgress();return false;
+    } finally {walletActionInFlight=false;}
+}
+function hasInventoryItem(type) {
+    return inventory[type]>0 || !!(isNativeAndroid()&&pendingWalletOperations['use_'+type]);
+}
+async function consumeInventoryItem(type) {
+    if (!hasInventoryItem(type)||walletActionInFlight) return false;
+    if (!isNativeAndroid()) {inventory[type]--;updateWalletUI();saveProgress();return true;}
+    walletActionInFlight=true;
+    var key='use_'+type,requestId=pendingWalletOperations[key] || (pendingWalletOperations[key]=clientEventId());saveProgress();
+    try {
+        var data=await storeApiFetch('/api/inventory/use',{method:'POST',body:JSON.stringify({itemId:type,requestId:requestId})});
+        applyPlayerState(data.state);delete pendingWalletOperations[key];saveProgress();return true;
+    } catch(error) {
+        if(error.status===400||error.status===409)delete pendingWalletOperations[key];
+        setStoreStatus('Tool not confirmed. It remains in your bag until use is confirmed. Reconnect and retry.','error');saveProgress();return false;
+    } finally {walletActionInFlight=false;}
 }
 async function useCoinPowerup(type,mode) {
     var names={shield:'🛡️ Shield',slowmo:'⏱️ Slow Motion',superJump:'🦘 Super Jump',extraLife:'❤️ Extra Life',secondChance:'💫 Second Chance'};
     mode = mode || 'bank';
     if (!names[type]) return;
-    if (!(await spendCoinsForItem(type,1))) return;
+    if (runActionInFlight) return;
+    var runId=levelRunId, originState=state;
+    runActionInFlight=true;
+    try {
+    if (!hasInventoryItem(type)) {
+        if (!(await spendCoinsForItem(type,1))) return;
+        if (!isNativeAndroid()) inventory[type]=(inventory[type]||0)+1;
+    }
+    if (levelRunId!==runId || state!==originState) return;
+    if (!(await consumeInventoryItem(type))) return;
+    if (levelRunId!==runId || state!==originState) return;
     grantPowerup(type);
     if (mode==='continue') {
         var spot=findReviveSpot(); frog.row=spot.row; frog.col=spot.col; continuePlayingAfterAd('Power-up active. Keep going!');
     }
+    } finally {runActionInFlight=false;}
 }
 async function buyInventoryItem(type) {
     if(itemPurchaseInFlight)return;
@@ -2019,9 +2093,8 @@ async function buyInventoryItem(type) {
     setStoreStatus('Adding item to your inventory…');
     renderShopContents();
     try {
-        if (!(await spendCoinsForItem(type,1))) {setStoreStatus('Not enough coins. Choose a coin pack or return to the shop.');return;}
-        // The server response may already include the purchased item.
-        inventory[type]=Math.max(Number(inventory[type]||0),before+1);
+        if (!(await spendCoinsForItem(type,1))) return;
+        if (!isNativeAndroid()) inventory[type]=before+1;
         updateWalletUI(); saveProgress();
         setStoreStatus('Item stored for your next expedition · Balance: '+getAvailableCoins()+' coins','success');
         playSound('powerup');
@@ -2034,8 +2107,19 @@ async function buyInventoryItem(type) {
 }
 
 async function reviveWithCoins() {
-    if (!(await spendCoinsForItem('revive',1))) return;
+    if (runActionInFlight || state!==STATE.GAME_OVER) return;
+    var runId=levelRunId;
+    runActionInFlight=true;
+    try {
+    if (!hasInventoryItem('revive')) {
+        if (!(await spendCoinsForItem('revive',1))) return;
+        if (!isNativeAndroid()) inventory.revive=(inventory.revive||0)+1;
+    }
+    if (levelRunId!==runId || state!==STATE.GAME_OVER) return;
+    if (!(await consumeInventoryItem('revive'))) return;
+    if (levelRunId!==runId || state!==STATE.GAME_OVER) return;
     var spot=findReviveSpot();frog.row=spot.row;frog.col=spot.col;lives=Math.max(1,lives+1);powerups.shield=(powerups.shield||0)+1;playSound('revive');continuePlayingAfterAd('Revived with Shield. Keep pushing!');
+    } finally {runActionInFlight=false;}
 }
 
 function useAdPowerup(type,mode) {
@@ -2058,6 +2142,28 @@ async function storeApiFetch(path,options) {
     var timeout=setTimeout(function(){controller.abort();},20000);
     try { return await apiFetch(path,Object.assign({},options,{signal:controller.signal})); }
     finally { clearTimeout(timeout); }
+}
+
+async function recoverGooglePurchases() {
+    if(!isNativeAndroid()||!playerToken||coinPurchaseInFlight||purchaseRecoveryInFlight)return;
+    var plugin=window.Capacitor&&window.Capacitor.Plugins&&window.Capacitor.Plugins.FrogBilling;
+    if(!plugin||typeof plugin.getPendingPurchases!=='function')return;
+    purchaseRecoveryInFlight=true;
+    try {
+        var result=await plugin.getPendingPurchases();
+        for(var purchase of result.purchases||[]) {
+            if(purchase.purchaseState!==1||!purchase.purchaseToken)continue;
+            var data=await storeApiFetch('/api/purchases/google-play/verify',{method:'POST',body:JSON.stringify({productId:purchase.productId,purchaseToken:purchase.purchaseToken})});
+            applyPlayerState(data.state);saveProgress();
+            if(!data.duplicate)showCoinPurchaseConfirmation(Number(data.purchase.coinsGranted)||0);
+        }
+    } catch(error) {setWalletStatus('Payment recovery is waiting for a connection. Keep your Google Play receipt.');}
+    finally {purchaseRecoveryInFlight=false;}
+}
+async function initGooglePurchaseRecovery() {
+    if(!isNativeAndroid())return;
+    var plugin=window.Capacitor&&window.Capacitor.Plugins&&window.Capacitor.Plugins.FrogBilling;
+    if(plugin&&plugin.addListener)await plugin.addListener('purchasesUpdated',recoverGooglePurchases);
 }
 
 async function buyCoinPack(productId, fallbackCoins) {
@@ -2118,18 +2224,49 @@ function renderLevelSelect() {
     var grid=document.getElementById('levelGrid');
     if (!grid) return;
     grid.innerHTML='';
-    document.getElementById('campaignProgress').textContent='Cleared '+Math.min(levelsBeaten,CAMPAIGN_LEVELS)+'/'+CAMPAIGN_LEVELS+' · Level '+getUnlockedLevel()+' unlocked';
+    if (campaignChapter===null) campaignChapter=Math.floor((getUnlockedLevel()-1)/10);
+    var world=FrogCampaign.WORLDS[campaignChapter], first=campaignChapter*10+1;
+    document.getElementById('chapterName').textContent=world.name;
+    document.getElementById('chapterSubtitle').textContent=world.subtitle;
+    document.getElementById('chapterEyebrow').textContent='CHAPTER '+String(campaignChapter+1).padStart(2,'0')+' / 10';
+    document.getElementById('startScreen').style.setProperty('--chapter-accent',world.accent);
+    var tabs=document.getElementById('chapterTabs'); tabs.innerHTML='';
+    FrogCampaign.WORLDS.forEach(function(w,index){
+        var tab=document.createElement('button');
+        tab.className='chapter-tab'+(index===campaignChapter?' selected':'');
+        tab.textContent=index+1; tab.title=w.name+' · Levels '+(index*10+1)+'–'+(index*10+10);
+        tab.setAttribute('aria-label',tab.title);tab.setAttribute('aria-current',index===campaignChapter?'true':'false');
+        tab.onclick=function(){campaignChapter=index;renderLevelSelect();};tabs.appendChild(tab);
+    });
+    var arrows=document.querySelectorAll('.chapter-arrow');arrows[0].disabled=campaignChapter===0;arrows[1].disabled=campaignChapter===9;
+    document.getElementById('campaignProgress').textContent='Cleared '+Math.min(levelsBeaten,CAMPAIGN_LEVELS)+' / '+CAMPAIGN_LEVELS+' · '+totalStars+' / 300 stars';
+    document.getElementById('campaignMeter').style.width=Math.min(100,levelsBeaten)+'%';
     var btn=document.getElementById('continueBtn');
-    if (btn) btn.textContent = levelsBeaten>0 ? 'Continue Level '+getUnlockedLevel() : 'Start Run';
-    for (var i=1;i<=CAMPAIGN_LEVELS;i++) {
+    if (btn) btn.textContent = levelsBeaten>=CAMPAIGN_LEVELS?'Revisit Level 100':levelsBeaten>0 ? 'Continue Level '+getUnlockedLevel() : 'Start Run';
+    for (var i=first;i<first+10;i++) {
         var cfg=getLevelConfig(i), unlocked=isLevelUnlocked(i), cleared=i<=levelsBeaten, stars=levelStars[i]||0;
         var card=document.createElement('button');
         card.className='level-card '+(unlocked?'':'locked ')+(cleared?'cleared ':'')+(i===getUnlockedLevel()&&!cleared?'current':'');
         card.disabled=!unlocked;
         card.onclick=(function(lvl){return function(){openBriefing(lvl);};})(i);
-        card.innerHTML='<div class="num">'+(cleared?'✓':'Level '+i)+'</div><div class="title">'+cfg.name.replace(/^\S+\s*/,'')+'</div><div class="stars-mini">'+(unlocked?('★'.repeat(stars)+'☆'.repeat(3-stars)):'🔒 Locked')+'</div>';
+        card.setAttribute('aria-label','Level '+i+', '+cfg.shortName+(unlocked?', '+stars+' of 3 stars':', locked'));
+        card.innerHTML='<div class="num">'+(cleared?'✓ ':'')+'Level '+i+(cfg.milestone?' · Finale':'')+'</div><div class="title">'+cfg.shortName+'</div><div class="stars-mini">'+(unlocked?('★'.repeat(stars)+'☆'.repeat(3-stars)):'🔒 Locked')+'</div>';
         grid.appendChild(card);
     }
+    renderChapterScene();
+}
+
+function changeChapter(delta) { campaignChapter=Math.max(0,Math.min(9,(campaignChapter||0)+delta));renderLevelSelect(); }
+function renderChapterScene() {
+    var canvas=document.getElementById('chapterScene');if(!canvas||campaignChapter===null)return;
+    var bounds=canvas.getBoundingClientRect();
+    if (bounds.width>0&&bounds.height>0) canvas.height=Math.round(canvas.width*bounds.height/bounds.width);
+    var c=canvas.getContext('2d'),world=FrogCampaign.WORLDS[campaignChapter];
+    FrogChapterArt.paint(c,world,canvas.width,canvas.height,0);
+    var size=Math.min(130,canvas.height*.6),x=canvas.width*.84-size/2,y=canvas.height*.87-size;
+    if(assetReady('lilyHome'))c.drawImage(GameAssets.images.lilyHome,x-7,y+size*.58,size+14,size*.55);
+    if(assetReady('frog'))c.drawImage(GameAssets.images.frog,x,y,size,size);
+    var shade=c.createLinearGradient(0,0,600,0);shade.addColorStop(0,'#102b30ed');shade.addColorStop(.55,'#102b3070');shade.addColorStop(1,'#102b3000');c.fillStyle=shade;c.fillRect(0,0,canvas.width,canvas.height);
 }
 
 function openBriefing(lvl) {
@@ -2158,10 +2295,12 @@ function renderLoadoutChoices() {
     grid.innerHTML='';
     options.forEach(function(option){
         var count=option.type?Number(inventory[option.type]||0):0;
+        var available=!option.type||hasInventoryItem(option.type);
+        var pending=option.type&&isNativeAndroid()&&pendingWalletOperations['use_'+option.type];
         var button=document.createElement('button');
-        button.className='loadout-option '+(selectedLoadout===option.type?'selected ':'')+(option.type&&count<=0?'disabled ':'');
-        button.disabled=!!(option.type&&count<=0);
-        button.innerHTML='<span class="loadout-icon">'+option.icon+'</span><span class="loadout-name">'+option.name+'</span><span class="loadout-count">'+(option.type?'Stored: '+count:'Pure skill run')+'</span>';
+        button.className='loadout-option '+(selectedLoadout===option.type?'selected ':'')+(!available?'disabled ':'');
+        button.disabled=!available;
+        button.innerHTML='<span class="loadout-icon">'+option.icon+'</span><span class="loadout-name">'+option.name+'</span><span class="loadout-count">'+(pending?'Confirmation pending':(option.type?'Stored: '+count:'Pure skill run'))+'</span>';
         button.onclick=function(){ selectedLoadout=option.type; renderLoadoutChoices(); };
         grid.appendChild(button);
     });
@@ -2172,12 +2311,13 @@ function closeBriefing() {
     state=STATE.MENU;
     briefingLevel=null; selectedLoadout=null;
 }
-function launchBriefedLevel() {
-    if (!briefingLevel) return;
+async function launchBriefedLevel() {
+    if (!briefingLevel || levelStartInFlight) return;
+    levelStartInFlight=true;
+    try {
     var chosen=selectedLoadout, target=briefingLevel;
-    document.getElementById('briefingScreen').classList.remove('show');
-    briefingLevel=null; selectedLoadout=null;
-    startLevel(target,chosen);
+    if(await startLevel(target,chosen)){briefingLevel=null;selectedLoadout=null;}
+    } finally {levelStartInFlight=false;}
 }
 function ensureGameLoop() {
     if (window._gameLoopRunning) return;
@@ -2189,14 +2329,18 @@ function ensureGameLoop() {
         requestAnimationFrame(loop);
     })(previous);
 }
-function startLevel(lvl, loadout) {
+async function startLevel(lvl, loadout) {
     if (!isLevelUnlocked(lvl)) { addPopup('Clear the previous level first','#ffd700'); return; }
+    var originState=state;
+    if(loadout&&!(await consumeInventoryItem(loadout))) {document.getElementById('briefingTip').textContent='Reconnect to confirm this stored tool, or select No tool to play offline.';return false;}
+    if (loadout && (briefingLevel!==lvl || state!==originState)) return false;
     document.getElementById('startScreen').classList.remove('show');
+    document.getElementById('briefingScreen').classList.remove('show');
     score=0;lives=maxLives;homes=[];maxCombo=0;
     powerups={shield:0,slowmo:0,superJump:0,secondChance:0};
     initLevel(lvl); state=STATE.PLAYING; initAudio();
-    if (loadout && inventory[loadout]>0) {
-        inventory[loadout]--; grantPowerup(loadout); updateWalletUI(); saveProgress();
+    if (loadout) {
+        grantPowerup(loadout); updateWalletUI(); saveProgress();
         addPopup('Equipped '+loadout.replace('slowmo','Slow Motion').replace('superJump','Super Jump'),'#ffd700');
     }
     
@@ -2204,6 +2348,7 @@ function startLevel(lvl, loadout) {
     document.getElementById('pauseBtn').style.display='flex'; document.getElementById('exitBtn').style.display='flex';
     document.getElementById('musicIndicator').classList.add('show');
     ensureGameLoop();
+    return true;
 }
 
 function startGame() { openBriefing(getUnlockedLevel()); }
@@ -2251,7 +2396,7 @@ function showShop() {
     state=STATE.SHOP;
     ['startScreen','pauseScreen','gameOverScreen','levelCompleteScreen'].forEach(function(id){document.getElementById(id).classList.remove('show');});
     document.getElementById('shopScreen').classList.add('show');
-    if(!coinPurchaseInFlight&&!itemPurchaseInFlight)setStoreStatus('Choose an item to store for your next run, or open Coin Packs.');
+    if(!coinPurchaseInFlight&&!itemPurchaseInFlight)setStoreStatus(isNativeIOS()?'Choose an item for your next run. Earn coins through expeditions and contracts.':'Choose an item to store for your next run, or open Coin Packs.');
     renderShopContents();
     updateShopExitButton();
 }
@@ -2284,60 +2429,63 @@ function closeShop() {
 }
 
 function levelComplete() {
+    if (campaignFinished) return;
+    campaignFinished = true;
     state=STATE.LEVEL_COMPLETE; playSound('win');
     document.getElementById('levelCompleteScreen').classList.add('show');
-    var elapsed = levelTimer/60;
-    var ratio = timeTotal ? timeLeft/timeTotal : 0;
-    var st = ratio>.45?3:(ratio>.2?2:1);
+    var st = FrogCampaign.getStars(levelElapsedFrames,timeTotal,homesNeeded,levelDeaths);
     var oldStars = Number(levelStars[level]||0);
     if (st>oldStars) { levelStars[level]=st; totalStars += st-oldStars; }
     levelsBeaten = Math.max(levelsBeaten,Math.min(level,CAMPAIGN_LEVELS));
+    campaignChapter=Math.floor((getUnlockedLevel()-1)/10);
     if (score>highScore) highScore=score;
-    var timeBonus=Math.max(0,timeLeft)*2;
+    var timeBonus=Math.max(0,timeTotal-Math.floor(levelElapsedFrames/(60*homesNeeded)))*2;
     score+=timeBonus;
     if (score>highScore) highScore=score;
-    var clearCoins=12+level*4+st*3, contractCoins=settleContract(), earnedCoins=clearCoins+contractCoins;
-    coinBalance+=earnedCoins; updateWalletUI();
+    var contractCoins=settleContract(), reward=FrogCampaign.getReward(level,st,contractCoins>0,oldStars===0), earnedCoins=reward.total;
+    queueGameplayReward('complete',0,0,earnedCoins,levelRunId+'_clear'); updateWalletUI();
     saveProgress();
     document.getElementById('completeLevelName').textContent='Level '+level+' · '+levelConfig.name;
     document.getElementById('completeScore').textContent=score; document.getElementById('completeCombo').textContent=maxCombo+'×';
     document.getElementById('completeTimeBonus').textContent='+'+timeBonus;
-    document.getElementById('completeCoinReward').textContent='🪙 +'+earnedCoins+(contractCoins?' (contract +'+contractCoins+')':'');
+    document.getElementById('completeCoinReward').textContent='🪙 +'+earnedCoins+(contractCoins?' · Contract +'+contractCoins:'')+(reward.milestone?' · Chapter bonus +'+reward.milestone:'');
     document.getElementById('completeStars').textContent='★'.repeat(st)+'☆'.repeat(3-st);
     document.getElementById('totalStarsDisplay').textContent='⭐ '+totalStars;
     var next = level+1;
     var prep = document.getElementById('prepNextBtn');
-    if (next<=8) {
-        document.getElementById('nextLevelHook').textContent='Next tip: '+getLevelStartPopup(next)+' Bring '+getPrepPowerupForLevel(next).replace('shield','Shield').replace('slowmo','Slow Motion').replace('superJump','Super Jump')+' for a cleaner run.';
+    document.getElementById('nextLevelBtn').textContent=next>CAMPAIGN_LEVELS?'Finish Journey':'Next Level →';
+    if (next<=CAMPAIGN_LEVELS) {
+        document.getElementById('nextLevelHook').textContent='Next: '+getLevelConfig(next).name+'. '+getLevelPacing(next).detail;
         prep.style.display='inline-block';
         prep.textContent='🪙 Prep Boost for Level '+next;
     } else {
-        document.getElementById('nextLevelHook').textContent='Main campaign cleared. Endless mode is unlocked.';
+        document.getElementById('nextLevelHook').textContent='All 100 levels cleared! Revisit any chapter to collect every star.';
         prep.style.display='none';
     }
 }
 
 function getPrepPowerupForLevel(lvl) {
-    if (lvl===3||lvl===5) return 'superJump';
-    if (lvl>=6) return 'slowmo';
-    if (lvl===4||lvl===7||lvl===8) return 'shield';
-    return 'shield';
+    var cfg=getLevelConfig(lvl);
+    if (cfg.stage%3===0 && cfg.lanes.some(function(l){return l.objType==='turtle';})) return 'superJump';
+    return cfg.stage%2===0?'slowmo':'shield';
 }
 
 function prepareNextLevelBoost() {
     var next = level+1;
-    if (next>8) return;
+    if (next>CAMPAIGN_LEVELS) return;
     var type = getPrepPowerupForLevel(next);
     var names={shield:'Shield',slowmo:'Slow Motion',superJump:'Super Jump'};
-    spendCoinsForItem(type,1).then(function(ok){
+    spendCoinsForItem(type,1).then(async function(ok){
         if(!ok) return;
+        if(!isNativeAndroid())inventory[type]=(inventory[type]||0)+1;
+        if(!(await consumeInventoryItem(type)))return;
         grantPowerup(type);document.getElementById('levelCompleteScreen').classList.remove('show');initLevel(next);state=STATE.PLAYING;addPopup(names[type]+' boost equipped','#ffd700');
     });
 }
 
 function nextLevel() {
     document.getElementById('levelCompleteScreen').classList.remove('show');
-    if (level>=8) {
+    if (level>=CAMPAIGN_LEVELS) {
         document.getElementById('finalScore').textContent=score;
         document.getElementById('finalCombo').textContent=maxCombo;
         document.getElementById('finalStars').textContent=totalStars;
@@ -2381,7 +2529,7 @@ function resumeGame() {
     }
     state=STATE.PLAYING;
 }
-function continueEndless() { document.getElementById('winScreen').classList.remove('show'); initLevel(levelsBeaten+1); state=STATE.PLAYING; }
+function replayCampaign() { campaignChapter=0; backToMenu(); openBriefing(1); }
 function backToMenu() {
     friendRoomRequestGeneration++;
     friendRoomRetryToken='';
@@ -2452,14 +2600,7 @@ function drawBackground() {
             drawGrassLane(r*CELL,CELL,(r%2===0)?th.grass:lighten(th.grass,15));
         }
     }
-    var skyGrad = ctx.createLinearGradient(0,0,0,80);
-    var isNight = level>=3;
-    if (isNight) { skyGrad.addColorStop(0,'#0a0a2e'); skyGrad.addColorStop(1,'#1a1a3e'); } else { skyGrad.addColorStop(0,'#1a3a6e'); skyGrad.addColorStop(1,'#2a5a8e'); }
-    ctx.fillStyle = skyGrad; ctx.fillRect(0,0,W,80);
-    // Stars
-    stars.forEach(function(s){ var a = 0.3+Math.sin(s.twinkle)*0.3; ctx.fillStyle='rgba(255,255,255,'+a+')'; ctx.beginPath(); ctx.arc(s.x,s.y,s.size,0,Math.PI*2); ctx.fill(); });
-    // Clouds
-    clouds.forEach(function(c){ ctx.fillStyle='rgba(255,255,255,'+c.opacity+')'; ctx.beginPath(); ctx.arc(c.x,c.y+5,c.p1,0,Math.PI*2); ctx.arc(c.x+c.p2,c.y,c.p2,0,Math.PI*2); ctx.arc(c.x+c.p3+5,c.y+5,c.p1*0.7,0,Math.PI*2); ctx.fill(); });
+    FrogChapterArt.paint(ctx,th.world,W,80,frame);
     // Grass area
     drawGrassLane(14*CELL,CELL*2,th.grass);
     ctx.fillStyle = 'rgba(255,255,255,0.04)'; ctx.fillRect(0,15*CELL,W,CELL);
@@ -2468,12 +2609,14 @@ function drawBackground() {
 }
 
 function drawDecorations() {
+    var world=getTheme(level).world;
     roadDecor.forEach(function(d){
+        if (lanes.some(function(l){return l.row===d.row&&l.type!=='grass';})) return;
         var x=d.x, y=d.row*CELL+CELL/2, s=d.size;
         if (d.type==='tree') {
             ctx.fillStyle='#5a3a1a'; ctx.fillRect(x-2,y-2,4,8);
-            ctx.fillStyle='#2d7d2d'; ctx.beginPath(); ctx.arc(x,y-8,s,0,Math.PI*2); ctx.fill();
-            ctx.fillStyle='#3a9a3a'; ctx.beginPath(); ctx.arc(x-3,y-6,s*0.7,0,Math.PI*2); ctx.fill();
+            ctx.fillStyle=world.foliage; ctx.beginPath(); ctx.arc(x,y-8,s,0,Math.PI*2); ctx.fill();
+            ctx.fillStyle=world.accent; ctx.beginPath(); ctx.arc(x-3,y-6,s*0.7,0,Math.PI*2); ctx.fill();
             ctx.beginPath(); ctx.arc(x+3,y-10,s*0.6,0,Math.PI*2); ctx.fill();
         } else {
             ctx.fillStyle='#3a7a3a'; ctx.beginPath(); ctx.arc(x,y+2,s,0,Math.PI*2); ctx.fill();
@@ -2503,11 +2646,12 @@ function drawRoads() {
 }
 
 function drawRiver() {
+    var world=getTheme(level).world;
     lanes.forEach(function(l){
         if (l.type!=='river') return;
         var y=l.row*CELL;
         var grad=ctx.createLinearGradient(0,y,0,y+CELL);
-        grad.addColorStop(0,'#2696b8'); grad.addColorStop(0.5,'#197996'); grad.addColorStop(1,'#0e5878');
+        grad.addColorStop(0,world.river[0]); grad.addColorStop(1,world.river[1]);
         ctx.fillStyle=grad; ctx.fillRect(0,y,W,CELL);
         for (var layer=0;layer<3;layer++) {
             ctx.fillStyle='rgba(255,255,255,'+(0.03+layer*0.02)+')';
@@ -2597,7 +2741,11 @@ function drawVehicle(type,x,y,dir,w,speed) {
 
 function drawRiverObj(l,o,li) {
     var y=l.row*CELL+4, h=CELL-8;
-    var submerged = l.objType==='turtle'&&Math.sin(frame*.03+li*.5)<-.3;
+    var turtlePhase=FrogCampaign.turtleState(l,frame), submerged=turtlePhase==='submerged';
+    if (turtlePhase==='warning') {
+        ctx.strokeStyle='rgba(255,225,130,'+(.5+Math.sin(frame*.2)*.3)+')';ctx.lineWidth=2;
+        ctx.beginPath();ctx.ellipse(o.x+o.width/2,y+h/2,o.width/2+2,h/2+3,0,0,Math.PI*2);ctx.stroke();
+    }
     if (l.objType==='turtle') {
         if (drawAsset(submerged?'turtleSubmerged':'turtle',o.x,y-8,o.width,h+14,l.dir<0)) return;
     } else if (drawAsset('log',o.x,y-8,o.width,h+14,l.dir<0)) {
@@ -2823,6 +2971,9 @@ document.addEventListener('visibilitychange',function(){if(document.hidden&&stat
 
 // Boot
 initAdPrivacyOptions();
+initGooglePurchaseRecovery().catch(function(){setWalletStatus('Google Play purchase recovery is temporarily unavailable.');});
+window.addEventListener('online',function(){syncRewardClaims();recoverGooglePurchases();});
+document.addEventListener('visibilitychange',function(){if(!document.hidden){syncRewardClaims();recoverGooglePurchases();}});
 if (isNativeAndroid()) document.querySelector('.control-hint').textContent='Tap a direction or swipe the board';
 // Fit the entire board to its available space, including after rotation/browser-bar changes.
 var gameStage=document.getElementById('gameStage');
@@ -2832,6 +2983,7 @@ function fitGameBoard(){
     canvas.style.setProperty('--board-width',Math.max(0,width)+'px');
 }
 new ResizeObserver(fitGameBoard).observe(gameStage);
+new ResizeObserver(renderChapterScene).observe(document.getElementById('chapterScene'));
 window.addEventListener('resize',fitGameBoard);
 if(window.visualViewport)window.visualViewport.addEventListener('resize',fitGameBoard);
 fitGameBoard();

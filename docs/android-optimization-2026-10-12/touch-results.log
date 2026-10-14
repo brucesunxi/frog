@@ -1,0 +1,6 @@
+Start button: briefingScreen
+Directional touch: { before: 9, after: 8, playing: true }
+Pause button: true
+Coin store opened: true
+Store return resumes game: true
+Menu swipe: { scrolled: true, footerFixed: true }

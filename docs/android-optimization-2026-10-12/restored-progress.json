@@ -1,0 +1,22 @@
+{
+  "progress": {
+    "highScore": 0,
+    "totalStars": 0,
+    "levelsBeaten": 0,
+    "levelStars": {},
+    "totalCoinsSpent": 0,
+    "totalRewardAds": 0,
+    "maxCombo": 0,
+    "soundMuted": true,
+    "coinBalance": 300,
+    "previewCoinBalance": 0,
+    "inventory": {
+      "shield": 0,
+      "slowmo": 0,
+      "superJump": 0,
+      "extraLife": 0,
+      "secondChance": 0
+    }
+  },
+  "savedStateMatchesBaseline": true
+}

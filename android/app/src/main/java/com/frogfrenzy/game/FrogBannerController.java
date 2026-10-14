@@ -9,10 +9,6 @@ import android.view.Gravity;
 import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
-import androidx.core.graphics.Insets;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowCompat;
-import androidx.core.view.WindowInsetsCompat;
 import com.google.android.gms.ads.AdListener;
 import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.AdSize;
@@ -54,14 +50,6 @@ final class FrogBannerController {
     }
 
     void start() {
-        WindowCompat.setDecorFitsSystemWindows(activity.getWindow(), false);
-        ViewCompat.setOnApplyWindowInsetsListener(root, (view, insets) -> {
-            Insets bars = insets.getInsets(WindowInsetsCompat.Type.systemBars()
-                | WindowInsetsCompat.Type.displayCutout());
-            view.setPadding(bars.left, bars.top, bars.right, bars.bottom);
-            return WindowInsetsCompat.CONSUMED;
-        });
-        ViewCompat.requestApplyInsets(root);
         root.addOnLayoutChangeListener((view, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom) -> {
             if (availableWidth() != bannerWidth) loadBanner();
         });
@@ -88,7 +76,8 @@ final class FrogBannerController {
         if (destroyed || !consent.canRequestAds() || initialized || initializing) return;
         initializing = true;
         String testDevice = activity.getString(R.string.admob_test_device_id);
-        if ((activity.getApplicationInfo().flags & ApplicationInfo.FLAG_DEBUGGABLE) != 0 && !testDevice.isEmpty()) {
+        if (((activity.getApplicationInfo().flags & ApplicationInfo.FLAG_DEBUGGABLE) != 0 || BuildConfig.FROG_QA)
+            && !testDevice.isEmpty()) {
             MobileAds.setRequestConfiguration(new RequestConfiguration.Builder()
                 .setTestDeviceIds(Collections.singletonList(testDevice)).build());
         }

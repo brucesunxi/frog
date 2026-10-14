@@ -6,6 +6,11 @@ import { google } from 'googleapis';
 import { neon } from '@neondatabase/serverless';
 import { fileURLToPath } from 'node:url';
 import { nativeCors } from './lib/native-cors.js';
+import { createWalletService, normalizeOperationId, WalletError } from './lib/wallet-service.js';
+import { normalizeRunReward } from './lib/campaign-rewards.js';
+import { createLocalQaSql } from './lib/local-qa-database.js';
+import { createGooglePlayPurchaseHandler } from './lib/google-play-purchase.js';
+import { publicFiles } from './lib/public-files.js';
 import {
   CHALLENGE_RULES_VERSION,
   buildPlayStoreUrl,
@@ -21,16 +26,18 @@ import {
 const app = express();
 const port = Number(process.env.PORT || 3000);
 const rootDir = fileURLToPath(new URL('.', import.meta.url));
-const databaseUrl = process.env.DATABASE_URL;
+const databaseUrl = process.env.FROG_QA_DATABASE_URL || process.env.DATABASE_URL;
 const jwtSecret = process.env.JWT_SECRET;
-const sql = databaseUrl ? neon(databaseUrl) : null;
+const sql = process.env.FROG_QA_DATABASE_URL ? createLocalQaSql(databaseUrl) : databaseUrl ? neon(databaseUrl) : null;
+const walletService = createWalletService(sql);
+const asyncRoute = handler => (req,res,next) => Promise.resolve(handler(req,res,next)).catch(next);
 const googlePlayPackageName = process.env.GOOGLE_PLAY_PACKAGE_NAME || 'com.frogfrenzy.game';
 const publicAppUrl = String(process.env.PUBLIC_APP_URL || 'https://frog-omega-rose.vercel.app').replace(/\/$/, '');
 const roomCountdownSeconds = Math.max(1, Math.min(10, Number.parseInt(process.env.ROOM_COUNTDOWN_SECONDS || '5', 10) || 5));
 let androidPublisherPromise = null;
 
 const STARTER_COINS = 300;
-const MAX_LEVELS = 40;
+const MAX_LEVELS = 100;
 const MAX_CHALLENGES_PER_HOUR = 20;
 const MAX_CHALLENGE_ATTEMPTS_PER_HOUR = 60;
 const MAX_CHALLENGE_ROOMS_PER_HOUR = 10;
@@ -58,7 +65,7 @@ const ITEM_CATALOG = {
 
 app.use('/api', nativeCors);
 app.use(express.json({ limit: '128kb' }));
-app.use(express.static(rootDir, { extensions: ['html'] }));
+app.use(publicFiles(rootDir));
 app.set('trust proxy', 1);
 
 app.get('/', (req, res) => {
@@ -110,9 +117,10 @@ function getAndroidPublisher() {
       if (!credentials) return null;
       const auth = new google.auth.GoogleAuth({
         credentials,
-        scopes: ['https://www.googleapis.com/auth/androidpublisher']
+        scopes: ['https://www.googleapis.com/auth/androidpublisher'],
+        clientOptions: { transporterOptions: { timeout: 10000, retry: false } }
       });
-      return google.androidpublisher({ version: 'v3', auth });
+      return google.androidpublisher({ version: 'v3', auth, timeout: 10000, retry: false });
     })();
   }
   return androidPublisherPromise;
@@ -361,6 +369,7 @@ async function addCoins(playerId, amount, type, reason, refType = null, refId = 
     set coin_balance = coin_balance + ${n},
       lifetime_purchased_coins = lifetime_purchased_coins + ${type === 'purchase' ? n : 0},
       lifetime_granted_coins = lifetime_granted_coins + ${type === 'grant' ? n : 0},
+      financial_revision = financial_revision + 1,
       updated_at = now()
     where player_id = ${playerId}
     returning coin_balance
@@ -379,6 +388,7 @@ async function spendCoins(playerId, amount, reason, refType = null, refId = null
     update wallets
     set coin_balance = coin_balance - ${n},
       lifetime_spent_coins = lifetime_spent_coins + ${n},
+      financial_revision = financial_revision + 1,
       updated_at = now()
     where player_id = ${playerId} and coin_balance >= ${n}
     returning coin_balance
@@ -402,8 +412,8 @@ async function getInventory(playerId) {
 }
 
 async function getPlayerState(playerId) {
-  const wallet = await getWallet(playerId);
-  const inventory = await getInventory(playerId);
+  await getWallet(playerId);
+  const {wallet, inventory} = await walletService.financialState(playerId);
   const progressRows = await sql`
     select level_id, stars, best_time, best_score, attempts, deaths, completed_at
     from level_progress
@@ -463,7 +473,7 @@ app.get('/api/config', (req, res) => {
   });
 });
 
-app.post('/api/play/session', requireServerConfig, async (req, res) => {
+app.post('/api/play/session', requireServerConfig, asyncRoute(async (req, res) => {
   const body = req.body || {};
   const installId = normalizeInstallId(body.installId);
   const playGamesPlayerId = String(body.playGamesPlayerId || '').trim();
@@ -485,12 +495,12 @@ app.post('/api/play/session', requireServerConfig, async (req, res) => {
   const player = rows[0];
   const wallet = await getWallet(player.id);
   if (wallet.coin_balance === 0 && wallet.lifetime_granted_coins === 0 && wallet.lifetime_purchased_coins === 0 && wallet.lifetime_spent_coins === 0) {
-    await addCoins(player.id, STARTER_COINS, 'grant', 'starter_bonus', 'system', 'starter_bonus');
+    await walletService.grantStarter(player.id, STARTER_COINS);
   }
   const state = await getPlayerState(player.id);
   const referralAttributed = await attributeReferral(player.id, body.referralToken, body.referralSource);
   res.json({ token: signSession(player.id), player: { id: player.id }, state, referralAttributed });
-});
+}));
 
 app.get('/api/challenge-rooms/:token', requireServerConfig, async (req, res) => {
   const token = normalizeChallengeToken(req.params.token);
@@ -761,14 +771,14 @@ app.post('/api/events', requireServerConfig, requirePlayer, async (req, res) => 
   res.status(202).json({ accepted: true });
 });
 
-app.get('/api/player/state', requireServerConfig, requirePlayer, async (req, res) => {
+app.get('/api/player/state', requireServerConfig, requirePlayer, asyncRoute(async (req, res) => {
   res.json({ state: await getPlayerState(req.playerId) });
-});
+}));
 
-app.put('/api/progress', requireServerConfig, requirePlayer, async (req, res) => {
+app.put('/api/progress', requireServerConfig, requirePlayer, asyncRoute(async (req, res) => {
   const state = await upsertProgress(req.playerId, req.body?.progress || {});
   res.json({ state, progress: state.progress });
-});
+}));
 
 app.post('/api/levels/attempt/finish', requireServerConfig, requirePlayer, async (req, res) => {
   const body = req.body || {};
@@ -801,132 +811,46 @@ app.get('/api/store/products', (req, res) => {
   res.json({ products: STORE_PRODUCTS, items: Object.values(ITEM_CATALOG) });
 });
 
-app.post('/api/wallet/spend', requireServerConfig, requirePlayer, async (req, res) => {
+app.post('/api/wallet/spend', requireServerConfig, requirePlayer, asyncRoute(async (req, res) => {
   const item = ITEM_CATALOG[String(req.body?.itemId || '')];
   const quantity = clampInt(req.body?.quantity || 1, 1, 99);
   if (!item) return res.status(400).json({ error: 'unknown_item' });
   const cost = item.cost * quantity;
-  const balance = await spendCoins(req.playerId, cost, `buy_${item.id}`, 'item', item.id, { quantity });
-  if (balance === null) return res.status(409).json({ error: 'not_enough_coins', item, cost });
-  await sql`
-    insert into inventory (player_id, item_id, quantity, updated_at)
-    values (${req.playerId}, ${item.id}, ${quantity}, now())
-    on conflict (player_id, item_id) do update set
-      quantity = inventory.quantity + excluded.quantity,
-      updated_at = now()
-  `;
-  await sql`
-    insert into item_spends (player_id, item_id, coin_cost, quantity, level_id)
-    values (${req.playerId}, ${item.id}, ${cost}, ${quantity}, ${req.body?.levelId || null})
-  `;
-  res.json({ state: await getPlayerState(req.playerId), purchased: { itemId: item.id, quantity, cost } });
-});
+  const requestId=normalizeOperationId(req.body?.requestId || crypto.randomUUID());
+  const result=await walletService.spendItem(req.playerId,requestId,item,quantity);
+  res.json({ state: await getPlayerState(req.playerId), purchased: { itemId: item.id, quantity, cost }, duplicate:result.duplicate });
+}));
 
-app.post('/api/inventory/use', requireServerConfig, requirePlayer, async (req, res) => {
+app.post('/api/inventory/use', requireServerConfig, requirePlayer, asyncRoute(async (req, res) => {
   const item = ITEM_CATALOG[String(req.body?.itemId || '')];
   if (!item) return res.status(400).json({ error: 'unknown_item' });
-  const rows = await sql`
-    update inventory
-    set quantity = quantity - 1,
-      updated_at = now()
-    where player_id = ${req.playerId} and item_id = ${item.id} and quantity > 0
-    returning quantity
-  `;
-  if (!rows.length) return res.status(409).json({ error: 'item_not_owned', item });
-  res.json({ state: await getPlayerState(req.playerId), used: { itemId: item.id } });
-});
+  const requestId=normalizeOperationId(req.body?.requestId || crypto.randomUUID());
+  const result=await walletService.useItem(req.playerId,requestId,item.id);
+  res.json({ state: await getPlayerState(req.playerId), used: { itemId: item.id }, duplicate:result.duplicate });
+}));
 
-app.post('/api/purchases/google-play/verify', requireServerConfig, requirePlayer, async (req, res) => {
-  const productId = String(req.body?.productId || '').trim();
-  const purchaseToken = String(req.body?.purchaseToken || '').trim();
-  const product = STORE_PRODUCTS_BY_PLAY_ID[productId];
-  if (!product || product.kind !== 'coins') return res.status(400).json({ error: 'unknown_product' });
-  if (!purchaseToken) return res.status(400).json({ error: 'missing_purchase_token' });
+app.post('/api/campaign/rewards', requireServerConfig, requirePlayer, asyncRoute(async (req,res) => {
+  const claim=normalizeRunReward(req.body);
+  const result=await walletService.grantRun(req.playerId,claim);
+  res.json({state:await getPlayerState(req.playerId),duplicate:result.duplicate,requestId:claim.requestId});
+}));
 
-  const existingRows = await sql`
-    select player_id, product_id, purchase_state, coins_granted
-    from google_play_purchases
-    where purchase_token = ${purchaseToken}
-  `;
-  if (existingRows.length) {
-    const existing = existingRows[0];
-    if (existing.player_id !== req.playerId) return res.status(409).json({ error: 'purchase_token_already_bound' });
-    return res.json({ state: await getPlayerState(req.playerId), purchase: existing, duplicate: true });
-  }
+app.post('/api/purchases/google-play/verify', requireServerConfig, requirePlayer, asyncRoute(createGooglePlayPurchaseHandler({
+  sql, walletService, getPlayerState, getAndroidPublisher,
+  products: STORE_PRODUCTS_BY_PLAY_ID, packageName: googlePlayPackageName
+})));
 
-  const androidPublisher = await getAndroidPublisher();
-  if (!androidPublisher) {
-    return res.status(503).json({
-      error: 'google_play_credentials_missing',
-      message: 'Set GOOGLE_PLAY_SERVICE_ACCOUNT_JSON or GOOGLE_PLAY_SERVICE_ACCOUNT_JSON_BASE64 in production.'
-    });
-  }
-
-  let verification;
-  try {
-    verification = await androidPublisher.purchases.products.get({
-      packageName: googlePlayPackageName,
-      productId,
-      token: purchaseToken
-    });
-  } catch (error) {
-    return res.status(502).json({
-      error: 'google_play_verification_failed',
-      message: error?.message || 'Google Play verification failed'
-    });
-  }
-
-  const purchase = verification.data || {};
-  if (purchase.purchaseState !== 0) {
-    await sql`
-      insert into google_play_purchases (purchase_token, player_id, product_id, order_id, purchase_state, quantity, coins_granted, raw_response)
-      values (${purchaseToken}, ${req.playerId}, ${productId}, ${purchase.orderId || null}, ${String(purchase.purchaseState ?? 'unknown')}, ${clampInt(purchase.quantity || 1, 1, 99)}, 0, ${JSON.stringify(purchase)})
-      on conflict (purchase_token) do nothing
-    `;
-    return res.status(409).json({ error: 'purchase_not_completed', purchaseState: purchase.purchaseState });
-  }
-
-  const quantity = clampInt(purchase.quantity || 1, 1, 99);
-  const coinsToGrant = (product.coins + product.bonus) * quantity;
-  await sql`
-    insert into google_play_purchases (purchase_token, player_id, product_id, order_id, purchase_state, quantity, coins_granted, raw_response)
-    values (${purchaseToken}, ${req.playerId}, ${productId}, ${purchase.orderId || null}, 'purchased', ${quantity}, ${coinsToGrant}, ${JSON.stringify(purchase)})
-  `;
-  await addCoins(req.playerId, coinsToGrant, 'purchase', `google_play_${productId}`, 'google_play_purchase', purchase.orderId || purchaseToken, {
-    productId,
-    purchaseToken,
-    quantity
-  });
-
-  try {
-    await androidPublisher.purchases.products.consume({
-      packageName: googlePlayPackageName,
-      productId,
-      token: purchaseToken
-    });
-    await sql`
-      update google_play_purchases
-      set consumed_at = now(), purchase_state = 'consumed'
-      where purchase_token = ${purchaseToken}
-    `;
-  } catch (error) {
-    await sql`
-      update google_play_purchases
-      set purchase_state = 'credited_not_consumed'
-      where purchase_token = ${purchaseToken}
-    `;
-  }
-
-  res.json({
-    state: await getPlayerState(req.playerId),
-    purchase: { productId, quantity, coinsGranted: coinsToGrant }
-  });
+app.use((error,req,res,next) => {
+  if (res.headersSent) return next(error);
+  if (error instanceof WalletError) return res.status(error.status).json({error:error.message});
+  console.error('API request failed:',error?.name || 'Error');
+  res.status(503).json({error:'service_temporarily_unavailable'});
 });
 
 export default app;
 
 if (process.env.VERCEL !== '1') {
-  app.listen(port, () => {
-    console.log(`Frog Frenzy server listening on http://127.0.0.1:${port}`);
+  const listener=app.listen(port, () => {
+    console.log(`Frog Frenzy server listening on http://127.0.0.1:${listener.address().port}`);
   });
 }

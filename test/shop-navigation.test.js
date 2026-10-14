@@ -12,7 +12,7 @@ function productionFunction(name) {
   if (firstLine.endsWith('}')) return firstLine;
   return html.slice(start, html.indexOf('\n}', start) + 2);
 }
-function harness({ native = true, ios = false, buyCoins, api } = {}) {
+function harness({ native = true, ios = false, buyCoins, getCoinProducts, api } = {}) {
   const elements = new Map();
   function element() {
     const classes = new Set();
@@ -34,7 +34,7 @@ function harness({ native = true, ios = false, buyCoins, api } = {}) {
   let timerId = 0;
   const context = vm.createContext({
     document: { getElementById: get, createElement: element },
-    window: { Capacitor: { Plugins: buyCoins ? { FrogBilling: { buyCoins } } : {} } },
+    window: { Capacitor: { Plugins: buyCoins || getCoinProducts ? { FrogBilling: { buyCoins, getCoinProducts } } : {} } },
     AbortController, console,
     setTimeout: (fn, ms) => { timers.set(++timerId, { fn, ms }); return timerId; },
     clearTimeout: id => timers.delete(id),
@@ -44,6 +44,8 @@ function harness({ native = true, ios = false, buyCoins, api } = {}) {
     state: 0, _shopReturnState: 0, _coinStoreReturnState: 0, _adReturnState: 0,
     adInterval: null, _adCallback: null, inventory: {},
     coinBalance: 5, previewCoinBalance: 0, totalCoinsSpent: 0, level: 1,
+    pendingRewardClaims: [], pendingWalletOperations: {}, walletActionInFlight: false,
+    syncRewardClaims: async () => true, clientEventId: () => 'request_'+(++timerId),
     rewardedAdsThisExpedition: 0, totalRewardAds: 0,
     challengeActive: false, challengePauseStartedAt: 0,
     saveProgress() {}, playSound() {}, addPopup() {}, updateAdCount() {},
@@ -75,6 +77,20 @@ test('Android Buy Coins opens a separate real-product page and Back returns to t
   c.closeShop();
   assert.equal(c.state, 0);
   assert.equal(get('startScreen').classList.contains('show'), true);
+});
+
+test('Android coin cards show Play localized prices and retry safely after query failures',async()=>{
+  let calls=0,fail=true,ids;
+  const {c,get}=harness({getCoinProducts:async options=>{
+    calls++;ids=options.productIds;if(fail)throw new Error('offline');
+    return {products:[{productId:'coins_starter',price:'HK$8.00'}]};
+  }});
+  c.showCoinStore();await c.loadPlayProductPrices();assert.equal(calls,1);
+  assert.match(get('coinStoreStatus').textContent||get('storeStatus').textContent||c.status||'',/./);
+  fail=false;await c.loadPlayProductPrices();assert.equal(calls,2);
+  assert.equal(ids.length,5);
+  assert.equal(get('coinPackGrid').children[0].querySelector('.pack-action').textContent,'HK$8.00');
+  assert.equal(get('coinPackGrid').children[1].querySelector('.pack-action').textContent,'Check price in Google Play');
 });
 
 test('insufficient-coins overlay cannot block packs or leave the run frozen', async () => {
@@ -132,6 +148,8 @@ test('iOS premium edition has no coin checkout or reward break', () => {
   const { c, get } = harness({ native: false, ios: true });
   c.showShop();
   assert.equal(get('shopPowerups').children.length, 4);
+  assert.match(get('shopStatus').textContent,/Earn coins through expeditions and contracts/);
+  assert.doesNotMatch(get('shopStatus').textContent,/Coin Packs|Google Play|checkout/i);
   c.showCoinStore();
   assert.equal(c.state, 7);
   assert.equal(get('coinStoreScreen').classList.contains('show'), false);

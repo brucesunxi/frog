@@ -14,6 +14,7 @@ import com.android.billingclient.api.Purchase;
 import com.android.billingclient.api.PurchasesUpdatedListener;
 import com.android.billingclient.api.QueryProductDetailsParams;
 import com.android.billingclient.api.QueryProductDetailsResult;
+import com.android.billingclient.api.QueryPurchasesParams;
 import com.getcapacitor.JSArray;
 import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
@@ -29,6 +30,7 @@ import java.util.List;
 public class FrogBillingPlugin extends Plugin implements PurchasesUpdatedListener {
     private BillingClient billingClient;
     private PluginCall activePurchaseCall;
+    private String activeProductId;
 
     @Override
     public void load() {
@@ -59,7 +61,29 @@ public class FrogBillingPlugin extends Plugin implements PurchasesUpdatedListene
             return;
         }
         activePurchaseCall = call;
+        activeProductId = productId;
         ensureReady(call, () -> queryProductForPurchase(productId, call));
+    }
+
+    @PluginMethod
+    public void getPendingPurchases(PluginCall call) {
+        ensureReady(call, () -> billingClient.queryPurchasesAsync(
+            QueryPurchasesParams.newBuilder().setProductType(BillingClient.ProductType.INAPP).build(),
+            (result, purchases) -> {
+                if (result.getResponseCode() != BillingClient.BillingResponseCode.OK) {
+                    call.reject("Purchase recovery unavailable: " + result.getDebugMessage());
+                    return;
+                }
+                JSArray values = new JSArray();
+                for (Purchase purchase : purchases) values.put(serializePurchase(purchase));
+                JSObject response = new JSObject(); response.put("purchases", values); call.resolve(response);
+            }));
+    }
+
+    @Override
+    protected void handleOnResume() {
+        JSObject event = new JSObject();
+        notifyListeners("purchasesUpdated", event);
     }
 
     private void ensureReady(PluginCall call, Runnable action) {
@@ -168,8 +192,11 @@ public class FrogBillingPlugin extends Plugin implements PurchasesUpdatedListene
     @Override
     public void onPurchasesUpdated(@NonNull BillingResult billingResult, List<Purchase> purchases) {
         PluginCall call = activePurchaseCall;
+        String expectedProduct = activeProductId;
         activePurchaseCall = null;
+        activeProductId = null;
         if (call == null) {
+            notifyListeners("purchasesUpdated", new JSObject());
             return;
         }
         int code = billingResult.getResponseCode();
@@ -181,19 +208,32 @@ public class FrogBillingPlugin extends Plugin implements PurchasesUpdatedListene
             call.reject("Purchase failed: " + billingResult.getDebugMessage());
             return;
         }
-        Purchase purchase = purchases.get(0);
+        Purchase purchase = null;
+        for (Purchase candidate : purchases) {
+            if (candidate.getProducts().contains(expectedProduct)) { purchase = candidate; break; }
+        }
+        if (purchase == null) {
+            call.reject("The purchase did not match the requested product");
+            notifyListeners("purchasesUpdated", new JSObject());
+            return;
+        }
+        call.resolve(serializePurchase(purchase));
+    }
+
+    private JSObject serializePurchase(Purchase purchase) {
         JSObject result = new JSObject();
         result.put("productId", purchase.getProducts().isEmpty() ? "" : purchase.getProducts().get(0));
         result.put("purchaseToken", purchase.getPurchaseToken());
         result.put("orderId", purchase.getOrderId());
         result.put("purchaseState", purchase.getPurchaseState());
         result.put("quantity", purchase.getQuantity());
-        call.resolve(result);
+        return result;
     }
 
     private void clearActive(PluginCall call) {
         if (activePurchaseCall == call) {
             activePurchaseCall = null;
+            activeProductId = null;
         }
     }
 

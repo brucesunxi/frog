@@ -22,6 +22,7 @@
 		00000000000000000000010E /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000020E /* Assets.xcassets */; };
 		00000000000000000000010F /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000020F /* PrivacyInfo.xcprivacy */; };
 		000000000000000000000110 /* IAPPlaceholderService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000212 /* IAPPlaceholderService.swift */; };
+		000000000000000000000111 /* Game in Resources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000213 /* Game */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -42,6 +43,7 @@
 		000000000000000000000210 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		000000000000000000000211 /* FrogRiverPortal.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FrogRiverPortal.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		000000000000000000000212 /* IAPPlaceholderService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IAPPlaceholderService.swift; sourceTree = "<group>"; };
+		000000000000000000000213 /* Game */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Game; sourceTree = DERIVED_FILE_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -138,6 +140,7 @@
 				000000000000000000000210 /* Info.plist */,
 				00000000000000000000020F /* PrivacyInfo.xcprivacy */,
 				00000000000000000000020E /* Assets.xcassets */,
+				000000000000000000000213 /* Game */,
 			);
 			path = Resources;
 			sourceTree = "<group>";
@@ -149,6 +152,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 000000000000000000000701 /* Build configuration list for PBXNativeTarget "FrogRiverPortal" */;
 			buildPhases = (
+				000000000000000000000603 /* Prepare Offline Game */,
 				000000000000000000000601 /* Sources */,
 				000000000000000000000301 /* Frameworks */,
 				000000000000000000000602 /* Resources */,
@@ -203,10 +207,28 @@
 			files = (
 				00000000000000000000010E /* Assets.xcassets in Resources */,
 				00000000000000000000010F /* PrivacyInfo.xcprivacy in Resources */,
+				000000000000000000000111 /* Game in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		000000000000000000000603 /* Prepare Offline Game */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = ();
+			inputFileListPaths = ("$(SRCROOT)/FrogRiverPortal/Resources/OfflineGame-inputs.xcfilelist");
+			inputPaths = ("$(SRCROOT)/../assets");
+			name = "Prepare Offline Game";
+			outputFileListPaths = ("$(SRCROOT)/FrogRiverPortal/Resources/OfflineGame-outputs.xcfilelist");
+			outputPaths = ("$(DERIVED_FILE_DIR)/Game");
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "NODE_BINARY=\"$(command -v node || echo /opt/homebrew/bin/node)\"\n\"$NODE_BINARY\" \"$SRCROOT/../scripts/prepare-ios.js\" \"$DERIVED_FILE_DIR/Game\"\n";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		000000000000000000000601 /* Sources */ = {
@@ -351,7 +373,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 38;
 				DEVELOPMENT_TEAM = KLS4TVFJTM;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = FrogRiverPortal/Resources/Info.plist;
@@ -374,7 +396,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 38;
 				DEVELOPMENT_TEAM = KLS4TVFJTM;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = FrogRiverPortal/Resources/Info.plist;

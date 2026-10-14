@@ -1,6 +1,6 @@
 apply plugin: 'com.android.application'
 
-// Optional, paired debug-only overrides for investigating a broken demo creative.
+// Optional, paired Debug/QA overrides for investigating a broken demo creative.
 // A publisher ad unit must never be tested without explicitly registering the device.
 def adsTestProperties = new Properties()
 def adsTestConfig = rootProject.file('ads-test.properties')
@@ -21,12 +21,16 @@ if (adsTestDevice || rewardedTestUnit) {
 android {
     namespace "com.frogfrenzy.game"
     compileSdk rootProject.ext.compileSdkVersion
+    buildFeatures {
+        buildConfig true
+    }
     defaultConfig {
         applicationId "com.frogfrenzy.game"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 13
-        versionName "1.0.12"
+        versionCode 16
+        versionName "1.0.15"
+        buildConfigField "boolean", "FROG_QA", "false"
         resValue "string", "admob_app_id", "ca-app-pub-9711589934416529~1311124306"
         resValue "string", "admob_banner_id", "ca-app-pub-9711589934416529/3925834886"
         resValue "string", "admob_rewarded_id", "ca-app-pub-9711589934416529/9365863824"
@@ -57,11 +61,23 @@ android {
             resValue "string", "admob_test_device_id", adsTestDevice
         }
         release {
-            minifyEnabled false
+            minifyEnabled true
+            shrinkResources true
             if (System.getenv("ANDROID_KEYSTORE_PATH")) {
                 signingConfig signingConfigs.release
             }
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+        // Exercise the same R8 optimization as Release without serving production ads.
+        qa {
+            initWith release
+            signingConfig signingConfigs.debug
+            matchingFallbacks = ['release']
+            buildConfigField "boolean", "FROG_QA", "true"
+            resValue "string", "admob_app_id", rewardedTestUnit ? "ca-app-pub-9711589934416529~1311124306" : "ca-app-pub-3940256099942544~3347511713"
+            resValue "string", "admob_banner_id", "ca-app-pub-3940256099942544/9214589741"
+            resValue "string", "admob_rewarded_id", rewardedTestUnit ?: "ca-app-pub-3940256099942544/5224354917"
+            resValue "string", "admob_test_device_id", adsTestDevice
         }
     }
 }

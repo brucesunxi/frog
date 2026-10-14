@@ -1,0 +1,17 @@
+{
+  "before": {
+    "aabBytes": 17783803,
+    "dexBytes": 16054524,
+    "dexCompressedBytes": 6191428,
+    "resourcesBytes": 1935258,
+    "mappingIncluded": false
+  },
+  "after": {
+    "aabBytes": 16298672,
+    "dexBytes": 5101748,
+    "dexCompressedBytes": 2452714,
+    "resourcesBytes": 1207586,
+    "mappingIncluded": true
+  },
+  "sha256": "021b796765004e73b1c90ba5e8862f0b084549ecd1fa75839177a9a36dbc0198"
+}

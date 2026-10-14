@@ -37,6 +37,7 @@ final class WebPortalViewController: UIViewController {
     deinit {
         loadingTimeoutWorkItem?.cancel()
         WebBridge.messageNames.forEach { webView?.configuration.userContentController.removeScriptMessageHandler(forName: $0) }
+        webView?.configuration.userContentController.removeScriptMessageHandler(forName: WebBridge.requestMessageName)
     }
 
     private func setupWebView() {
@@ -44,8 +45,9 @@ final class WebPortalViewController: UIViewController {
 
         let contentController = WKUserContentController()
         WebBridge.messageNames.forEach { contentController.add(bridge, name: $0) }
-        contentController.addUserScript(WKUserScript(source: WebBridge.platformJavaScript, injectionTime: .atDocumentStart, forMainFrameOnly: false))
-        contentController.addUserScript(WKUserScript(source: WebBridge.injectedJavaScript, injectionTime: .atDocumentEnd, forMainFrameOnly: false))
+        contentController.addScriptMessageHandler(bridge, contentWorld: .page, name: WebBridge.requestMessageName)
+        contentController.addUserScript(WKUserScript(source: WebBridge.platformJavaScript, injectionTime: .atDocumentStart, forMainFrameOnly: true))
+        contentController.addUserScript(WKUserScript(source: WebBridge.injectedJavaScript, injectionTime: .atDocumentEnd, forMainFrameOnly: true))
 
         let configuration = WKWebViewConfiguration()
         configuration.websiteDataStore = .default()
@@ -99,7 +101,7 @@ final class WebPortalViewController: UIViewController {
 
     private func configurePageScrolling(for url: URL?) {
         let path = url?.path ?? "/"
-        let isGame = path == "/" || path.isEmpty || path == "/game.html"
+        let isGame = url?.isFileURL == true || path == "/" || path.isEmpty || path == "/game.html"
             || path.hasPrefix("/r/") || path.hasPrefix("/c/")
         // Game menus own their scrolling. Pulling the outer view must not move
         // the entire board or reload a run; other pages keep pull-to-refresh.
@@ -168,7 +170,11 @@ final class WebPortalViewController: UIViewController {
     }
 
     private func load(_ url: URL) {
-        webView.load(URLRequest(url: url, cachePolicy: .returnCacheDataElseLoad, timeoutInterval: 15))
+        if url.isFileURL {
+            webView.loadFileURL(url, allowingReadAccessTo: url.deletingLastPathComponent())
+        } else {
+            webView.load(URLRequest(url: url, cachePolicy: .reloadRevalidatingCacheData, timeoutInterval: 15))
+        }
     }
 
     private func startLoadingTimeout() {
